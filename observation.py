@@ -1,22 +1,11 @@
 #modules
 import numpy as np
-import numpy.matlib
-import netCDF4
 import xarray as xr
-from scipy import stats
-from scipy import signal
 from pathos.multiprocessing import ProcessingPool as Pool
 
-cores = 6
-
-#get netdf variables
-#def manipular_nc(archivo,variable,lat_name,lon_name):
-#    dataset = netCDF4.Dataset(archivo, 'r')
-#    var_out = np.squeeze(dataset.variables[variable][:])
-#    lon = dataset.variables[lat_name][:]
-#    lat = dataset.variables[lon_name][:]
-#    dataset.close()
-#    return var_out, lon, lat
+cores = 9
+date0 = 1982
+months = 12
 
 def manipular_nc(archivo,variable,lat_name,lon_name,lats, latn, lonw, lone):
 
@@ -48,22 +37,24 @@ class Observ(object):
 #selecciono los datos a partir del mes de IC y plazo, saco promedio trimestral
     def select_months(self, init_cond, target, lats, latn, lonw, lone): #init_cond en meses y target en meses ()
        
-        first_month = init_cond + target-1+12*(self.date_begin-1982)
+        first_month = init_cond + target-1+months*(self.date_begin-date0)
 	
         ruta = '/datos/osman/nmme/monthly/'        
 
         file = ruta + 'precip_monthly_nmme_' + self.institution +'.nc'
 
-        hind_len = (self.date_end-self.date_begin)*12+first_month  #esto hay que emprolijarlo
+        hind_len = (self.date_end-self.date_begin)*months+first_month  #esto hay que emprolijarlo
         
-        [variable,latitudes,longitudes] = manipular_nc (file,self.var_name,self.lat_name,self.lon_name,lats,latn,lonw,lone)
+        [variable,latitudes,longitudes] = manipular_nc (file,self.var_name,self.lat_name,
+                self.lon_name,lats,latn,lonw,lone)
 
-        #esto se puede mejorar usando las propiedades de xarray. tengo la cabeza
-        #quemada
+        #esto se puede mejorar usando las propiedades de xarray. De todos modos no es trivial porque
+        #implican cambio de anios segun plazos de pronosticos y computo de medias trimestrales no contem
+        #pladas en xarray
 
         variable = np.squeeze(np.array(variable))
 
-        observation = np.nanmean(np.stack((variable[first_month:hind_len:12,:,:],variable[first_month+1:hind_len:12,:,:],variable[first_month+2:hind_len:12,:,:]),axis = 3), axis = 3)
+        observation = np.nanmean(np.stack([variable[first_month:hind_len:12,:,:],variable[first_month+1:hind_len:12,:,:],variable[first_month+2:hind_len:12,:,:]],axis = 3), axis = 3)
        
         return latitudes, longitudes, observation
 
@@ -72,7 +63,7 @@ class Observ(object):
 
         [ntimes,nlats,nlons] = observation.shape
         
-        anios = np.arange(1982,2011)
+        anios = np.arange(ntimes) #en anios es un quilombo y para el caso es lo mismo
 
         i = np.repeat(np.arange(ntimes,dtype = int),nlats*nlons)
 
@@ -104,7 +95,6 @@ class Observ(object):
 
             observation_dt = np.reshape(np.squeeze(np.stack(res)),[ntimes,nlats,nlons])
 
-            print(observation_dt.shape)
 
             del(filtro_tendencia,res)
 
@@ -126,11 +116,85 @@ class Observ(object):
 
             observation_dt = np.reshape(np.squeeze(np.stack(res)),[ntimes,nlats,nlons])
 
-            print(observation_dt.shape)
-
             del(filtro_tendencia,res)
 
             p.close()
 
         return observation_dt
+
+    def computo_terciles(self,observation,CV_opt):
+
+        #calculo terciles observados a partir de anomalias observadas
+        #se puede calcular en validacion cruzada o no
+
+        [ntimes,nlats,nlons] = observation.shape
+        
+               
+        if CV_opt: #validacion cruzada ventana 1 anio
+
+            i = np.arange(ntimes)
+
+            p = Pool(cores)
+
+            p.clear()
+
+            print("Validacion cruzada")
+
+            CV_matrix = np.logical_not(np.identity(ntimes))
+
+            def cal_terciles(i,CV_m = CV_matrix,obs=observation):
+
+                A = np.sort(np.rollaxis(obs[CV_m[:,i],:,:],0,3), axis = -1, kind = 'quicksort')
+
+                upper = A[:,:,np.int(np.round((obs.shape[0]-1)/3)-1)]
+
+                lower = A[:,:,np.int(np.round((obs.shape[0]-1)/3*2)-1)]
+
+                return upper, lower
+
+            res = p.map(cal_terciles,i.tolist())
+
+            terciles = np.stack(res, axis = 1)
+
+            del(cal_terciles,res)
+
+            p.close()
+
+        else:
+
+                A = np.sort(np.rollaxis(observation,0,3), axis = -1, kind = 'quicksort')
+
+                upper = A[:,:,np.int(np.round((observation.shape[0])/3)-1)]
+
+                lower = A[:,:,np.int(np.round((observation.shape[0])/3*2)-1)]
+
+
+                terciles = np.rollaxis( np.stack([upper, lower],axis = 2),2,0)
+
+
+        return terciles
+
+    def computo_categoria (self, observation, tercil):
+        #clasifico cada anio segun el tercil que se observo: Below, normal, Above
+
+        [ntimes, nlats, nlons] = np.shape(observation)
+
+        #calculo el tercil observado cada anio
+
+        obs_terciles = np.empty([3, ntimes, nlats, nlons])
+
+        #above normal
+
+        obs_terciles [0,:,:,:] = observation <= tercil [0,:,:,:]
+
+        #below normal
+
+        obs_terciles [2,:,:,:] = observation >= tercil [1,:,:,:]
+
+        #near normal
+
+        obs_terciles [1,:,:,:] = np.logical_not (np.logical_or(obs_terciles[0,:,:,:],
+                                obs_terciles[2,:,:,:]))
+
+        return obs_terciles
 
