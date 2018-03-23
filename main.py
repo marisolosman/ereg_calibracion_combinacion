@@ -11,17 +11,6 @@ import glob
 import os.path
 from pathlib import Path 
 
-start = time.time()
-
-lat_sur = -10
-lat_nor = 0
-lon_oes = 295
-lon_est = 300
-ic_mes = 6 #en este ejemplo IC Nov
-plazo = 1 # es este ejemplo prono de Dec-Jan-Feb
-p = 0.95 #proporcion del spread maximo que quiero retener
-varn = 'prec'
-sss = 'JJA'
 def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension, varn, sss, p):
 
     for i in np.arange(len(modelos)):
@@ -138,10 +127,17 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
 #def main():
   
 	# Define parser data
-#    parser = argparse.ArgumentParser(description='Plotting satellite data.')
-    # First arguments. Dates. TODO:SPECIFY INITIAL AND FINAL ORDER
-#    parser.add_argument('date', metavar='YYYY.MM.DD YYYY.MM.DD', type=str, nargs=2,\
-#		      help='Initial date followed by end date')
+#    parser = argparse.ArgumentParser(description='Calibrating models using Ensemble Regression.')
+    # First arguments. Variable to calibrate. Prec or temp
+#    parser.add_argument('--variable', type=str, nargs= 1,\
+#		      help='Variable to calibrate (prec or temp)')
+#    parser.add_argument('--IC',type = int, narg= 1,\
+#        help = 'Month of intial conditions (from 1 for Jan to 12 for Dec)')
+#   parser.add_argument('--leadtime', type = int, narg = 1,\
+#        help = 'Forecast leatime (in months, from 1 to 7)')
+#    parser.add_argument('--spread', type = float, narg = 1,\
+#        help = 'percentage of spread to retain (from 0 to 1)')
+#   parser.add_argument('')
 #    # Specify sattelites to exclude from command line. TODO: change to flag!
 #    parser.add_argument('--no-ascat', dest='ascat_bool', action="store_true", \
 #		      default= False, help="Don't display ASCAT information")
@@ -174,6 +170,18 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
 
 #if __name__ == "__main__":
 #    clean()
+start = time.time()
+
+lat_sur = -10
+lat_nor = 0
+lon_oes = 295
+lon_est = 300
+ic_mes = 6 #en este ejemplo IC Nov
+plazo = 1 # es este ejemplo prono de Dec-Jan-Feb
+p = 0.95 #proporcion del spread maximo que quiero retener
+varn = 'prec'
+sss = 'JJA'
+
 modelo = ['CFSv2','CESM1', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5']
 instit = ['NCEP', 'NCAR', 'CMC','CMC', 'GFDL','GFDL', 'GFDL', 'NASA']
 latn = [ 'Y', 'Y', 'lat','lat', 'Y', 'Y', 'lat','Y' ]
