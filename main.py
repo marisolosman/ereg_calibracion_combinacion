@@ -2,16 +2,17 @@
 
 #!/usr/bin/env python
 
-import argparse 
-import time
+import argparse #para hacer el llamado desde consola
+import time #tomar el tiempo que lleva el codigo
 import numpy as np
-import model
-import observation
-import glob
-import os.path
-from pathlib import Path 
+import model #objeto y metodos asociados a los modelos
+import observation # idem observaciones
+import glob #listar archivos
+import os.path #manejar path
+import calendar #manejar meses del calendario
+from pathlib import Path #manejar path
 
-def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension, varn, sss, p):
+def calibrar(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension, varn, ic_mes,leadtime,sss, p, lat_sur, lat_nor, lon_oes, lon_est):
 
     for i in np.arange(len(modelos)):
 
@@ -20,7 +21,7 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
         archivo = Path('/datos/osman/nmme_output/obs_'+varn+'_'+sss+'.npz')
 
         output = Path('/datos/osman/nmme_output/'+varn+'_'+ modelos[i] +'_'+
-                '{:02}'.format(ic_mes)+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p)+'_hind.npz')
+                '{:02}'.format(ic_mes)+'_'+'{:02}'.format(leadtime)+'_01_'+'{:03}'.format(p)+'_hind.npz')
 
         if archivo.is_file():
 
@@ -40,7 +41,7 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
 
             print("Selecciono observacion")
 
-            [lats_obs, lons_obs, obs_3m] = obs.select_months(ic_mes,plazo, lat_sur, lat_nor, lon_oes, lon_est)
+            [lats_obs, lons_obs, obs_3m] = obs.select_months(ic_mes,leadtime, lat_sur, lat_nor, lon_oes, lon_est)
 
             #remuevo tendencia y estandarizo observacion
 
@@ -56,7 +57,6 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
 
             terciles = obs.computo_terciles(obs_dt,True) # la variable logica habilita o no CV
 
-
             print("Calculo que tercil se observo en cada anio")
 
             categoria_obs = obs.computo_categoria (obs_dt, terciles)
@@ -65,7 +65,7 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
                     lats_obs = lats_obs, lons_obs = lons_obs, terciles = terciles, cat_obs =
                     categoria_obs)
 
-        #instancio un modelo de ejemplo
+        #instancio modelo 
 
         if output.is_file():
             pass
@@ -79,7 +79,7 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
 
             print("Selecciono pronos")
 
-            [lats,lons,pronos] = modelo.select_months(ic_mes, plazo, lat_sur, lat_nor, lon_oes, lon_est)
+            [lats,lons,pronos] = modelo.select_months(ic_mes, leadtime, lat_sur, lat_nor, lon_oes, lon_est)
         
             print("Remuevo tendencia")
 
@@ -115,83 +115,105 @@ def main(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension,
             np.savez(output,lats = lats, lons = lons, pronos_dt = pronos_dt, pronos_cr = forecast_cr, eps = epsb,Rm = Rmedio, Rb = Rmej, K2 = Kmax, 
                     K = K, peso = pdf_intensity, prob_terc = prob_terc)
 
-#def plot_data_matrix(data_matrix):
-#    pass
-
-
-# Clean working environment (should be called before main)
-#def clean():
-#    import os
-#    os.system("rm -f /tmp/*.gz /tmp/*.nc")
-
-#def main():
+def main():
   
 	# Define parser data
-#    parser = argparse.ArgumentParser(description='Calibrating models using Ensemble Regression.')
+    parser = argparse.ArgumentParser(description='Calibrating models using Ensemble Regression.')
     # First arguments. Variable to calibrate. Prec or temp
-#    parser.add_argument('--variable', type=str, nargs= 1,\
-#		      help='Variable to calibrate (prec or temp)')
-#    parser.add_argument('--IC',type = int, narg= 1,\
-#        help = 'Month of intial conditions (from 1 for Jan to 12 for Dec)')
-#   parser.add_argument('--leadtime', type = int, narg = 1,\
-#        help = 'Forecast leatime (in months, from 1 to 7)')
-#    parser.add_argument('--spread', type = float, narg = 1,\
-#        help = 'percentage of spread to retain (from 0 to 1)')
-#   parser.add_argument('')
-#    # Specify sattelites to exclude from command line. TODO: change to flag!
-#    parser.add_argument('--no-ascat', dest='ascat_bool', action="store_true", \
-#		      default= False, help="Don't display ASCAT information")
+    parser.add_argument('variable',type=str, nargs= 1,\
+            help='Variable to calibrate (prec or temp)')
+    parser.add_argument('IC', type = int, nargs= 1,\
+            help = 'Month of intial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type = int, nargs = 1,\
+            help = 'Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('spread',  type = float, nargs = 1,\
+            help = 'percentage of spread to retain (from 0 to 1)')
+    # Specify models to exclude from command line. 
+    parser.add_argument('--no-model', required = False, nargs = '+', choices = ['CFSv2', 'CESM1','CanCM3','CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5'],
+            dest ='no_model', help="Models to be discarded")
 
     # Extract dates from args
-#    args=parser.parse_args()
-#    initialDate = args.date[0]
-#    finalDate = args.date[1]
+    args=parser.parse_args()
+
+    nombres = args.no_model[:]
+
+    varn = args.variable[0]
     
-    # Flow control depending on specified options
-#    if not args.ascat_bool:
-        # Instantiate ASCAT and get datetime object
-#        ascat = satellite.ASCAT(initialDate, finalDate)
-#        ascat.get_datetime_object()
-        # Download files from ASCAT servers
-#        ascat.download_files()
-        # Get figure handler and colormap
-#        m, cmap = satellite.generate_figure()   
-        # Process for every *.nc file in folder
-#        for src_name in glob.glob(os.path.join("/tmp", '*.nc')):
-#            base = os.path.basename(src_name)
-#            lat, lon, data = ascat.extract_data(src_name)
-#            satellite.plot_data(m, lat, lon, data, cmap)
-        # Finalize plot design and show it
-#        plt.title('ASCAT - Sfc Wind Speed')
-#        plt.show()
+    ic_mes = args.IC[0]
+    
+    plazo = args.leadtime[0]
+    
+    p = args.spread[0]
 
-#    else:
-#        print "You've discarded all the satellites I know!"
+    seas = range(ic_mes+plazo,ic_mes+plazo+3)
+       
+    sss = [i-12 if i>12 else i for i in seas ]
+    sss = "".join(calendar.month_abbr[i][0] for i in sss)
 
-#if __name__ == "__main__":
-#    clean()
+    lista = glob.glob("/home/osman/actividades/postdoc/modelos/*")
+    
+    modelo = []
+    instit = []
+    latn = []
+    lonn = []
+    miembros = []
+    plazos = []
+    fechai = []
+    fechaf = []
+    ext = []
+    
+    if args.no_model is not None: #si tengo que descartar modelos
+        for j in nombres:
+            for i in lista:
+                lines = [line.rstrip('\n') for line in open(i)]
+                modelos = lines[0] ==j
+
+                if modelos: 
+                    
+                    lista.remove(i)
+                    break
+
+    for i in lista:
+       
+        lines = [line.rstrip('\n') for line in open(i)]
+        modelo.append(lines[0])
+        instit.append(lines[1])
+        latn.append(lines[2])
+        lonn.append(lines[3])
+        miembros.append(int(lines[4]))
+        plazos.append(int(lines[5]))
+        fechai.append(int(lines[6]))
+        fechaf.append(int(lines[7]))
+        ext.append(lines[8])
+        
+#llamo a la funcion para calibrar
+#def calibrar(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extension, varn, ic_mes,leadtime,sss, p, lat_sur, lat_nor, lon_oes, lon_est):
+
+    calibrar(modelo,instit,latn, lonn, miembros, plazos, fechai,fechaf, ext, varn,ic_mes,plazo, sss, p,lat_sur, lat_nor, lon_oes, lon_est) 
 start = time.time()
 
-lat_sur = -10
-lat_nor = 0
-lon_oes = 295
-lon_est = 300
-ic_mes = 6 #en este ejemplo IC Nov
-plazo = 1 # es este ejemplo prono de Dec-Jan-Feb
-p = 0.95 #proporcion del spread maximo que quiero retener
-varn = 'prec'
-sss = 'JJA'
+#abro archivo donde guardo coordenadas
+coordenadas = 'coords'
 
-modelo = ['CFSv2','CESM1', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5']
-instit = ['NCEP', 'NCAR', 'CMC','CMC', 'GFDL','GFDL', 'GFDL', 'NASA']
-latn = [ 'Y', 'Y', 'lat','lat', 'Y', 'Y', 'lat','Y' ]
-lonn = [ 'X', 'X', 'lon', 'lon', 'X', 'X', 'lon', 'X']
-miembros = [ 24, 28, 10, 10, 28, 28, 10, 28 ]
-plazos = [ 10, 12, 12, 12, 12, 12, 12, 9 ]
-fechai = [ 1982, 1982, 1982, 1982, 1982, 1982, 1982, 1982]
-fechaf = [ 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]
-ext = ['nc','nc', 'nc4', 'nc4', 'nc', 'nc','nc', 'nc']
-main(modelo,instit,latn, lonn, miembros, plazos, fechai,fechaf, ext, varn, sss, p) 
+lines = [line.rstrip('\n') for line in open(coordenadas)]
 
+lat_sur = float(lines[1]) #se va a un text file
+lat_nor = float(lines [2]) #idem
+lon_oes = float(lines[3]) #idem
+lon_est = float(lines[4]) #idem
+
+#modelo = ['CFSv2','CESM1', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5']
+#instit = ['NCEP', 'NCAR', 'CMC','CMC', 'GFDL','GFDL', 'GFDL', 'NASA']
+#latn = [ 'Y', 'Y', 'lat','lat', 'Y', 'Y', 'lat','Y' ]
+#lonn = [ 'X', 'X', 'lon', 'lon', 'X', 'X', 'lon', 'X']
+#miembros = [ 24, 28, 10, 10, 28, 28, 10, 28 ]
+#plazos = [ 10, 12, 12, 12, 12, 12, 12, 9 ]
+#fechai = [ 1982, 1982, 1982, 1982, 1982, 1982, 1982, 1982]
+#fechaf = [ 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]
+#ext = ['nc','nc', 'nc4', 'nc4', 'nc', 'nc','nc', 'nc']
+#main(modelo,instit,latn, lonn, miembros, plazos, fechai,fechaf, ext, varn, sss, p) 
+if __name__=="__main__":
+    main()
 end = time.time()
+
 print(end - start)
