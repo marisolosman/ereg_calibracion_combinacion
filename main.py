@@ -135,8 +135,6 @@ def main():
     # Extract dates from args
     args=parser.parse_args()
 
-    nombres = args.no_model[:]
-
     varn = args.variable[0]
     
     ic_mes = args.IC[0]
@@ -163,6 +161,9 @@ def main():
     ext = []
     
     if args.no_model is not None: #si tengo que descartar modelos
+
+        nombres = args.no_model[:]
+
         for j in nombres:
             for i in lista:
                 lines = [line.rstrip('\n') for line in open(i)]

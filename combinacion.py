@@ -1,41 +1,44 @@
 #codigo para calcular la probabilidad pronosticada para cada tercil en cada anio
 # a partir de la combinacion de pronosticos con la metodologia de wpdf y wsereg
-#modelos calibrados con ereg
+#modelos calibrados con ereg. Ademas grafica algunos indices de verificacion y guarda los resultados
 
 #!/usr/bin/env python
 
-import argparse 
-import time
+import argparse #llamado del condigo desde consola
+import time #medir tiempo que toma
 import numpy as np
-import glob
-import os.path
+import glob 
+#import os.path
 from pathlib import Path 
-import matplotlib.pyplot as plt
-import mpl_toolkits.basemap as bm
-from scipy.stats import norm
-from pathos.multiprocessing import ProcessingPool as Pool
-import ereg
-import verif_scores
+from scipy.stats import norm #calculos probabilidades distro normal
+from pathos.multiprocessing import ProcessingPool as Pool 
+import calendar
+import ereg #calibrar superensamble con ensemble regression
+import verif_scores #calculo y grafico de los indices de verificacion
 
 cores = 9
 
-def main(modelos,instit,varn,latn, lonn, miembros, plazos, fechai,fechaf, p, wtech, ctech, p_mme):
+def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fechai,fechaf, p, wtech, ctech, p_mme,
+        lat_s,lat_n,lon_oes,lon_est):
     nmodels = len(modelos)
+    ny = int(np.abs(lat_n-lat_s)+1)
+    nx = int(np.abs (lon_est-lon_oes)+1) #esto no funciona si mi dominio pasa por greenwich
+    nyears = int(fechaf[0]-fechai[0]+1)
 
-        #tomo la info de todos los modelos, hay que mejorar la definicion del modelo
+    #tomo la info de todos los modelos, hay que mejorar la definicion del modelo
 
     if ctech == 'wpdf':
-        prob_terciles = np.array([]).reshape(2,29,26,26,0)
+        prob_terciles = np.array([]).reshape(2,nyears,ny,nx,0) #cat anios lats lons
     else:
-        for_dt = np.array([]).reshape(29,26,26,0)
+        for_dt = np.array([]).reshape(nyears,ny,nx,0)
 
     if wtech == 'pdf_int':
 
-        weight = np.array([]).reshape(29,26,26,0)
+        weight = np.array([]).reshape(nyears,ny,nx,0)
 
     elif wtech == 'mean_cor':
 
-        rmean = np.array([]).reshape(26,26,0)
+        rmean = np.array([]).reshape(ny,nx,0)
 
     nmembers = np.empty([nmodels],dtype = int)
 
@@ -158,12 +161,9 @@ def main(modelos,instit,varn,latn, lonn, miembros, plazos, fechai,fechaf, p, wte
     elif ctech == 'wsereg':                 
         #ereg con el smme pesado
 
-        print(for_dt.shape)
-        print(weight.shape)
-                          
-        pronos_dt = np.rollaxis(for_dt * np.repeat(weight[0,:,:,:,:],nmembers,axis = 3),3,1)      
-        print('tamanio:')
-        print(pronos_dt.shape)
+                                 
+        pronos_dt = np.rollaxis(for_dt * np.repeat(weight[0,:,:,:,:]/nmembers,nmembers,axis = 3),3,1)      
+
         [forecast_cr, Rmedio, Rmej, epsb, Kmax, K] = ereg.ensemble_regression(pronos_dt, 
                 obs_dt,p_mme, True)
                           
@@ -171,9 +171,7 @@ def main(modelos,instit,varn,latn, lonn, miembros, plazos, fechai,fechaf, p, wte
                           
         prob_terc = ereg.probabilidad_terciles (forecast_cr, epsb, terciles)
 
-        print('tamanio prob_terc wsereg')
-        print(prob_terc.shape)
-                          
+                        
         #obtengo la combinacion a partir de la suma pesada
                           
         prob_terc_comb = np.nanmean(prob_terc,axis = 2)
@@ -339,29 +337,150 @@ def main(modelos,instit,varn,latn, lonn, miembros, plazos, fechai,fechaf, p, wte
     #SA tropical
 
     #SA extratropical
-   
-# =================================================================================
+# ================================================================================
+def main():
+    # Define parser data
+    parser = argparse.ArgumentParser(description='Calibrating models using Ensemble Regression.')
+    # First arguments. Variable to calibrate. Prec or temp
+    parser.add_argument('variable',type=str, nargs= 1,\
+            help='Variable to calibrate (prec or temp)')
+    parser.add_argument('IC', type = int, nargs= 1,\
+            help = 'Month of intial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type = int, nargs = 1,\
+            help = 'Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('mod_spread',  type = float, nargs = 1,\
+            help = 'percentage of spread to retain in each model (from 0 to 1)')
+    parser.add_argument('mme_spread', type = float, nargs = 1,\
+            help = 'percentage of spread to retain in the mme (from 0 to 1)') #este argumento deberia
+    #existir solo si elijo wsereg como metodo de combinacion. Algo para cambiar en el futuro
+    parser.add_argument('--comb-tech',required = True, nargs = 1,\
+            choices = ['wpdf','wsereg'],dest = 'ctech', help = 'Combination approach')
+    parser.add_argument('--weight-tech', required = True, nargs = 1,\
+            choices = ['pdf_int','mean_cor','same'],dest = 'wtech', \
+            help = 'Relative weight between models (pdf intensity at obs,mean correlation, same weight)')
+    # Specify models to exclude from command line. 
+    parser.add_argument('--no-model', required = False, nargs = '+', 
+            choices = ['CFSv2', 'CESM1','CanCM3','CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5'],
+            dest ='no_model', help = "Models to be discarded")
+
+    # Extract dates from args
+
+    args=parser.parse_args()
+
+    varn = args.variable[0]
+
+    ic_mes = args.IC[0]
+
+    plazo = args.leadtime[0]
+
+    p = args.mod_spread[0]
+
+    p_mme = args.mme_spread[0]
+
+    wtech = args.wtech[0]
+
+    ctech = args.ctech[0]
+
+    seas = range(ic_mes+plazo,ic_mes+plazo+3)
+               
+    sss = [i-12 if i>12 else i for i in seas ]
+
+    sss = "".join(calendar.month_abbr[i][0] for i in sss)
+
+    lista = glob.glob("/home/osman/actividades/postdoc/modelos/*")
+
+    modelo = []
+    instit = []
+    latn = []
+    lonn = []
+    miembros = []
+    plazos = []
+    fechai = []
+    fechaf = []
+    ext = []
+                                           
+    if args.no_model is not None: #si tengo que descartar modelos
+
+        nombres = args.no_model[:]
+
+        for j in nombres:
+            for i in lista:
+                lines = [line.rstrip('\n') for line in open(i)]
+
+                modelos = lines[0] ==j
+
+                if modelos: 
+                    
+                    lista.remove(i)
+
+                    break
+    for i in lista:
+
+        lines = [line.rstrip('\n') for line in open(i)]
+        
+        modelo.append(lines[0])
+        
+        instit.append(lines[1])
+        
+        latn.append(lines[2])
+        
+        lonn.append(lines[3])
+        
+        miembros.append(int(lines[4]))
+        
+        plazos.append(int(lines[5]))
+        
+        fechai.append(int(lines[6]))
+        
+        fechaf.append(int(lines[7]))
+        
+        ext.append(lines[8])
+        
+    combinar(modelo,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fechai,fechaf, p, wtech, ctech, p_mme,lat_sur,lat_nor,lon_oes,lon_est) 
+
+#===================================================================================================
+
 start = time.time()
+                                                                                                                                                                                                              #abro archivo donde guardo coordenadas
+                                                  
+coordenadas = 'coords'
 
-ic_mes = 11 #en este ejemplo IC Mayo
-plazo = 1 # es este ejemplo prono de Junio-Julio-Agosto
-varn = 'prec'
-sss = 'DJF'
-p = 0.9
-p_mme = 1
-wtech = 'same' #pdf_int or mean_cor or same
-ctech = 'wsereg'  #wpdf or wsereg
-modelo = ['CFSv2','CESM1', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5']
-instit = ['NCEP', 'NCAR', 'CMC','CMC', 'GFDL','GFDL', 'GFDL', 'NASA']
-latn = [ 'Y', 'Y', 'lat','lat', 'Y', 'Y', 'lat','Y' ]
-lonn = [ 'X', 'X', 'lon', 'lon', 'X', 'X', 'lon', 'X']
-miembros = [ 24, 28, 10, 10, 28, 28, 10, 28 ]
-plazos = [ 10, 12, 12, 12, 12, 12, 12, 9 ]
-fechai = [ 1982, 1982, 1982, 1982, 1982, 1982, 1982, 1982]
-fechaf = [ 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]
-ext = ['nc','nc', 'nc4', 'nc4', 'nc', 'nc','nc', 'nc']
+lines = [line.rstrip('\n') for line in open(coordenadas)]
 
-main(modelo,instit,varn,latn, lonn, miembros, plazos, fechai,fechaf, p, wtech, ctech, p_mme) 
+lat_sur = float(lines[1])
+
+lat_nor = float(lines [2]) #idem
+
+lon_oes = float(lines[3]) #idem
+
+lon_est = float(lines[4]) #idem
+
+#if __name__=="__main__":
+main()
 
 end = time.time()
+
 print(end - start)
+
+# =================================================================================
+#start = time.time()
+
+#ic_mes = 11 #en este ejemplo IC Mayo
+#plazo = 1 # es este ejemplo prono de Junio-Julio-Agosto
+#varn = 'prec'
+#sss = 'DJF'
+#p = 0.9
+#p_mme = 1
+#wtech = 'same' #pdf_int or mean_cor or same
+#ctech = 'wsereg'  #wpdf or wsereg
+#modelo = ['CFSv2','CESM1', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5']
+#instit = ['NCEP', 'NCAR', 'CMC','CMC', 'GFDL','GFDL', 'GFDL', 'NASA']
+#latn = [ 'Y', 'Y', 'lat','lat', 'Y', 'Y', 'lat','Y' ]
+#lonn = [ 'X', 'X', 'lon', 'lon', 'X', 'X', 'lon', 'X']
+#miembros = [ 24, 28, 10, 10, 28, 28, 10, 28 ]
+#plazos = [ 10, 12, 12, 12, 12, 12, 12, 9 ]
+#fechai = [ 1982, 1982, 1982, 1982, 1982, 1982, 1982, 1982]
+#fechaf = [ 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]
+#ext = ['nc','nc', 'nc4', 'nc4', 'nc', 'nc','nc', 'nc']
+#
+#
