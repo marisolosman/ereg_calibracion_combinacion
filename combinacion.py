@@ -202,13 +202,13 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                          
     titulo = 'Ranked Probabilistic Skill Score'
                          
-    salida = route + 'rpss'+'_'+varn+'_mme_'+'{:02}'.format(ic_mes
+    salida = route + 'rpss_'+varn+'_mme_'+'{:02}'.format(ic_mes
             )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
             )+'_'+wtech+'_'+ctech+'_hind.eps'
                          
     verif_scores.plot_scores(lat, lon, rpss, titulo, salida)
    
-    archivo = 'rpss' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
+    archivo = 'rpss_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
             plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
 
     np.savez(ruta+archivo,rpss = rpss, lat = lat, lon= lon)
@@ -222,14 +222,14 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
 
             BSS_above[:,i,j] = verif_scores.BS_decomposition(1-prob_terc_comb[1,:,i,j],obs_terciles[2,:,i,j],bins)
 
-    archivo = 'bss_above' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
+    archivo = 'bss_above_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
             plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
 
     np.savez(ruta+archivo,BSS_above = BSS_above, lat = lat, lon= lon)
                      
     titulo = 'Brier Skill Score - Above Normal event'
                          
-    salida = route + 'brierss_above'+'_'+varn+'_mme_'+'{:02}'.format(
+    salida = route + 'brierss_above_'+varn+'_mme_'+'{:02}'.format(
             ic_mes)+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
             )+'_'+wtech+'_'+ctech+'_hind.eps'
     
@@ -239,7 +239,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                          
     titulo = 'BSS - Resolution - Above Normal event'
                          
-    salida = route + 'bss_res_above'+'_'+varn+'_mme_'+'{:02}'.format(
+    salida = route + 'bss_res_above_'+varn+'_mme_'+'{:02}'.format(
             ic_mes)+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
                     )+'_'+wtech+'_'+ctech+'_hind.eps'
                         
@@ -247,7 +247,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                         
     titulo = 'BSS - Reliability - Above Normal event'
                         
-    salida = route + 'bss_rel_above'+'_'+varn+'_mme_'+'{:02}'.format(ic_mes
+    salida = route + 'bss_rel_above_'+varn+'_mme_'+'{:02}'.format(ic_mes
             )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
                     )+'_'+wtech+'_'+ctech+'_hind.eps'
                         
@@ -260,14 +260,14 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
 
             BSS_below[:,i,j] = verif_scores.BS_decomposition(prob_terc_comb[0,:,i,j],obs_terciles[0,:,i,j],bins)
                          
-    archivo = 'bss_below' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
+    archivo = 'bss_below_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
             plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
 
     np.savez(ruta+archivo,BSS_below = BSS_below, lat = lat, lon= lon)
 
     titulo = 'Brier Skill Score - Below Normal event'
                          
-    salida = route + 'brierss_below'+'_'+varn+'_mme_'+'{:02}'.format(ic_mes
+    salida = route + 'brierss_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
             )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
                     )+'_'+wtech+'_'+ctech+'_hind.eps'
     
@@ -277,7 +277,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                          
     titulo = 'BSS - Resolution - Below Normal event'
                          
-    salida = route + 'bss_res_below'+'_'+varn+'_mme_'+'{:02}'.format(ic_mes
+    salida = route + 'bss_res_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
             )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
                     )+'_'+wtech+'_'+ctech+'_hind.eps'
                          
@@ -285,7 +285,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                         
     titulo = 'BSS - Reliability - Below Normal event'
                         
-    salida = route + 'bss_rel_below'+'_'+varn+'_mme_'+'{:02}'.format(ic_mes
+    salida = route + 'bss_rel_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
             )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
                     )+'_'+wtech+'_'+ctech+'_hind.eps'
                          
@@ -296,7 +296,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                         
     auroc_above = verif_scores.auroc(1-prob_terc_comb[1,:,:,:],obs_terciles[2,:,:,:],lat,bins)
     
-    archivo = 'auroc_above' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
+    archivo = 'auroc_above_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
             plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
 
     np.savez(ruta+archivo,auroc_above = auroc_above, lat = lat, lon= lon)
@@ -311,7 +311,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
                         
     auroc_below = verif_scores.auroc(prob_terc_comb[0,:,:,:],obs_terciles[0,:,:,:],lat,bins)
 
-    archivo = 'auroc_below' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
+    archivo = 'auroc_below_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
             plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
 
     np.savez(ruta+archivo,aurco_below = auroc_below, lat = lat, lon= lon)
@@ -329,7 +329,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
    #todo el dominio
 
     salida = varn+'_mme_'+'{:02}'.format(ic_mes)+'_'+'{:02}'.format(plazo
-            )+'_01_'+'{:03}'.format(p)+'_'+wtech+'_'+ctech+'_hind_all.jpg'
+            )+'_01_'+'{:03}'.format(p)+'_'+wtech+'_'+ctech+'_hind_all.eps'
 
     verif_scores.rel_roc(prob_terc_comb,obs_terciles,lat,bins,route,salida)
 
