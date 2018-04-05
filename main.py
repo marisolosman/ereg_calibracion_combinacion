@@ -20,7 +20,7 @@ def calibrar(modelos,instit,latn, lonn, miembros, plazos, fechai, fechaf, extens
 
         archivo = Path('/datos/osman/nmme_output/obs_'+varn+'_'+sss+'.npz')
 
-        output = Path('/datos/osman/nmme_output/'+varn+'_'+ modelos[i] +'_'+
+        output = Path('/datos/osman/nmme_output/cal_forecasts/'+varn+'_'+ modelos[i] +'_'+
                 '{:02}'.format(ic_mes)+'_'+'{:02}'.format(leadtime)+'_01_'+'{:03}'.format(p)+'_hind.npz')
 
         if archivo.is_file():

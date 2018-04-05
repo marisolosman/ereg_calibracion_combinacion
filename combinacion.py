@@ -46,7 +46,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
         
         #abro archivo modelo
 
-        archivo = Path('/datos/osman/nmme_output/'+ varn + '_' + modelos[i
+        archivo = Path('/datos/osman/nmme_output/cal_forecasts/'+ varn + '_' + modelos[i
             ] +'_'+'{:02}'.format(ic_mes)+'_'+'{:02}'.format(plazo)+'_01_'+
             '{:03}'.format(p)+'_hind.npz')
 
@@ -178,7 +178,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
         
     #guardo los pronos
 
-    route = '/datos/osman/nmme_output/'
+    route = '/datos/osman/nmme_output/cal_forecasts/'
 
     archivo = varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
             plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
@@ -191,7 +191,7 @@ def combinar(modelos,instit,varn,latn, lonn, miembros, ic_mes, plazo, sss, fecha
     
     route = '/datos/osman/nmme_figuras/'
 
-    ruta = '/datos/osman/nmme_output/'
+    ruta = '/datos/osman/nmme_output/verif_scores/'
 
     print(prob_terc_comb[:,4,3:5,3:5])
 
