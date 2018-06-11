@@ -30,8 +30,8 @@ Ensemble regression is a technique used to calibrate climate models. Developed b
 * ereg.py
 	_compute enseble regression for multi-model super ensemble_
 
-##Requirements##
+## Requirements ##
 
-##Usage##
+## Usage ##
 
-##Way forward##
+## Way forward ##
