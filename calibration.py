@@ -25,7 +25,7 @@ def main():
 
     args = parser.parse_args()   # Extract dates from args
     p = args.spread[0]
-    lista = glob.glob("/home/osman/actividades/postdoc/modelos/*")
+    lista = glob.glob("/home/osman/proyectos/postdoc/modelos/*")
    
     if args.no_model is not None: 
         
@@ -67,12 +67,14 @@ def main():
         np.savez(archivo, obs_dt = obs_dt,
                 lats_obs = lats_obs, lons_obs = lons_obs, terciles = terciles, cat_obs =
                 categoria_obs) #Save observed variables
-    print("Processing Models")    
+    print("Processing Models")
+    print (args.IC[0],SSS,'{:03}'.format(p))
     for it in modelos:
 
         output = Path('/datos/osman/nmme_output/cal_forecasts/'+args.variable[0] + '_' +\
                 it['nombre'] + '_' + calendar.month_abbr[args.IC[0]] + '_' + SSS + '_gp_01_'\
                 + 'p_' + '{:03}'.format(p) + '_hind.npz')
+        print(output)
 
         if output.is_file():
             pass
@@ -80,7 +82,7 @@ def main():
 
             modelo = model.Model(it['nombre'], it['instit'], args.variable[0], it['latn'],\
                     it['lonn'], it['miembros'], it['plazos'], it['fechai'], it['fechaf'], it['ext'])
-            print (modelo)
+            print (modelo,args.IC[0],SSS,p)
             [lats, lons, pronos] = modelo.select_months(args.IC[0], args.leadtime[0], coords['lat_s'], coords['lat_n'], coords['lon_w'], coords['lon_e'])  #Select forecast
             pronos_dt = modelo.remove_trend(pronos, True)  #Standardize and detrend forecast
             for_terciles = modelo.computo_terciles(pronos_dt, True) #uncalibrated forecast terciles
