@@ -45,7 +45,7 @@ def main():
     #defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i-12 if i>12 else i for i in seas]
-    year_verif = 1982 if seas[0]<12 else 1983
+    year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
    
     #obtengo datos observados
@@ -146,16 +146,12 @@ def main():
     #Reliability y ROC para:
 
     #todo el dominio
+    salida = file_end + '_all'
+    verif_scores.rel_roc(prob_terc_comb,obs_terciles,lat,bins,route,salida)
+    #SA tropical north of 20degree south 85W- 30W
 
-#    salida = varn+'_mme_'+'{:02}'.format(ic_mes)+'_'+'{:02}'.format(plazo
-#            )+'_01_'+'{:03}'.format(p)+'_'+wtech+'_'+ctech+'_hind_all.eps'
-#
-#    verif_scores.rel_roc(prob_terc_comb,obs_terciles,lat,bins,route,salida)
+    #SA extratropical 20S-55S  292-308
 
-
-    #SA tropical
-
-    #SA extratropical
 #===================================================================================================
 start = time.time()
 

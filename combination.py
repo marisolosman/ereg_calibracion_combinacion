@@ -83,8 +83,9 @@ def main():
     #defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i-12 if i>12 else i for i in seas]
-    year_verif = 1982 if seas[0]<12 else 1983
+    year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
+    print(SSS,args.ctech,args.wtech[0])
     i = 0
     for it in modelos:
         
@@ -110,7 +111,7 @@ def main():
             elif args.ctech == 'wsereg':
                 f_dt = data['pronos_dt']
                 nmembers[i] = f_dt.shape[1]
-                for_dt = np.concatenate((for_dt,np.rollaxis(f_dt,1,4)),axis = 3)
+                for_dt = np.concatenate((for_dt, np.rollaxis(f_dt, 1, 4)), axis = 3)
                 f_dt = []
                 #for_dt[years lats lons nmembers]
             else:
@@ -153,12 +154,11 @@ def main():
         #peso: nro veces max de la intensidad de la pdf / anios
         maximo = np.ndarray.argmax (weight, axis = 3) #posicion en donde se da el maximo
         weight = []
-        peso = np.empty([nmodels, nlats,nlons])
+        peso = np.empty([nlats,nlons, nmodels])
 
         for i in np.arange(nmodels):
-            peso [i,:,:] = np.sum (maximo == i, axis = 0)/ntimes
+            peso [:,:,i] = np.sum (maximo == i, axis = 0)/ntimes
 
-        peso = np.rollaxis(peso, 0, 3)
         weight = np.tile (peso,(2, ntimes, 1, 1, 1)) #2 ntimes nlat nlon nmodels
         
     elif args.wtech[0] == 'mean_cor':
@@ -178,7 +178,7 @@ def main():
                          
     elif args.ctech == 'wsereg':                 
         #ereg con el smme pesado
-        weight = weight/nmembers                         
+        weight = weight[0,:,:,:,:]/nmembers                         
         pronos_dt = np.rollaxis(for_dt * np.repeat(weight, nmembers, axis = 3), 3, 1)      
         [forecast_cr, Rmedio, Rmej, epsb, Kmax, K] = ereg.ensemble_regression(pronos_dt, 
                 obs_dt, args.mme_spread[0], True)

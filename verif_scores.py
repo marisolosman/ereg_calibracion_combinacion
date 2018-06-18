@@ -19,24 +19,19 @@ def hit_false_alarm(Occurrence,Pforecast,prob_bin_vector,lats):
     # NO: same as O but for Non ocurrence
 
     nbins = np.shape(prob_bin_vector)[0]
-
     O = np.empty([nbins-1])
-
     NO = np.empty([nbins-1])
 
     for i in np.arange(nbins-1):
 
             cases = np.logical_and(Pforecast[:]>prob_bin_vector[i],
                         Pforecast[:]<=prob_bin_vector[i+1])
-
             O[i] = np.nansum(Occurrence[cases]*np.cos(np.deg2rad(lats[cases])))
-
             NO[i] = np.nansum(np.logical_not(Occurrence[cases])*
                         np.cos(np.deg2rad(lats[cases])))
     return O, NO
 
-    return subax
-
+    
 def plot_scores(lat, lon, var, titulo, output):
         #funcion para graficar scores (ergo barra entre -1 y 1)
 
@@ -44,44 +39,28 @@ def plot_scores(lat, lon, var, titulo, output):
     latn = np.max(lat)
     lonw = np.min(lon)
     lone = np.max(lon)
-
     [dx,dy] = np.meshgrid (lon,lat)
 
     plt.figure()
-
     mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
                         llcrnrlon= lonw, urcrnrlat= latn, urcrnrlon= lone)
     #projection and map limits
-
     mapproj.drawcoastlines()          # coast
-
     mapproj.drawcountries()         #countries
-
     lonproj, latproj = mapproj(dx, dy)      #poject grid
     # set desired contour levels.
-
     clevs = np.linspace(-1,1 , 11)
-
     barra = plt.cm.get_cmap('coolwarm',10) #colorbar
-
     CS1 = mapproj.pcolor(lonproj, latproj, var, cmap = barra, vmin = -1, vmax = 1)
-
     cbar = plt.colorbar(CS1, ticks = np.linspace(-1,1,11))
-
     cbar.ax.tick_params(labelsize = 8)
-
     plt.title(titulo)
-
     plt.savefig(output, dpi=300, bbox_inches='tight', papertype='A4')
-
     plt.close()
 
     return
 
-
-
 def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
-
 
     #[BS]=BS_decomposition(Pforecast,Occurrence, prob_bin_vector)
     #
@@ -121,153 +100,101 @@ def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
     if len(locals())>2:#probability bins specified, use them
 
         binning = True
-        
         prob_bins = np.transpose(np.array([(prob_bin_vector[0:-1]), (prob_bin_vector[1:])]))
-
         prob_bins[0,0] =-1  #trick to include 0 in first bin
 
         
     else: #probability bins not specified, use all issued probs 
 
         binning = False
-
         prob_bins = np.unique(Pforecast)
 
     #Total
-
     BS ={'direct': np.nanmean(np.power(Pforecast-Occurrence,2))}
-
     #number of forecasts issued and number of bins to stratify
-
     N = np.max(np.shape(Pforecast)[0])
-
     Nk = np.shape(prob_bins)[0]
 
     if N==Nk: #all forecasts are unique
-
         shortcut = True
-
     else:
-
         shortcut = False
 
     #initialize vectors
 
     res = np.zeros([Nk])
-
     rel = res
-
     wbv = res
-
     wbc = res
-
     #climatic probability of occurrence
-
     pclim = np.nanmean(Occurrence)
-
     #uncertainty component
-
     BS['unc'] = (1-pclim)*pclim
 
     if shortcut:
 
         BS['rel'] = BS['direct']
-
         BS['res'] = BS['unc']
-
         BS['wbv'] = 0
-
         BS['wbc'] = 0
-
         pass
 
     #loop for all probability bins (or issued probs if no binning)
-
     for k in np.arange(Nk):
-
         #idxK= indexes that belong to bin K
         if binning: 
-            
             #find indexes of forecasts within bin
             idxK = np.where(np.logical_and(Pforecast>prob_bins[k,0],Pforecast<=prob_bins[k,1]))
 
         else:
-            
             #find indexes of forecasts for a bin consisting of one prob only
             idxK = np.where(Pforecast==prob_bins[k])
 
         #values per bin to calculate components
         fk = Pforecast[idxK]   #vector of forecast probs within bin k
-
         occk = Occurrence[idxK] #vector of occurences within bin k
-
         avfk = np.nanmean(fk)     #average forecast prob within bin k
-
         avocck = np.nanmean(occk)  #average occurence (= probability of occurence) within bin k 
-
         nk = np.shape(fk)[0]     #number of values in bin k
-
         #reliability component (needs to be summed over bins later) 
-
         rel[k] = nk*(np.power(avfk-avocck,2))
-
         #resolution component (needs to be summed over bins later)
-
         res[k]=nk*(np.power(avocck-pclim,2))
-
         # xxx calculate wbv and wbc here
-
         if binning:
 
             wbv[k]=np.var(fk)*nk
-        
             tmp=np.cov(fk,occk)*nk
-
             wbc[k]=tmp[1,0]
-
             #line to avoid problems with empty bins
-        
+      
             if nk==0:
 
                 wbv[k] = 0
-
                 wbc[k] = 0
-
                 rel[k] = 0
-
                 res[k] = 0
 
-
     #calculate total components by summing over all bins and dividing by nr obs
-
     BS['rel'] = np.nansum(rel)/N
-
     BS['res'] = np.nansum(res)/N
 
     if binning:
-        
+       
         BS['wbv'] = np.nansum(wbv)/N
-
         BS['wbc'] = np.nansum(wbc)/N
 
     else:
 
         BS['wbv'] = 0
-
         BS['wbc'] = 0
 
     BS_1 =np.empty([6])
-
     BS_1[0] = BS['direct']
-
     BS_1[1] = BS['unc']
-
     BS_1[2] = BS['res']
-
     BS_1[3] = BS['rel']
-
     BS_1[4] = BS['wbv']
-
     BS_1[5] = BS['wbc']
 
     return BS_1
@@ -285,21 +212,15 @@ def RPSS (Pforecast, Occurrence):
     #RPSS [gridpoints]
 
     #compute RPS
-
     rps = np.nanmean((np.power(Pforecast[0,:,:,:]- Occurrence[0,:,:,:],2) +
-
               np.power(Pforecast[1,:,:,:]-np.sum(Occurrence[0:2,:,:,:], axis = 0),2)), 
-              
               axis = 0)
 
     #compute RPS for ref 
-
     rps_ref = np.nanmean((np.power(0.33-Occurrence[0,:,:,:],2) +
-
                 np.power(0.66-np.nansum(Occurrence[0:2,:,:,:],axis = 0),2)), axis = 0)
 
     rpss=1-rps/rps_ref
-
     return rpss
 
 def auroc(Pforecast,Occurrence,lats,bins):
@@ -324,7 +245,6 @@ def auroc(Pforecast,Occurrence,lats,bins):
     #categoria para calcular luego el roc y rel diagram
 
     Obs = np.empty([len(bins)-1, nlats, nlons])
-
     NObs = np.empty([len(bins)-1, nlats, nlons])
 
     for i in np.arange(nlats):
@@ -376,33 +296,22 @@ def rel_roc(Pforecast,Occurrence,lats,bins,ruta,output_name):
 
     #replico el vector de latitudes por la cantidad de longitudes para usar
     #en el codigo
-
     latsrep = np.reshape(np.rollaxis(np.tile(lats,[nyears, nlons, 1]),2,1),nyears*nlats*nlons)
-
     Occurrence_below = np.reshape(Occurrence[0,:,:,:],nyears*nlats*nlons)
-
     Pforecast_below = np.reshape(Pforecast[0,:,:,:],nyears*nlats*nlons)
-
     Occurrence_above = np.reshape(Occurrence[2,:,:,:],nyears*nlats*nlons)
-
     Pforecast_above = 1-np.reshape(Pforecast[1,:,:,:],nyears*nlats*nlons)
 
     #llamo a la funcion que calculas las observaciones y no obsersavciones de cada
-
     [O_above,NO_above] = hit_false_alarm(Occurrence_above,Pforecast_above,bins,latsrep)
-
     [O_below,NO_below] = hit_false_alarm(Occurrence_below,Pforecast_below,bins,latsrep)
 
     #compute roc and reliability diagrams
 
     #hit rate and false alarm rate
-
     hrr_above = np.empty([len(bins)-1])
-    
     farr_above = np.empty([len(bins)-1])
-   
     hrr_below = np.empty([len(bins)-1])
-    
     farr_below = np.empty([len(bins)-1])
 
     for i in np.arange(0,len(bins)-1):
@@ -410,28 +319,20 @@ def rel_roc(Pforecast,Occurrence,lats,bins,ruta,output_name):
         #roc
 
         hrr_above[i] = np.sum(O_above[i:])/np.sum(O_above)
-
         farr_above[i] = np.sum(NO_above[i:])/np.sum(NO_above)
-
         hrr_below[i] = np.sum(O_below[i:])/np.sum(O_below)
-
         farr_below[i] = np.sum(NO_below[i:])/np.sum(NO_below)
 
     #reliability
 
     hrrd_above = O_above/(O_above + NO_above)
-
     hrrd_below = O_below/(O_below + NO_below)
 
     #histograma de frecuencia
-
     frd_above = (O_above+NO_above)/np.shape(Occurrence_above)[0]
-    
     frd_below = (O_below+NO_below)/np.shape(Occurrence_below)[0]
-
     roc_above = 2*(PolyArea(np.concatenate([np.flip(farr_above,0), np.array([1, 0])]),
                 np.concatenate([np.flip(hrr_above,0),np.array([ 0, 0])]))-0.5)
- 
     roc_below = 2*(PolyArea(np.concatenate([np.flip(farr_below,0), np.array([1, 0])]),
                 np.concatenate([np.flip(hrr_below,0),np.array([ 0, 0])]))-0.5)
 
@@ -489,9 +390,7 @@ def rel_roc(Pforecast,Occurrence,lats,bins,ruta,output_name):
     plt.title('Below',fontsize = 10)
     plt.savefig(ruta+'reliability_diagram_'+output_name+'.eps',
             dpi=300,bbox_inches = 'tight', papertype = 'A4')
-
     plt.close()
-
     return
 
 
