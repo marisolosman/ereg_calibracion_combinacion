@@ -1,7 +1,6 @@
 """
-codigo para calcular la probabilidad pronosticada para cada tercil en cada anio
-a partir de la combinacion de pronosticos con la metodologia de wpdf y wsereg
-modelos calibrados con ereg. Ademas grafica algunos indices de verificacion y guarda los resultados
+This code compute the standar WMO verification scores for the combined forecast obtained through 
+combination.py code
 """
 #!/usr/bin/env python
 
@@ -11,20 +10,19 @@ import numpy as np
 import glob 
 from pathlib import Path 
 import calendar
-import ereg #apply ensemble regression to multi-model ensemble
 import verif_scores #calculo y grafico de los indices de verificacion
 
 def main():
     # Define parser data
-    parser = argparse.ArgumentParser(description='Combining models')
+    parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
-            help='Variable to calibrate (prec or temp)')
+            help='Variable to verify (prec or temp)')
     parser.add_argument('IC', type = int, nargs= 1,\
             help = 'Month of intial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type = int, nargs = 1,\
             help = 'Forecast leatime (in months, from 1 to 7)')
     parser.add_argument('mod_spread',  type = float, nargs = 1,\
-            help = 'percentage of spread to retain in each model (from 0 to 1)')
+            help = 'percentage of spread retained in each model (from 0 to 1)')
     subparsers = parser.add_subparsers(help = "Combination technique")
     wpdf_parser = subparsers.add_parser('wpdf', help = 'weighted sum of calibrated PDFs')
     wsereg_parser = subparsers.add_parser('wsereg', help = 'Ereg with the weighted superensemble')
@@ -40,7 +38,7 @@ def main():
             choices = ['pdf_int', 'mean_cor', 'same'], dest= 'wtech', help = 'Relative weight between models')
     # Extract dates from args
     args=parser.parse_args()
-    nyears = int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
+    #nyears = int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
 
     #defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
@@ -64,11 +62,12 @@ def main():
         file_end = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                 '_gp_01_p_' + '{:03}'.format(args.mod_spread[0]) +'_'+ args.wtech[0]+'_'+ args.ctech + '_hind'
 
-    data = np.load(route + archivo + '.npz'), prob_terc_comb = prob_terc_comb, lat = lat, lon= lon)
+    data = np.load(route + file_end + '.npz')
     lat = data ['lat']
     lon = data ['lon']
     prob_terc_comb = data ['prob_terc_comb']
     data = []
+    [nlats, nlons] = prob_terc_comb.shape[2:]
  
 # ====================================================================================================
     # calculo y grafico los diferentes scores de verificacion:
@@ -112,7 +111,7 @@ def main():
 
             BSS_below[:,i,j] = verif_scores.BS_decomposition(prob_terc_comb[0,:,i,j],obs_terciles[0,:,i,j],bins)
     archivo = 'bss_below_' + file_end + '.npz'
-    np.savez(ruta+ a rchivo, BSS_below = BSS_below, lat = lat, lon= lon)
+    np.savez(ruta+ archivo, BSS_below = BSS_below, lat = lat, lon= lon)
     
     titulo = 'Brier Skill Score - Below Normal event'
     salida = route + 'brierss_below_'+ file_end + '.eps'
@@ -147,22 +146,52 @@ def main():
 
     #todo el dominio
     salida = file_end + '_all'
-    verif_scores.rel_roc(prob_terc_comb,obs_terciles,lat,bins,route,salida)
+    verif_scores.rel_roc(prob_terc_comb, obs_terciles, lat, bins, route, salida)
+    
     #SA tropical north of 20degree south 85W- 30W
-
+    salida = file_end + '_trop_SA'
+    latn = 15
+    lats = -20
+    lonw = 275
+    lone = 330
+    lati = np.argmin(abs(lat-lats))
+    latf = np.argmin(abs(lat-latn)) + 1
+    loni = np.argmin(abs(lonw-lon))
+    lonf = np.argmin(abs(lone-lon)) + 1
+   
+    lat_trop_SA = lat[lati:latf]
+    prob_terc_comb_trop_SA = prob_terc_comb[:,:,lati:latf,loni:lonf] 
+    obs_terciles_trop_SA = obs_terciles[:,:,lati:latf,loni:lonf]
+    verif_scores.rel_roc(prob_terc_comb_trop_SA, obs_terciles_trop_SA, lat_trop_SA, bins, route, salida )
     #SA extratropical 20S-55S  292-308
+    salida = file_end + '_extratrop_SA'
+    latn = -20
+    lats = -55
+    lonw = 292
+    lone = 308
+    lati = np.argmin(abs(lat-lats))
+    latf = np.argmin(abs(lat-latn)) + 1
+    loni = np.argmin(abs(lonw-lon))
+    lonf = np.argmin(abs(lone-lon)) + 1
+   
 
+    lat_extratrop_SA = lat[lati:latf]
+    prob_terc_comb_extratrop_SA = prob_terc_comb[:,:,lati:latf,loni:lonf]
+    obs_terciles_extratrop_SA = obs_terciles[:,:,lati:latf,loni:lonf]
+    
+    verif_scores.rel_roc(prob_terc_comb_extratrop_SA, obs_terciles_extratrop_SA, lat_extratrop_SA, bins, route, salida )
+# 
 #===================================================================================================
 start = time.time()
 
 #abro archivo donde guardo coordenadas
-coordenadas = 'coords'
-lines = [line.rstrip('\n') for line in open(coordenadas)]
+#coordenadas = 'coords'
+#lines = [line.rstrip('\n') for line in open(coordenadas)]
 
-coords = {'lat_s' : float(lines[1]),
-        'lat_n' : float(lines [2]),
-        'lon_w' : float(lines[3]),
-        'lon_e' : float(lines[4])}
+#coords = {'lat_s' : float(lines[1]),
+#        'lat_n' : float(lines [2]),
+#        'lon_w' : float(lines[3]),
+#        'lon_e' : float(lines[4])}
 
 main()
 end = time.time()
