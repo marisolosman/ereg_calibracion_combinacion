@@ -45,8 +45,8 @@ def plot_scores(lat, lon, var, titulo, output):
     mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
                         llcrnrlon= lonw, urcrnrlat= latn, urcrnrlon= lone)
     #projection and map limits
-    mapproj.drawcoastlines()          # coast
-    mapproj.drawcountries()         #countries
+    mapproj.drawcoastlines(linewidth = 0.5)          # coast
+    mapproj.drawcountries(linewidth = 0.1)         #countries
     lonproj, latproj = mapproj(dx, dy)      #poject grid
     # set desired contour levels.
     clevs = np.linspace(-1,1 , 11)
@@ -67,7 +67,7 @@ def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
     #Brier score decomposition, implemented by Steven Weijs, Water Resources Management, TU Delft
     #
     #calculates the 5 components of the brier score based on a series of
-    #probabilistic forecasts and corresponding occurrences of binary events.
+    #probabilistic forecasts and cor.pngonding occurrences of binary events.
     #Fast version, no input checking. 
     #Input:
         #  Pforecast: vector of forecasted probabilities of the event occuring. (between 0 and 1)
@@ -98,7 +98,7 @@ def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
     # see Stephenson, Coelho, Jolifffe 2007 for discussion about WBV WBC components
 
     if len(locals())>2:#probability bins specified, use them
-
+        
         binning = True
         prob_bins = np.transpose(np.array([(prob_bin_vector[0:-1]), (prob_bin_vector[1:])]))
         prob_bins[0,0] =-1  #trick to include 0 in first bin
@@ -109,12 +109,13 @@ def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
         binning = False
         prob_bins = np.unique(Pforecast)
 
+    
     #Total
     BS ={'direct': np.nanmean(np.power(Pforecast-Occurrence,2))}
     #number of forecasts issued and number of bins to stratify
-    N = np.max(np.shape(Pforecast)[0])
+    N = np.max(np.shape(Pforecast))
     Nk = np.shape(prob_bins)[0]
-
+    
     if N==Nk: #all forecasts are unique
         shortcut = True
     else:
@@ -123,21 +124,24 @@ def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
     #initialize vectors
 
     res = np.zeros([Nk])
-    rel = res
-    wbv = res
-    wbc = res
+    rel =  np.zeros([Nk])
+    wbv =  np.zeros([Nk])
+    wbc =  np.zeros([Nk])
     #climatic probability of occurrence
     pclim = np.nanmean(Occurrence)
     #uncertainty component
     BS['unc'] = (1-pclim)*pclim
-
+    
     if shortcut:
+        BS_1 =np.empty([6])
+        BS_1[0] = BS['direct']
+        BS_1[1] = BS['unc']
+        BS_1[2] = BS['unc']
+        BS_1[3] = BS['direct']
+        BS_1[4] = 0 
+        BS_1[5] = 0
 
-        BS['rel'] = BS['direct']
-        BS['res'] = BS['unc']
-        BS['wbv'] = 0
-        BS['wbc'] = 0
-        pass
+        return BS_1
 
     #loop for all probability bins (or issued probs if no binning)
     for k in np.arange(Nk):
@@ -356,7 +360,7 @@ def rel_roc(Pforecast,Occurrence,lats,bins,ruta,output_name):
     plt.ylabel('Hit Rate')
     plt.legend([ley1,ley2],loc = 'lower right')
     plt.title('Roc Diagram')
-    plt.savefig(ruta+'roc_'+output_name+'.eps',dpi = 300, bbox_inches = 'tight', 
+    plt.savefig(ruta+'roc/roc_'+output_name+'.png',dpi = 300, bbox_inches = 'tight', 
             papertype = 'A4')
     plt.close()
 
@@ -388,9 +392,9 @@ def rel_roc(Pforecast,Occurrence,lats,bins,ruta,output_name):
     ax2.yaxis.label.set_size(6)
     plt.axis([0, 1, 0, 1])
     plt.title('Below',fontsize = 10)
-    plt.savefig(ruta+'reliability_diagram_'+output_name+'.eps',
+    plt.savefig(ruta+'rel/reliability_diagram_'+output_name+'.png',
             dpi=300,bbox_inches = 'tight', papertype = 'A4')
     plt.close()
-    return
+    return roc_above, roc_below, hrr_above, farr_above, hrr_below, farr_below, hrrd_above, hrrd_below
 
 

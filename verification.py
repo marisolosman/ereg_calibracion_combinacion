@@ -76,77 +76,83 @@ def main():
     route = '/datos/osman/nmme_figuras/'
     ruta = '/datos/osman/nmme_output/verif_scores/'
    
-    #RPSS                
-    rpss = verif_scores.RPSS(prob_terc_comb,obs_terciles)
-    titulo = 'Ranked Probabilistic Skill Score'
-    salida = route + 'rpss_'+ file_end + '.eps'
-    verif_scores.plot_scores(lat, lon, rpss, titulo, salida)
-    archivo = 'rpss_' + file_end + '.npz'
-    np.savez(ruta + archivo, rpss = rpss, lat = lat, lon= lon)
-                         
-    #BSS y su descomposicion
-    BSS_above = np.empty([6,nlats,nlons])
-    for i in np.arange(nlats):
-        for j in np.arange(nlons):
-            BSS_above[:,i,j] = verif_scores.BS_decomposition(1-prob_terc_comb[1,:,i,j],obs_terciles[2,:,i,j],bins)
-    archivo = 'bss_above_' + file_end + '.npz'
-    np.savez(ruta + archivo, BSS_above = BSS_above, lat = lat, lon= lon)
-    
-    titulo = 'Brier Skill Score - Above Normal event'             
-    salida = route + 'brierss_above_'+ file_end + '.eps'
-    BSS = 1-BSS_above[0]/(0.33*(1-0.33))
-    verif_scores.plot_scores (lat, lon, BSS , titulo, salida)                     
-    
-    titulo = 'BSS - Resolution - Above Normal event'
-    salida = route + 'bss_res_above_'+ file_end + '.eps'  
-    verif_scores.plot_scores (lat, lon, BSS_above[2,:,:], titulo, salida)
-    
-    titulo = 'BSS - Reliability - Above Normal event'
-    salida = route + 'bss_rel_above_'+ file_end + '.eps'
-    verif_scores.plot_scores (lat, lon, BSS_above[3,:,:], titulo, salida)
-    
-    BSS_below = np.empty([6,nlats,nlons])
-    for i in np.arange(nlats):
-        for j in np.arange(nlons):
-
-            BSS_below[:,i,j] = verif_scores.BS_decomposition(prob_terc_comb[0,:,i,j],obs_terciles[0,:,i,j],bins)
-    archivo = 'bss_below_' + file_end + '.npz'
-    np.savez(ruta+ archivo, BSS_below = BSS_below, lat = lat, lon= lon)
-    
-    titulo = 'Brier Skill Score - Below Normal event'
-    salida = route + 'brierss_below_'+ file_end + '.eps'
-    BSS = 1-BSS_below[0]/(0.33*(1-0.33))                        
-    verif_scores.plot_scores (lat, lon, BSS_below[0], titulo, salida)
-    
-    titulo = 'BSS - Resolution - Below Normal event'
-    salida = route + 'bss_res_below_'+ file_end + '.eps'
-    verif_scores.plot_scores (lat, lon, BSS_below[2], titulo, salida)
-    
-    titulo = 'BSS - Reliability - Below Normal event'
-    salida = route + 'bss_rel_below_' + file_end + '.eps'
-    verif_scores.plot_scores (lat, lon, BSS_below[3], titulo, salida)
-                        
-    #AUROC                
-                        
-    auroc_above = verif_scores.auroc(1-prob_terc_comb[1,:,:,:],obs_terciles[2,:,:,:],lat,bins)
-    archivo = 'auroc_above_' + file_end + '.npz'
-    np.savez(ruta + archivo, auroc_above = auroc_above, lat = lat, lon= lon)
-    titulo = 'Area under curve ROC - Above Normal event'
-    salida = route + 'auroc_above_' + file_end + '.eps'
-    verif_scores.plot_scores(lat, lon, auroc_above[:,:], titulo, salida)
-
-    auroc_below = verif_scores.auroc(prob_terc_comb[0,:,:,:], obs_terciles[0,:,:,:], lat, bins)
-    archivo = 'auroc_below_' + file_end + '.npz'
-    np.savez(ruta + archivo, auroc_below = auroc_below, lat = lat, lon= lon)
-    titulo = 'Area under curve ROC - Below Normal event'
-    salida = route + 'auroc_below_'+ file_end + '.eps'
-    verif_scores.plot_scores (lat, lon, auroc_below[:,:], titulo, salida)
-
+#    #RPSS                
+#    rpss = verif_scores.RPSS(prob_terc_comb,obs_terciles)
+#    titulo = 'Ranked Probabilistic Skill Score'
+#    salida = route + 'rpss/rpss_'+ file_end + '.png'
+#    verif_scores.plot_scores(lat, lon, rpss, titulo, salida)
+#    archivo = 'rpss_' + file_end + '.npz'
+#    np.savez(ruta + archivo, rpss = rpss, lat = lat, lon= lon)
+#                         
+#    #BSS y su descomposicion
+#    BSS_above = np.empty([6,nlats,nlons])
+#    for i in np.arange(nlats):
+#        for j in np.arange(nlons):
+#            BSS_above[:,i,j] = verif_scores.BS_decomposition(1-prob_terc_comb[1,:,i,j],obs_terciles[2,:,i,j],bins)
+#    archivo = 'bss_above_' + file_end + '.npz'
+#    np.savez(ruta + archivo, bss_above = BSS_above, lat = lat, lon= lon)
+#    
+#    titulo = 'Brier Skill Score - Above Normal event'             
+#    salida = route + 'bss/brierss_above_'+ file_end + '.png'
+#    BSS = 1-BSS_above[0]/(0.33*(1-0.33))
+#    verif_scores.plot_scores (lat, lon, BSS , titulo, salida)                     
+#    
+#    titulo = 'BSS - Resolution - Above Normal event'
+#    salida = route + 'bss/bss_res_above_'+ file_end + '.png'  
+#    verif_scores.plot_scores (lat, lon, BSS_above[2,:,:]/BSS_above[1,:,:], titulo, salida)
+#    
+#    titulo = 'BSS - Reliability - Above Normal event'
+#    salida = route + 'bss/bss_rel_above_'+ file_end + '.png'
+#    verif_scores.plot_scores (lat, lon, -BSS_above[3,:,:]/BSS_above[1,:,:], titulo, salida)
+#    
+#    BSS_below = np.empty([6,nlats,nlons])
+#    for i in np.arange(nlats):
+#        for j in np.arange(nlons):
+#
+#            BSS_below[:,i,j] = verif_scores.BS_decomposition(prob_terc_comb[0,:,i,j],obs_terciles[0,:,i,j],bins)
+#    archivo = 'bss_below_' + file_end + '.npz'
+#    np.savez(ruta+ archivo, bss_below = BSS_below, lat = lat, lon= lon)
+#    
+#    titulo = 'Brier Skill Score - Below Normal event'
+#    salida = route + 'bss/brierss_below_'+ file_end + '.png'
+#    BSS = 1-BSS_below[0]/(0.33*(1-0.33))                        
+#    verif_scores.plot_scores (lat, lon, BSS, titulo, salida)
+###    
+#    titulo = 'BSS - Resolution - Below Normal event'
+#    salida = route + 'bss/bss_res_below_'+ file_end + '.png'
+#    verif_scores.plot_scores (lat, lon, BSS_below[2,:,:]/BSS_above[1,:,:], titulo, salida)
+#    
+#    titulo = 'BSS - Reliability - Below Normal event'
+#    salida = route + 'bss/bss_rel_below_' + file_end + '.png'
+#    verif_scores.plot_scores (lat, lon, -BSS_below[3,:,:]/BSS_above[1,:,:], titulo, salida)
+#                        
+#    #AUROC                
+#                        
+#    auroc_above = verif_scores.auroc(1-prob_terc_comb[1,:,:,:],obs_terciles[2,:,:,:],lat,bins)
+#    archivo = 'auroc_above_' + file_end + '.npz'
+#    np.savez(ruta + archivo, auroc_above = auroc_above, lat = lat, lon= lon)
+#    titulo = 'Area under curve ROC - Above Normal event'
+#    salida = route + 'roc/auroc_above_' + file_end + '.png'
+#    verif_scores.plot_scores(lat, lon, auroc_above[:,:], titulo, salida)
+#
+#    auroc_below = verif_scores.auroc(prob_terc_comb[0,:,:,:], obs_terciles[0,:,:,:], lat, bins)
+#    archivo = 'auroc_below_' + file_end + '.npz'
+#    np.savez(ruta + archivo, auroc_below = auroc_below, lat = lat, lon= lon)
+#    titulo = 'Area under curve ROC - Below Normal event'
+#    salida = route + 'roc/auroc_below_'+ file_end + '.png'
+#    verif_scores.plot_scores (lat, lon, auroc_below[:,:], titulo, salida)
+#
     #Reliability y ROC para:
 
     #todo el dominio
     salida = file_end + '_all'
-    verif_scores.rel_roc(prob_terc_comb, obs_terciles, lat, bins, route, salida)
+    [roc_above, roc_below, hrr_above, farr_above, hrr_below, farr_below, hrrd_above, 
+            hrrd_below] = verif_scores.rel_roc(prob_terc_comb, obs_terciles, lat, bins, route, 
+                    salida)
+    archivo = 'rel_roc_all_' + file_end + '.npz'
+    np.savez(ruta + archivo, roc_above = roc_above, roc_below = roc_below, hrr_above = hrr_above,
+            farr_above = farr_above, hrr_below = hrr_below, farr_below = farr_below, 
+            hrrd_above = hrrd_above, hrrd_below = hrrd_below)
     
     #SA tropical north of 20degree south 85W- 30W
     salida = file_end + '_trop_SA'
@@ -162,7 +168,15 @@ def main():
     lat_trop_SA = lat[lati:latf]
     prob_terc_comb_trop_SA = prob_terc_comb[:,:,lati:latf,loni:lonf] 
     obs_terciles_trop_SA = obs_terciles[:,:,lati:latf,loni:lonf]
-    verif_scores.rel_roc(prob_terc_comb_trop_SA, obs_terciles_trop_SA, lat_trop_SA, bins, route, salida )
+    [roc_above, roc_below, hrr_above, farr_above, hrr_below, farr_below, hrrd_above, 
+            hrrd_below] = verif_scores.rel_roc(prob_terc_comb_trop_SA, obs_terciles_trop_SA, 
+                    lat_trop_SA, bins, route, salida)
+    archivo = 'rel_roc_trop_SA_' + file_end + '.npz'
+    np.savez(ruta + archivo, roc_above = roc_above, roc_below = roc_below, hrr_above = hrr_above,
+            farr_above = farr_above, hrr_below = hrr_below, farr_below = farr_below, 
+            hrrd_above = hrrd_above, hrrd_below = hrrd_below)
+    
+
     #SA extratropical 20S-55S  292-308
     salida = file_end + '_extratrop_SA'
     latn = -20
@@ -178,9 +192,14 @@ def main():
     lat_extratrop_SA = lat[lati:latf]
     prob_terc_comb_extratrop_SA = prob_terc_comb[:,:,lati:latf,loni:lonf]
     obs_terciles_extratrop_SA = obs_terciles[:,:,lati:latf,loni:lonf]
-    
-    verif_scores.rel_roc(prob_terc_comb_extratrop_SA, obs_terciles_extratrop_SA, lat_extratrop_SA, bins, route, salida )
-# 
+    [roc_above, roc_below, hrr_above, farr_above, hrr_below, farr_below, hrrd_above, 
+            hrrd_below] = verif_scores.rel_roc(prob_terc_comb_extratrop_SA, 
+                    obs_terciles_extratrop_SA, lat_extratrop_SA, bins, route, salida)
+    archivo = 'rel_roc_extratrop_SA_' + file_end + '.npz'
+    np.savez(ruta + archivo, roc_above = roc_above, roc_below = roc_below, hrr_above = hrr_above,
+            farr_above = farr_above, hrr_below = hrr_below, farr_below = farr_below,
+            hrrd_above = hrrd_above, hrrd_below = hrrd_below)
+    # 
 #===================================================================================================
 start = time.time()
 

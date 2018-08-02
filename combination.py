@@ -60,7 +60,8 @@ def main():
 
     for i in lista:
         lines = [line.rstrip('\n') for line in open(i)]
-        modelos.append(dict(zip(keys, [lines[0], lines[1], lines[2], lines[3], int(lines[4]), int(lines[5]), int(lines[6]), int(lines[7]), lines[8]])))
+        modelos.append(dict(zip(keys, [lines[0], lines[1], lines[2], lines[3], int(lines[4]), 
+            int(lines[5]), int(lines[6]), int(lines[7]), lines[8]])))
 
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
@@ -103,8 +104,8 @@ def main():
             """
             if args.ctech == 'wpdf':
                 prob_terc = data ['prob_terc']
-                prob_terc = np.nanmean(prob_terc, axis = 2)
                 nmembers[i] = prob_terc.shape[2]
+                prob_terc = np.nanmean(prob_terc, axis = 2)
                 prob_terciles = np.concatenate((prob_terciles,prob_terc[:,:,:,:,np.newaxis]), axis = 4)
                 prob_terc = []
                 #prob_terciles [cat year lats lons models]
@@ -210,160 +211,6 @@ def main():
 
     np.savez(route+archivo, prob_terc_comb = prob_terc_comb, lat = lat, lon= lon)
 
-# ====================================================================================================
-    # calculo y grafico los diferentes scores de verificacion:
-#                         
-#    bins = np.arange(0,1.1,0.1)
-#    
-#    route = '/datos/osman/nmme_figuras/'
-#
-#    ruta = '/datos/osman/nmme_output/verif_scores/'
-#
-#    print(prob_terc_comb[:,4,3:5,3:5])
-#
-#    #RPSS                
-#    #ploteo rpss         
-#
-#    rpss = verif_scores.RPSS(prob_terc_comb,obs_terciles)
-#                         
-#    titulo = 'Ranked Probabilistic Skill Score'
-#                         
-#    salida = route + 'rpss_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#            )+'_'+wtech+'_'+ctech+'_hind.eps'
-#                         
-#    verif_scores.plot_scores(lat, lon, rpss, titulo, salida)
-#   
-#    archivo = 'rpss_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
-#            plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
-#
-#    np.savez(ruta+archivo,rpss = rpss, lat = lat, lon= lon)
-#                         
-#   #BSS y su descomposicion
-#
-#    BSS_above = np.empty([6,nlats,nlons])
-#
-#    for i in np.arange(nlats):
-#        for j in np.arange(nlons):
-#
-#            BSS_above[:,i,j] = verif_scores.BS_decomposition(1-prob_terc_comb[1,:,i,j],obs_terciles[2,:,i,j],bins)
-#
-#    archivo = 'bss_above_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
-#            plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
-#
-#    np.savez(ruta+archivo,BSS_above = BSS_above, lat = lat, lon= lon)
-#                     
-#    titulo = 'Brier Skill Score - Above Normal event'
-#                         
-#    salida = route + 'brierss_above_'+varn+'_mme_'+'{:02}'.format(
-#            ic_mes)+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#            )+'_'+wtech+'_'+ctech+'_hind.eps'
-#    
-#    BSS = 1-BSS_above[0]/(0.33*(1-0.33))
-#    
-#    verif_scores.plot_scores (lat, lon,BSS , titulo, salida)
-#                         
-#    titulo = 'BSS - Resolution - Above Normal event'
-#                         
-#    salida = route + 'bss_res_above_'+varn+'_mme_'+'{:02}'.format(
-#            ic_mes)+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#                        
-#    verif_scores.plot_scores (lat, lon, BSS_above[2,:,:], titulo, salida)
-#                        
-#    titulo = 'BSS - Reliability - Above Normal event'
-#                        
-#    salida = route + 'bss_rel_above_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#                        
-#    verif_scores.plot_scores (lat, lon, BSS_above[3,:,:], titulo, salida)
-#                        
-#    BSS_below = np.empty([6,nlats,nlons])
-#
-#    for i in np.arange(nlats):
-#        for j in np.arange(nlons):
-#
-#            BSS_below[:,i,j] = verif_scores.BS_decomposition(prob_terc_comb[0,:,i,j],obs_terciles[0,:,i,j],bins)
-#                         
-#    archivo = 'bss_below_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
-#            plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
-#
-#    np.savez(ruta+archivo,BSS_below = BSS_below, lat = lat, lon= lon)
-#
-#    titulo = 'Brier Skill Score - Below Normal event'
-#                         
-#    salida = route + 'brierss_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#    
-#    BSS = 1-BSS_below[0]/(0.33*(1-0.33))                        
-#    
-#    verif_scores.plot_scores (lat, lon, BSS_below[0], titulo, salida)
-#                         
-#    titulo = 'BSS - Resolution - Below Normal event'
-#                         
-#    salida = route + 'bss_res_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#                         
-#    verif_scores.plot_scores (lat, lon, BSS_below[2], titulo, salida)
-#                        
-#    titulo = 'BSS - Reliability - Below Normal event'
-#                        
-#    salida = route + 'bss_rel_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#                         
-#    verif_scores.plot_scores (lat, lon, BSS_below[3], titulo, salida)
-#                        
-#                        
-#   #AUROC                
-#                        
-#    auroc_above = verif_scores.auroc(1-prob_terc_comb[1,:,:,:],obs_terciles[2,:,:,:],lat,bins)
-#    
-#    archivo = 'auroc_above_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
-#            plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
-#
-#    np.savez(ruta+archivo,auroc_above = auroc_above, lat = lat, lon= lon)
-#                      
-#    titulo = 'Area under curve ROC - Above Normal event'
-#                        
-#    salida = route + 'auroc_above_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#                        
-#    verif_scores.plot_scores (lat, lon, auroc_above[:,:], titulo, salida)
-#                        
-#    auroc_below = verif_scores.auroc(prob_terc_comb[0,:,:,:],obs_terciles[0,:,:,:],lat,bins)
-#
-#    archivo = 'auroc_below_' + varn + '_mme_' + '{:02}'.format(ic_mes) + '_' + '{:02}'.format(
-#            plazo) + '_01_' + '{:03}'.format(p) +'_'+ wtech+'_'+ctech+'_hind.npz'
-#
-#    np.savez(ruta+archivo,aurco_below = auroc_below, lat = lat, lon= lon)
-#
-#    titulo = 'Area under curve ROC - Below Normal event'
-#
-#    salida = route + 'auroc_below_'+varn+'_mme_'+'{:02}'.format(ic_mes
-#            )+'_'+'{:02}'.format(plazo)+'_01_'+'{:03}'.format(p
-#                    )+'_'+wtech+'_'+ctech+'_hind.eps'
-#
-#    verif_scores.plot_scores (lat, lon, auroc_below[:,:], titulo, salida)
-#
-#   #Reliability y ROC para:
-#
-#   #todo el dominio
-#
-#    salida = varn+'_mme_'+'{:02}'.format(ic_mes)+'_'+'{:02}'.format(plazo
-#            )+'_01_'+'{:03}'.format(p)+'_'+wtech+'_'+ctech+'_hind_all.eps'
-#
-#    verif_scores.rel_roc(prob_terc_comb,obs_terciles,lat,bins,route,salida)
-#
-#
-    #SA tropical
-
-    #SA extratropical
-# ================================================================================
 #===================================================================================================
 
 start = time.time()
