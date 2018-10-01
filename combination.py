@@ -165,7 +165,7 @@ def main():
     elif args.wtech[0] == 'mean_cor':
 
         rmean [np.where(rmean < 0)] = 0
-        rmean [np.where(np.sum(rmean, axis = 2)== 0),:] = 1
+        rmean [np.sum(rmean, axis = 2)== 0,:] = 1
         peso = rmean / np.tile(np.sum(rmean, axis = 2)[:,:,np.newaxis],[1,1,nmodels])
         weight = np.tile(peso, (2, ntimes, 1, 1, 1))  #2 ntimes nlat nlon nmodels
                          

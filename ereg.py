@@ -44,7 +44,7 @@ def ensemble_regression(forecast, observation, P, CV_opt):
 
     # si kmax es amayor a 1 lo fuerzo a que sea 1
 
-    kmax [np.where(kmax>1)] = 1
+    kmax [kmax>1] = 1
 
     #testeo
 
@@ -53,11 +53,11 @@ def ensemble_regression(forecast, observation, P, CV_opt):
     #si el error en la regresion positivo, entonces no cambio la dispersion 
     #del ensamble
 
-    K[np.where(epsbn>=0)] = 1 * P
+    K[epsbn>=0] = 1 * P
 
     #si el error en la regresion es negativo, voy a aplicar ereg solo con la media
 
-    K[np.where(epsbn<0)] = 0
+    K[epsbn<0] = 0
 
     K = np.repeat(np.repeat(K[np.newaxis,:,:], 
         nmembers, axis=0)[np.newaxis,:,:,:],ntimes,axis=0)

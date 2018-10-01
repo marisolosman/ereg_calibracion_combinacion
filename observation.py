@@ -163,9 +163,9 @@ class Observ(object):
         [ntimes, nlats, nlons] = np.shape(observation)
         #calculo el tercil observado cada anio
         obs_terciles = np.empty([3, ntimes, nlats, nlons])
-        #above normal
-        obs_terciles [0,:,:,:] = observation <= tercil [0,:,:,:]
         #below normal
+        obs_terciles [0,:,:,:] = observation <= tercil [0,:,:,:]
+        #above normal
         obs_terciles [2,:,:,:] = observation >= tercil [1,:,:,:]
         #near normal
         obs_terciles [1,:,:,:] = np.logical_not (np.logical_or(obs_terciles[0,:,:,:],

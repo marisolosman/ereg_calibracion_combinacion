@@ -157,13 +157,13 @@ class Model(object):
         #kmax**2 S/N * (m-1/m) * (1/R**2-1)
         kmax = signal/noise * (((self.ensembles-1)/self.ensembles) * (1/np.power(Rm,2)-1))
         # si kmax es amayor a 1 lo fuerzo a que sea 1
-        kmax [np.where(kmax>1)] = 1
+        kmax [kmax>1] = 1
         #testeo
         K = np.zeros_like(epsbn)
         #si el error en la regresion positivo, entonces cambio la dispersion del ensamble segun p
-        K[np.where(epsbn>=0)] = 1 * P
+        K[epsbn>=0] = 1 * P
         #si el error en la regresion es negativo, voy a aplicar ereg solo con la media
-        K[np.where(epsbn<0)] = 0
+        K[epsbn<0] = 0
         K = np.repeat(np.repeat(K[np.newaxis,:,:], self.ensembles, axis=0)
                 [np.newaxis,:,:,:],ntimes,axis=0)
         forecast_inf = np.repeat(np.nanmean(forecast, axis =1)[:,np.newaxis,:,:],

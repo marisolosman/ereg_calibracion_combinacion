@@ -1,6 +1,9 @@
 import numpy as np
-from matplotlib import pyplot as plt
 import mpl_toolkits.basemap as bm
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
+plt.ioff()
 
 #funciones para verificar pronosticos
 
@@ -34,7 +37,6 @@ def hit_false_alarm(Occurrence,Pforecast,prob_bin_vector,lats):
     
 def plot_scores(lat, lon, var, titulo, output):
         #funcion para graficar scores (ergo barra entre -1 y 1)
-
     lats = np.min(lat)
     latn = np.max(lat)
     lonw = np.min(lon)
@@ -46,13 +48,13 @@ def plot_scores(lat, lon, var, titulo, output):
                         llcrnrlon= lonw, urcrnrlat= latn, urcrnrlon= lone)
     #projection and map limits
     mapproj.drawcoastlines(linewidth = 0.5)          # coast
-    mapproj.drawcountries(linewidth = 0.1)         #countries
+    mapproj.drawcountries(linewidth = 0.2)         #countries
     lonproj, latproj = mapproj(dx, dy)      #poject grid
     # set desired contour levels.
-    clevs = np.linspace(-1,1 , 11)
-    barra = plt.cm.get_cmap('coolwarm',10) #colorbar
-    CS1 = mapproj.pcolor(lonproj, latproj, var, cmap = barra, vmin = -1, vmax = 1)
-    cbar = plt.colorbar(CS1, ticks = np.linspace(-1,1,11))
+    clevs = np.linspace(-1.1,1.1 , 13)
+    barra = plt.cm.get_cmap('coolwarm',11) #colorbar
+    CS1 = mapproj.pcolor(lonproj, latproj, var, cmap = barra, vmin = -1.1, vmax = 1.1)
+    cbar = plt.colorbar(CS1, ticks = np.linspace(-0.9,0.9,10))
     cbar.ax.tick_params(labelsize = 8)
     plt.title(titulo)
     plt.savefig(output, dpi=300, bbox_inches='tight', papertype='A4')
@@ -148,11 +150,11 @@ def BS_decomposition(Pforecast, Occurrence, prob_bin_vector):
         #idxK= indexes that belong to bin K
         if binning: 
             #find indexes of forecasts within bin
-            idxK = np.where(np.logical_and(Pforecast>prob_bins[k,0],Pforecast<=prob_bins[k,1]))
+            idxK = np.logical_and(Pforecast>prob_bins[k,0],Pforecast<=prob_bins[k,1])
 
         else:
             #find indexes of forecasts for a bin consisting of one prob only
-            idxK = np.where(Pforecast==prob_bins[k])
+            idxK = Pforecast==prob_bins[k]
 
         #values per bin to calculate components
         fk = Pforecast[idxK]   #vector of forecast probs within bin k
