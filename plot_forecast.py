@@ -97,9 +97,9 @@ cmap = mpl.colors.ListedColormap(colores)
 for i in ctech:
     for j in wtech:
         if i == 'wsereg':
-            archivo = 'prec_mme_Nov_DJF_gp_01_p_1.0_'+ j +'_'+ i + '_p_1.0_hind.npz'
+            archivo = 'prec_mme_Nov_DJF_gp_01_'+ j +'_'+ i + '_hind.npz'
         else:
-            archivo = 'prec_mme_Nov_DJF_gp_01_p_1.0_'+ j +'_'+ i + '_hind.npz'
+            archivo = 'prec_mme_Nov_DJF_gp_01_'+ j +'_'+ i + '_hind.npz'
         ruta = '/datos/osman/nmme_output/comb_forecast/'
         data = np.load(ruta + archivo)
         lat = data['lat']
