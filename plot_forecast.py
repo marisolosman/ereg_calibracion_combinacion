@@ -1,86 +1,98 @@
 #grafico pronostico
 import numpy as np
+import scipy.ndimage as ndimage
+import xarray as xr
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import mpl_toolkits.basemap as bm
-from matplotlib.colors import LinearSegmentedColormap
+
+def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
+    """gets netdf variables"""
+    dataset = xr.open_dataset(archivo, decode_times=False)
+    var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
+    lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
+    lat = dataset[lat_name].sel(**{lat_name: slice(lats, latn)})
+    return var_out, lat, lon
 
 def asignar_categoria(for_terciles):
-    most_likely_cat = np.argmax(for_terciles, axis = 2)
+    """determines most likely category"""
+    most_likely_cat = np.argmax(for_terciles, axis=2)
     [nlats, nlons] = for_terciles.shape[0:2]
-    for_cat = np.zeros([nlats,nlons],dtype=int)
+    for_cat = np.zeros([nlats, nlons], dtype=int)
     for_cat.fill(np.nan)
     for ii in np.arange(nlats):
         for jj in np.arange(nlons):
-            if (most_likely_cat[ii,jj]==2) & (for_terciles[ii,jj,0]<0.33):
-                if for_terciles[ii,jj,2]>=0.7:
-                    for_cat[ii,jj] = 12
-                elif for_terciles[ii,jj,2]>=0.6:
-                    for_cat[ii,jj] = 11
-                elif for_terciles[ii,jj,2]>=0.5:
-                    for_cat[ii,jj] = 10
-                elif for_terciles[ii,jj,2]>=0.4:
-                    for_cat[ii,jj] = 9
+            if (most_likely_cat[ii, jj] == 2):
+                if for_terciles[ii, jj, 2] >= 0.7:
+                    for_cat[ii, jj] = 12
+                elif for_terciles[ii, jj, 2] >= 0.6:
+                    for_cat[ii, jj] = 11
+                elif for_terciles[ii, jj, 2] >= 0.5:
+                    for_cat[ii, jj] = 10
+                elif for_terciles[ii, jj, 2] >= 0.4:
+                    for_cat[ii, jj] = 9
+            elif (most_likely_cat[ii, jj] == 0):
+                if for_terciles[ii, jj, 0] >= 0.7:
+                    for_cat[ii, jj] = 1
+                elif for_terciles[ii, jj, 0] >= 0.6:
+                    for_cat[ii, jj] = 2
+                elif for_terciles[ii, jj, 0] >= 0.5:
+                    for_cat[ii, jj] = 3
+                elif for_terciles[ii, jj, 0] >= 0.4:
+                    for_cat[ii, jj] = 4
+            elif (most_likely_cat[ii, jj] == 1):
+                if for_terciles[ii, jj, 1] >= 0.7:
+                    for_cat[ii, jj] = 8
+                elif for_terciles[ii, jj, 1] >= 0.6:
+                    for_cat[ii, jj] = 7
+                elif for_terciles[ii, jj, 1] >= 0.5:
+                    for_cat[ii, jj] = 6
+                elif for_terciles[ii, jj, 1] >= 0.4:
+                    for_cat[ii, jj] = 5
 
-            elif (most_likely_cat[ii,jj]==0) & (for_terciles[ii,jj,2]<0.33):
-                if for_terciles[ii,jj,0]>=0.7:
-                    for_cat[ii,jj] = 1
-                elif for_terciles[ii,jj,0]>=0.6:
-                    for_cat[ii,jj] = 2
-                elif for_terciles[ii,jj,0]>=0.5:
-                    for_cat[ii,jj] = 3
-                elif for_terciles[ii,jj,0]>=0.4:
-                    for_cat[ii,jj] = 4
-            elif (most_likely_cat[ii,jj]==1) & (for_terciles[ii,jj,2]<0.33) & (for_terciles[ii,jj,0]<0.33):
-                if for_terciles[ii,jj,1]>=0.7:
-                    for_cat[ii,jj] = 8
-                elif for_terciles[ii,jj,1]>=0.6:
-                    for_cat[ii,jj] = 7
-                elif for_terciles[ii,jj,1]>=0.5:
-                    for_cat[ii,jj] = 6
-                elif for_terciles[ii,jj,1]>=0.4:
-                    for_cat[ii,jj] = 5
-
-            mascara = for_cat<1
-            for_mask = np.ma.masked_array(for_cat,mascara)
+            mascara = for_cat < 1
+            for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
-def plot_pronosticos(pronos,dx,dy,titulo,salida):
+def plot_pronosticos(pronos, dx, dy, titulo, salida):
     fig = plt.figure()
     mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
-    llcrnrlon= lonw, urcrnrlat= latn, urcrnrlon= lone)
+                         llcrnrlon=lonw, urcrnrlat=latn, urcrnrlon=lone)
     #projection and map limits
     mapproj.drawcoastlines()          # coast
     mapproj.drawcountries()         #countries
     lonproj, latproj = mapproj(dx, dy)      #poject grid
-    CS1 = mapproj.pcolor(lonproj, latproj, pronos, cmap = cmap, vmin = 0.5, vmax = 12.5)
+    CS1 = mapproj.pcolor(lonproj, latproj, pronos, cmap=cmap, vmin=0.5, vmax=12.5)
     #genero colorbar para pronos
     plt.title(titulo)
     ax1 = fig.add_axes([0.2, 0.05, 0.2, 0.03])
-    cmap1 = mpl.colors.ListedColormap(colores[0:4,:])
-    bounds = [0.5,1.5,2.5,3.5,4.5]
+    cmap1 = mpl.colors.ListedColormap(colores[0:4, :])
+    bounds = [0.5, 1.5, 2.5, 3.5, 4.5]
     norm = mpl.colors.BoundaryNorm(bounds, cmap1.N)
     cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap1, norm=norm, boundaries=bounds,
-            ticks=[1,2,3,4],spacing='uniform', orientation='horizontal')
-    cb1.set_ticklabels(['+70%','65%','55%','45%'])
-    cb1.ax.tick_params(labelsize = 7)
+                                    ticks=[1, 2, 3, 4], spacing='uniform',
+                                    orientation='horizontal')
+    cb1.set_ticklabels(['+70%', '65%', '55%', '45%'])
+    cb1.ax.tick_params(labelsize=7)
     cb1.set_label('Lower')
     ax2 = fig.add_axes([0.415, 0.05, 0.2, 0.03])
-    cmap2 = mpl.colors.ListedColormap(colores[4:8,:])
-    bounds = [4.5,5.5,6.5,7.5,8.5]
+    cmap2 = mpl.colors.ListedColormap(colores[4:8, :])
+    bounds = [4.5, 5.5, 6.5, 7.5, 8.5]
     norm = mpl.colors.BoundaryNorm(bounds, cmap1.N)
     cb2 = mpl.colorbar.ColorbarBase(ax2, cmap=cmap2, norm=norm, boundaries=bounds,
-            ticks=[5,6,7,8],spacing='uniform', orientation='horizontal')
-    cb2.set_ticklabels(['45%','55%','65%','+70%'])
-    cb2.ax.tick_params(labelsize = 7)
+                                    ticks=[5, 6, 7, 8], spacing='uniform',
+                                    orientation='horizontal')
+    cb2.set_ticklabels(['45%', '55%', '65%', '+70%'])
+    cb2.ax.tick_params(labelsize=7)
     cb2.set_label('Normal')
     ax3 = fig.add_axes([0.63, 0.05, 0.2, 0.03])
-    cmap3 = mpl.colors.ListedColormap(colores[8:,:])
-    bounds = [8.5,9.5,10.5,11.5,12.5]
+    cmap3 = mpl.colors.ListedColormap(colores[8:, :])
+    bounds = [8.5, 9.5, 10.5, 11.5, 12.5]
     norm = mpl.colors.BoundaryNorm(bounds, cmap1.N)
     cb3 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap3, norm=norm, boundaries=bounds,
-            ticks=[9,10,11,12], spacing='uniform', orientation='horizontal')
+                                    ticks=[9, 10, 11, 12], spacing='uniform',
+                                    orientation='horizontal')
     cb3.set_ticklabels(['45%','55%','65%','+70%'])
-    cb3.ax.tick_params(labelsize = 7)
+    cb3.ax.tick_params(labelsize=7)
     cb3.set_label('Upper')
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
@@ -89,17 +101,31 @@ def plot_pronosticos(pronos,dx,dy,titulo,salida):
 #tomo prono de DJF con CI en Nov 1997
 wtech = ['pdf_int', 'mean_cor', 'same']
 ctech = ['wpdf', 'wsereg']
-#abro pronosticos
-colores = np.array([[166.,54.,3.], [230.,85.,13.], [253.,141.,60.], [253.,190.,133.], [227.,227.,227.], [204.,204.,204.], [150.,150.,150.],[82.,82.,82.], 
-    [186.,228.,179.],[116.,196.,118.],[49.,163.,84.],[0.,109.,44.]])/255
-
+#genero barra de colores
+colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141., 60.],
+                    [253., 190., 133.], [227., 227., 227.], [204., 204., 204.],
+                    [150., 150., 150.], [82., 82., 82.], [186., 228., 179.],
+                    [116., 196., 118.], [49., 163., 84.],
+                    [0., 109., 44.]]) / 255
 cmap = mpl.colors.ListedColormap(colores)
+#open and handle land-sea mask
+lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
+coordenadas = 'coords'
+domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
+coords = {'lat_s': float(domain[1]),
+          'lat_n': float(domain[2]),
+          'lon_w': float(domain[3]),
+          'lon_e': float(domain[4])}
+
+[land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'], coords['lat_s'],
+                            coords['lon_w'], coords['lon_e'])
+land = np.flipud(land)
 for i in ctech:
     for j in wtech:
         if i == 'wsereg':
-            archivo = 'prec_mme_Nov_DJF_gp_01_'+ j +'_'+ i + '_hind.npz'
+            archivo = 'prec_mme_Nov_DJF_gp_01_' + j + '_' + i + '_hind.npz'
         else:
-            archivo = 'prec_mme_Nov_DJF_gp_01_'+ j +'_'+ i + '_hind.npz'
+            archivo = 'prec_mme_Nov_DJF_gp_01_' + j + '_' + i + '_hind.npz'
         ruta = '/datos/osman/nmme_output/comb_forecast/'
         data = np.load(ruta + archivo)
         lat = data['lat']
@@ -108,36 +134,36 @@ for i in ctech:
         latn = np.max(lat)
         lonw = np.min(lon)
         lone = np.max(lon)
-        [dx,dy] = np.meshgrid (lon,lat)
-
-        for k in np.arange(1982,2010,1):
-            output = '/datos/osman/nmme_figuras/for_prec_DJF_ic_nov_' + str(k) + '_'+ i + '_' + j + '.png'
-
-            for_terciles = np.squeeze(data['prob_terc_comb'][:,k-1982,:,:])
+        [dx, dy] = np.meshgrid(lon, lat)
+        ruta = '/datos/osman/nmme_figuras/forecast/'
+        for k in np.arange(1982, 2010, 1):
+            output = ruta + 'for_prec_DJF_ic_ nov_' + str(k) + '_' + i + '_' +\
+                    j + '.png'
+            for_terciles = np.squeeze(data['prob_terc_comb'][:, k - 1982, :, :])
             #agrego el prono de la categoria above normal
-            for_terciles = np.concatenate([for_terciles[0,:,:][:,:,np.newaxis],(for_terciles[1,:,:]-\
-                    for_terciles[0,:,:])[:,:,np.newaxis],(1-for_terciles[1,:,:])[:,:,np.newaxis]], axis=2)
+            below = ndimage.filters.gaussian_filter(for_terciles[0, :,
+                                                                 :], 1,
+                                                    order=0, output=None,
+                                                    mode='reflect')
+            near = ndimage.filters.gaussian_filter(for_terciles[1, :, :]\
+                                                         - for_terciles[0, :,\
+                                                                        :], 1,
+                                                   order=0, output=None,
+                                                   mode='reflect')
+            above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
+                                                                     :], 1,
+                                                    order=0, output=None,
+                                                    mode='reflect')
+            for_terciles = np.concatenate([below[:, :, np.newaxis],
+                                           near[:, :, np.newaxis],
+                                           above[:, :, np.newaxis]], axis=2)
             for_mask = asignar_categoria(for_terciles)
-            plot_pronosticos(for_mask,dx,dy,'DJF Precipitation Forecast IC Nov. ' + str(k) +' - ' + i + '-' + j,output)
+            for_mask = np.ma.masked_array(for_mask,
+                                          np.logical_not(land.astype(bool)))
 
-    #
-    #        smooth_forecast = np.array(np.shape(for_terciles))
-    #
-    #        for i in np.arange(np.shape(for_terciles)[0]):
-    #            for j in np.arange(np.shape(for_terciles)[1]):
-    #                print(i,j)
-    #                if ((i >=1) & (i<(np.shape(for_terciles)[0]-1))) &  ((j >=1) & (j<(np.shape(for_terciles)[1]-1))):
-    #                    smooth_forecast[i,j,:] = np.nanmean(np.reshape(for_terciles[i-1:i+2,j-1:j+2,:],[9,3]), axis = 1)
-    #                elif i==0: #faltan casos!!
-    #                    smooth_forecast[i,j,:] = np.nanmean(np.reshape(for_terciles[i:i+2,j-1:j+2,:],[6,3]), axis = 1)
-    #                elif i==(np.shape(for_terciles)[0]-1):
-    #                    smooth_forecast[i,j,:] = np.nanmean(np.reshape(for_terciles[i-1:,j-1:j+2,:],[6,3]), axis = 1)
-    #                elif j==0:
-    #                    smooth_forecast[i,j,:] = np.nanmean(np.reshape(for_terciles[i-1:i+2,j:j+2,:],[6,3]), axis = 1)
-    #                else:
-    #                    smooth_forecast[i,j,:] = np.nanmean(np.reshape(for_terciles[i-1:i+2,j-1:,:],[6,3]), axis = 1)
-    #
-    #        for_terciles = smooth_forecast
+            plot_pronosticos(for_mask, dx, dy, 'DJF Precipitation Forecast '\
+                             'IC Nov. ' + str(k) + ' - ' + i + '-' + j, output)
+
 ruta = '/datos/osman/nmme_output/comb_forecast/'
 archivo = 'prec_mme_Nov_DJF_gp_01_p_1.0_same_count_hind.npz'
 data = np.load(ruta + archivo)
@@ -147,16 +173,25 @@ lats = np.min(lat)
 latn = np.max(lat)
 lonw = np.min(lon)
 lone = np.max(lon)
-[dx,dy] = np.meshgrid (lon,lat)
+[dx,dy] = np.meshgrid (lon, lat)
+ruta = '/datos/osman/nmme_figuras/forecast/'
+for k in np.arange(1982, 2010, 1):
 
-for k in np.arange(1982,2010,1):
-    output = '/datos/osman/nmme_figuras/for_prec_DJF_ic_nov_' + str(k) + '_count.png'
-    for_terciles = np.squeeze(data['prob_terc_comb'][:,k-1982,:,:])
+    output = ruta + 'for_prec_DJF_ic_nov_' + str(k) + '_count.png'
+    for_terciles = np.squeeze(data['prob_terc_comb'][:, k-1982, :, :])
     #agrego el prono de la categoria above normal
-    for_terciles = np.concatenate([for_terciles[0,:,:][:,:,np.newaxis],(for_terciles[1,:,:]-\
-    for_terciles[0,:,:])[:,:,np.newaxis],(1-for_terciles[1,:,:])[:,:,np.newaxis]], axis=2)
+    for_terciles = np.concatenate([for_terciles[0, :, :][:, :, np.newaxis],
+                                   (for_terciles[1, :, :] -
+                                    for_terciles[0, :, :])[:, :,
+                                                           np.newaxis],
+                                   (1 - for_terciles[1, :, :])[:, :,
+                                                               np.newaxis]],
+                                  axis=2)
     for_mask = asignar_categoria(for_terciles)
-    plot_pronosticos(for_mask,dx,dy,'DJF Precipitation Forecast IC Nov. ' + str(k) + ' - Uncalibrated',output)
+    for_mask = np.ma.masked_array(for_mask,
+                                  np.logical_not(land.astype(bool)))
+    plot_pronosticos(for_mask, dx, dy, 'DJF Precipitation Forecast IC Nov. ' +
+                     str(k) + ' - Uncalibrated', output)
 #plot observed category
 #ruta = '/datos/osman/nmme_output/'
 #archivo = 'obs_prec_1983_DJF.npz'
@@ -201,5 +236,3 @@ for k in np.arange(1982,2010,1):
 #    cb.ax.tick_params(labelsize = 7)
 #    plt.savefig(output, dpi=600, bbox_inches='tight', papertype='A4')
 #    plt.close()
-#
-#
