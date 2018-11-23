@@ -1,4 +1,4 @@
-#grafico pronostico
+"""smoth calibrated probabilities using a gaussian filter and plot forecast"""
 import argparse #parse command line options
 import time #test time consummed
 import calendar
@@ -56,7 +56,8 @@ def asignar_categoria(for_terciles):
             mascara = for_cat < 1
             for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
-def plot_pronosticos(pronos, dx, dy, titulo, salida):
+def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
+                     titulo, salida):
     """Plot probabilistic forecast"""
     fig = plt.figure()
     mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
@@ -95,7 +96,7 @@ def plot_pronosticos(pronos, dx, dy, titulo, salida):
     cb3 = mpl.colorbar.ColorbarBase(ax3, cmap=cmap3, norm=norm, boundaries=bounds,
                                     ticks=[9, 10, 11, 12], spacing='uniform',
                                     orientation='horizontal')
-    cb3.set_ticklabels(['45%','55%','65%','+70%'])
+    cb3.set_ticklabels(['45%', '55%', '65%', '+70%'])
     cb3.ax.tick_params(labelsize=7)
     cb3.set_label('Upper')
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
@@ -106,10 +107,10 @@ def main():
     parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
             help='Variable to verify (prec or temp)')
-    parser.add_argument('IC', type = int, nargs= 1,\
-            help = 'Month of intial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('leadtime', type = int, nargs = 1,\
-            help = 'Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('IC', type=int, nargs=1,\
+            help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type=int, nargs=1,\
+            help='Forecast leatime (in months, from 1 to 7)')
 
     args=parser.parse_args()
     #defino ref dataset y target season
@@ -120,7 +121,7 @@ def main():
 
     wtech = ['pdf_int', 'mean_cor', 'same']
     ctech = ['wpdf', 'wsereg']
-    #genero barra de colores
+    #custom colorbar
     colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141., 60.],
                         [253., 190., 133.], [227., 227., 227.], [204., 204.,
                                                                  204.],
@@ -141,12 +142,13 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    ruta = '/datos/osman/nmme_output/comb_forecast/'
+    RUTA = '/datos/osman/nmme_output/comb_forecast/'
+    RUTA_IM = '/datos/osman/nmme_figuras/forecast/'
     for i in ctech:
         for j in wtech:
             archivo = args.variable[0] + '_mme_' + calendar.month_abbr[
-                args.IC[0]] +'_' + SSS + '_' + j + '_' + i + '_hind.npz'
-            data = np.load(ruta + archivo)
+                args.IC[0]] +'_' + SSS + '_gp_01_' + j + '_' + i + '_hind.npz'
+            data = np.load(RUTA + archivo)
             lat = data['lat']
             lon = data['lon']
             lats = np.min(lat)
@@ -154,11 +156,10 @@ def main():
             lonw = np.min(lon)
             lone = np.max(lon)
             [dx, dy] = np.meshgrid(lon, lat)
-            ruta = '/datos/osman/nmme_figuras/forecast/'
             for k in np.arange(year_verif, 2011, 1):
-                output = ruta + 'for_prec_' + SSS + '_ic_' + \
-                        calendar.month_abbr[args.IC[0]] + '_' + str(k) + '_' +\
-                        i + '_' + j + '.png'
+                output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
+                        + calendar.month_abbr[args.IC[0]] + '_' + str(k) +\
+                        '_' + i + '_' + j + '.png'
                 for_terciles = np.squeeze(data['prob_terc_comb'][:, k - 1982, :, :])
                 #agrego el prono de la categoria above normal
                 below = ndimage.filters.gaussian_filter(for_terciles[0, :,
@@ -180,25 +181,25 @@ def main():
                 for_mask = asignar_categoria(for_terciles)
                 for_mask = np.ma.masked_array(for_mask,
                                               np.logical_not(land.astype(bool)))
-                plot_pronosticos(for_mask, dx, dy, SSS + ' Forecast '\
-                                 'IC ' + calendar.month_abbr[args.IC[0]] +\
-                                 + '_' + str(k) + ' - ' + i + '-' + j, output)
+                plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
+                                 cmap, colores, SSS + ' Forecast IC ' +\
+                                 calendar.month_abbr[args.IC[0]] + '_' +\
+                                 str(k) + ' - ' + i + '-' + j, output)
 
-    ruta = '/datos/osman/nmme_output/comb_forecast/'
     archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]] +\
-            '_'Nov_DJF_gp_01_p_1.0_same_count_hind.npz'
-    data = np.load(ruta + archivo)
+            '_' + SSS + '_gp_01_same_count_hind.npz'
+    data = np.load(RUTA + archivo)
     lat = data['lat']
     lon = data['lon']
     lats = np.min(lat)
     latn = np.max(lat)
     lonw = np.min(lon)
     lone = np.max(lon)
-    [dx,dy] = np.meshgrid (lon, lat)
-    ruta = '/datos/osman/nmme_figuras/forecast/'
+    [dx, dy] = np.meshgrid (lon, lat)
     for k in np.arange(1982, 2010, 1):
 
-        output = ruta + 'for_prec_DJF_ic_nov_' + str(k) + '_count.png'
+        output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_' + \
+                calendar.month_abbr[args.IC[0]] + '_' + str(k) + '_count.png'
         for_terciles = np.squeeze(data['prob_terc_comb'][:, k-1982, :, :])
         #agrego el prono de la categoria above normal
         for_terciles = np.concatenate([for_terciles[0, :, :][:, :, np.newaxis],
@@ -211,8 +212,10 @@ def main():
         for_mask = asignar_categoria(for_terciles)
         for_mask = np.ma.masked_array(for_mask,
                                       np.logical_not(land.astype(bool)))
-        plot_pronosticos(for_mask, dx, dy, 'DJF Precipitation Forecast IC Nov. ' +
-                         str(k) + ' - Uncalibrated', output)
+        plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
+                                 cmap, colores, SSS + ' Forecast IC ' +\
+                         calendar.month_abbr[args.IC[0]] + '_' + str(k) +\
+                         ' - Uncalibrated', output)
 #===================================================================================================
 start = time.time()
 main()
