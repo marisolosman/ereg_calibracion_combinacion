@@ -23,11 +23,11 @@ def plot_weights(lat, lon, var, titulo, output):
     mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
                     llcrnrlon= lonw, urcrnrlat= latn, urcrnrlon= lone)
     #projection and map limits
-    mapproj.drawcoastlines(linewidth = 0.5)          # coast
-    mapproj.drawcountries(linewidth = 0.1)         #countries
+    mapproj.drawcoastlines(linewidth=0.5)          # coast
+    mapproj.drawcountries(linewidth=0.1)         #countries
     lonproj, latproj = mapproj(dx, dy)      #poject grid
     # set desired contour levels.
-    clevs = np.array([-0.3,-0.1,0.1,0.3,0.5])
+    clevs = np.array([-0.3, -0.1, 0.1, 0.3, 0.5])
 #    barra = plt.cm.get_cmap('PRGn',5) #colorbar
     num_levels = 5
     vmin, vmax = -0.3,0.5
@@ -40,7 +40,8 @@ def plot_weights(lat, lon, var, titulo, output):
 #    fig, ax = plt.subplots()
 #    im = ax.imshow(data, cmap=cmap, norm=norm, interpolation='none')
 #    fig.colorbar(im)
-    CS1 = mapproj.pcolor(lonproj, latproj, var, cmap = cmap, norm = norm, vmin = -0.3, vmax = 0.5)
+    CS1 = mapproj.pcolor(lonproj, latproj, var, cmap=cmap, norm=norm,
+                         vmin=-0.3, vmax=0.5)
     cbar = plt.colorbar(CS1, ticks = clevs)
     cbar.ax.tick_params(labelsize = 8)
     plt.title(titulo)
