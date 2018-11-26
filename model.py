@@ -119,7 +119,6 @@ class Model(object):
             res = p.map(filtro_tendencia, i.tolist(), l.tolist(), j.tolist(), k.tolist())
             print("Termino Paralelizacion")
             res = np.stack(res, axis=1)
-            print(length(res))
             forecast_dt = np.reshape(res[0, :], [ntimes, nmembers, nlats, nlons])
             a1 = np.reshape(res[1, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
             b1 = np.reshape(res[0, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
@@ -182,8 +181,8 @@ class Model(object):
             epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
             print(np.sum(np.sum(np.sum(epsbn<0))))
         else:
-            obs_c = np.mean(obs, axis=0)
-            em_c = np.mean(np.mean(forec, axis=1), axis=0)
+            obs_c = np.mean(observation, axis=0)
+            em_c = np.mean(np.mean(forecast, axis=1), axis=0)
             em = np.mean(forecast, axis=1)
             obs_var = np.sum(np.power(observation - obs_c, 2), axis=0) / ntimes
             signal = np.sum(np.power(em - em_c, 2), axis=0) / ntimes
