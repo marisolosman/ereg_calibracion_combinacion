@@ -115,7 +115,9 @@ def main():
         if args.ctech == 'wpdf':
             a2 = data['a2']
             b2 = data['b2']
+            K = data['K'][0, :, :, :]
             eps = data['eps']
+            f_dt = f_dt * K + (1 - K) * np.mean(f_dt, axis = 0)
             for_cr = b2 + f_dt * a2
             #integro en los limites de terciles
             prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
@@ -187,6 +189,7 @@ def main():
             a_mme = data['a_mme']
             b_mme = data['b_mme']
             eps_mme = data['eps_mme']
+            K_mme = data['K_mme']
         else:
             #ereg con el smme pesado
             for_dt = np.rollaxis(for_dt * np.repeat(weight, nmembers, axis=3), 3, 1)
@@ -200,16 +203,20 @@ def main():
                                                                   nmembers,
                                                                   axis=2),
                                       2, 0)
+        K_mme = K_mme[0, :, :, :]
+        prono_actual_dt = prono_actual_dt * K_mme + (1 - K_mme) *\
+                np.mean(prono_actual_dt, axis = 0)
+
         #corrijo prono
         prono_cr = b_mme + a_mme * prono_actual_dt
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(prono_cr, eps_mme, terciles)
-        prob_terc_comb = np.nanmean(prob_terc, axis=2)
+        prob_terc_comb = np.nanmean(prob_terc, axis=1)
 
     #guardo los pronos
     archivo = Path('/datos/osman/nmme_output/rt_forecast/' +\
                    args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
-                   str(iniy) + '_' + SSS + 'gp_01_' + args.wtech[0]+'_' +\
+                   str(iniy) + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' +\
                    args.ctech + '.npz')
     np.savez(archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
 #=============================================================================
