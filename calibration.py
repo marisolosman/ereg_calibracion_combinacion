@@ -31,14 +31,14 @@ def main():
                                       for line in open(i)][0] not in args.no_model]
 
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
-            'fechai', 'fechaf', 'ext']
+            'fechai', 'fechaf', 'ext', 'rt_miembros']
     modelos = []
     for i in lista:
         lines = [line.rstrip('\n') for line in open(i)]
         modelos.append(dict(zip(keys, [lines[0], lines[1], lines[2], lines[3],\
                                        int(lines[4]), int(lines[5]), \
                                        int(lines[6]), int(lines[7]), \
-                                       lines[8]])))
+                                       lines[8], int(lines[9])])))
     """ref dataset (otro momento delirante): depende de CI del prono y plazo.
     Ej: si IC prono es Jan y plazo 1 entonces FMA en primer tiempo 1982. Si IC
     prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983. Deberia
@@ -109,7 +109,7 @@ def main():
             modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                                  it['latn'], it['lonn'], it['miembros'], \
                                  it['plazos'], it['fechai'], it['fechaf'],\
-                                 it['ext'])
+                                 it['ext'], it['rt_miembros'])
             print(modelo, args.IC[0], SSS)
             [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                         args.leadtime[0], \
@@ -151,7 +151,7 @@ def main():
                 modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                                  it['latn'], it['lonn'], it['miembros'], \
                                  it['plazos'], it['fechai'], it['fechaf'],\
-                                 it['ext'])
+                                 it['ext'], it['rt_miembros'])
                 print(modelo, args.IC[0], SSS)
                 [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                             args.leadtime[0], \
