@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
-cores = 9
+CORES = 9
 ruta = '/datos/osman/nmme/monthly/'
 hind_length = 28
 
@@ -69,13 +69,13 @@ class Observ(object):
 
     def remove_trend(self, observation, CV_opt):
         """removes trend"""
-        print("Removes trend")
+        print("Removing trend")
         [ntimes,nlats,nlons] = observation.shape
         anios = np.arange(ntimes) #en anios es un quilombo y para el caso es lo mismo
         i = np.repeat(np.arange(ntimes ,dtype=int), nlats * nlons)
         j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes)
         k = np.tile(np.arange(nlons, dtype=int), ntimes * nlats)
-        p = Pool(cores)
+        p = Pool(CORES)
         p.clear()
 
         if CV_opt: #validacion cruzada ventana 1 anio
@@ -116,7 +116,7 @@ class Observ(object):
         ntimes = observation.shape[0]
         if CV_opt: #validacion cruzada ventana 1 anio
             i = np.arange(ntimes)
-            p = Pool(cores)
+            p = Pool(CORES)
             p.clear()
             print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))

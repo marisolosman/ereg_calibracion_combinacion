@@ -5,7 +5,7 @@ import xarray as xr
 from scipy.stats import norm
 from pathos.multiprocessing import ProcessingPool as Pool
 
-cores = 9
+CORES = 9
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -18,7 +18,8 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
 class Model(object):
     """Model definition"""
     def __init__(self, name, institution, var_name, lat_name,
-                 lon_name, miembros_ensamble, leadtimes, hind_begin, hind_end, extension):
+                 lon_name, miembros_ensamble, leadtimes, hind_begin, hind_end,
+                 extension, rt_ensamble):
         #caracteristicas comunes de todos los modelos
         self.name = name
         self.institution = institution
@@ -30,6 +31,7 @@ class Model(object):
         self.hind_begin = hind_begin
         self.hind_end = hind_end
         self.ext = extension
+        self.rt_ensembles = rt_ensamble
     #imprimir caracteristicas generales del modelo
     def __str__(self):
         return "%s is a model from %s and has %s ensemble members and %s leadtimes" % (self.name,
@@ -87,7 +89,7 @@ class Model(object):
         l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats * nlons), ntimes)
         j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
         k = np.tile(np.arange(nlons, dtype=int), ntimes * nmembers * nlats)
-        p = Pool(cores)
+        p = Pool(CORES)
         p.clear()
 
         if CV_opt: #validacion cruzada ventana 1 anio
@@ -103,30 +105,33 @@ class Model(object):
             forecast_dt = np.reshape(np.squeeze(np.stack(res)), [ntimes, nmembers, nlats, nlons])
             del(filtro_tendencia, res)
             p.close()
+            return forecast_dt
 
         else:
 
             def filtro_tendencia(i, l, j, k, anios=anios, forec=forecast): #forecast 4D
 
                 y = np.nanmean(forec[:, :, j, k], axis=1)
-                A = np.vstack([ anios, np.ones(anios.shape[0])])
+                A = np.vstack([anios, np.ones(anios.shape[0])])
                 m, c = np.linalg.lstsq(A.T, y)[0]
                 for_dt = forec[i, l, j, k] - (m * anios[i] + c)
-                return for_dt
+                return for_dt, m, c
 
             print("Paralelizando")
             res = p.map(filtro_tendencia, i.tolist(), l.tolist(), j.tolist(), k.tolist())
             print("Termino Paralelizacion")
-            forecast_dt = np.reshape(np.squeeze(np.stack(res)), [ntimes, nmembers, nlats, nlons])
+            res = np.stack(res, axis=1)
+            forecast_dt = np.reshape(res[0, :], [ntimes, nmembers, nlats, nlons])
+            a1 = np.reshape(res[1, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
+            b1 = np.reshape(res[2, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
             del(filtro_tendencia, res)
             p.close()
-
-        return forecast_dt
+            return forecast_dt, a1, b1
 
     def ereg(self, forecast, observation, CV_opt):
         """calibrates model using ensemble regression"""
         [ntimes, nmembers, nlats, nlons] = forecast.shape
-        p = Pool(cores)
+        p = Pool(CORES)
         p.clear()
         if CV_opt: #validacion cruzada ventana 1 anio
             i = np.arange(ntimes, dtype=int)
@@ -141,55 +146,56 @@ class Model(object):
             res = np.stack(res, axis=1)
             obs_c = res[0, :, :, :]
             em_c = res[1, :, :, :]
-            em = np.mean(forecast, axis=1)
-            obs_var = np.sum(np.power(observation - obs_c, 2), axis=0) / ntimes
-            signal = np.sum(np.power(em - em_c, 2), axis=0) / ntimes
-            Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
-                obs_var * signal)
-            noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
-            #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
-            Rbest = Rm * np.sqrt(1 + (self.ensembles / (self.ensembles - 1) * noise) / signal)
-            #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
-            epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-            #kmax**2 S/N * (m-1/m) * (1/R**2-1)
-            kmax = signal / noise * (((self.ensembles - 1)/self.ensembles) *
-                                     (1 / np.power(Rm, 2) - 1))
-            # si kmax es amayor a 1 lo fuerzo a que sea 1
-            kmax[kmax > 1] = 1
-            #testeo
-            K = np.zeros_like(epsbn)
-            #if epsbn is positive spread remains the same
-            K[epsbn >= 0] = 1
-            #if epsbn is negative spread changes
-            K[epsbn < 0] = kmax[epsbn < 0]
-            K = np.repeat(np.repeat(K[np.newaxis, :, :], self.ensembles,
-                                    axis=0)[np.newaxis, :, :, :], ntimes,
-                          axis=0)
-            forecast_inf = forecast * K + (1 - K) *  np.rollaxis(np.repeat(em[np.newaxis, :
-                                                                  :, :],
-                                                               self.ensembles,
-                                                                          axis=0),
-                                                                 1)
-            #compute Rbest and epsbn again
-            noise = np.nanmean(np.nanvar(forecast_inf, axis=1), axis=0) #noise
-            #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
-            Rbest = Rm * np.sqrt(1 + (self.ensembles / (self.ensembles - 1) * noise) / signal)
-            #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
-            epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-            print(np.sum(np.sum(np.sum(epsbn<0))))
+        else:
+            obs_c = np.mean(observation, axis=0)
+            em_c = np.mean(np.mean(forecast, axis=1), axis=0)
 
+        em = np.mean(forecast, axis=1)
+        obs_var = np.sum(np.power(observation - obs_c, 2), axis=0) / ntimes
+        signal = np.sum(np.power(em - em_c, 2), axis=0) / ntimes
+        Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
+            obs_var * signal)
+        noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
+        #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
+        Rbest = Rm * np.sqrt(1 + (self.ensembles / (self.ensembles - 1) * noise) / signal)
+        #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
+        epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
+        #kmax**2 S/N * (m-1/m) * (1/R**2-1)
+        kmax = signal / noise * (((self.ensembles - 1)/self.ensembles) *
+                                 (1 / np.power(Rm, 2) - 1))
+        # si kmax es amayor a 1 lo fuerzo a que sea 1
+        kmax[kmax > 1] = 1
+        #testeo
+        K = np.zeros_like(epsbn)
+        #if epsbn is positive spread remains the same
+        K[epsbn >= 0] = 1
+        #if epsbn is negative spread changes
+        K[epsbn < 0] = kmax[epsbn < 0]
+        K = np.repeat(np.repeat(K[np.newaxis, :, :], self.ensembles,
+                                axis=0)[np.newaxis, :, :, :], ntimes,
+                      axis=0)
+        forecast_inf = forecast * K + (1 - K) *  np.rollaxis(np.repeat(em[np.newaxis, :
+                                                              :, :],
+                                                           self.ensembles,
+                                                                      axis=0),
+                                                             1)
+        #compute Rbest and epsbn again
+        noise = np.nanmean(np.nanvar(forecast_inf, axis=1), axis=0) #noise
+        #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
+        Rbest = Rm * np.sqrt(1 + (self.ensembles / (self.ensembles - 1) * noise) / signal)
+        #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
+        epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
+        print(np.sum(np.sum(np.sum(epsbn<0))))
         #ahora calculo la regresion
-        i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
-        l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats* nlons), ntimes)
-        j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
-        k = np.tile(np.arange(nlons, dtype=int), ntimes * nmembers * nlats)
-        p = Pool(cores)
+        p = Pool(CORES)
         p.clear()
-
         if CV_opt: #validacion cruzada ventana 1 anio
+            i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
+            l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats* nlons), ntimes)
+            j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
+            k = np.tile(np.arange(nlons, dtype=int), ntimes * nmembers * nlats)
             print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))
-
             def ens_reg(i, l, j, k, CV_m=CV_matrix, obs=observation, forec=forecast_inf):
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 A = np.vstack([ y[CV_m[:, i]], np.ones((y.shape[0] - 1))])
@@ -201,20 +207,21 @@ class Model(object):
             forecast_cr = np.reshape(np.squeeze(np.stack(res)), [ntimes, nmembers, nlats, nlons])
             del(ens_reg, res)
             p.close()
+            return forecast_cr, Rm, Rbest, epsbn, K
         else:
-            def ens_reg(i, l, j, k, obs=observation, forec=forecast_inf): #forecast 4D
+            j = np.repeat(np.arange(nlats, dtype=int), nlons)
+            k = np.tile(np.arange(nlons, dtype=int), nlats)
+            def ens_reg(j, k, obs=observation, forec=forecast_inf): #forecast 4D
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 A = np.vstack([y, np.ones(y.shape[0])])
                 m, c = np.linalg.lstsq(A.T, obs[:, j, k])[0]
-                for_cr = m * forec[i, l, j, k] + c
-                return for_cr
-            res = p.map(ens_reg, i.tolist(), l.tolist(), j.tolist(), k.tolist())
-            forecast_cr = np.reshape(np.squeeze(np.stack(res)), [ntimes, nmembers, nlats, nlons])
-            print(forecast_cr.shape)
-            del(ens_reg, res)
-            p.close()
-
-        return forecast_cr, Rm, Rbest, epsbn, K
+                #for_cr = m * forec[i, l, j, k] + c
+                return m, c
+            res = p.map(ens_reg, j.tolist(), k.tolist())
+            res = np.stack(res, axis=1)
+            a2 = np.reshape(res[0, :], [nlats, nlons])
+            b2 = np.reshape(res[1, :], [nlats, nlons])
+            return a2, b2, Rm, Rbest, epsbn, K
 
     def pdf_eval(self, forecast, eps, observation):
         """obtains pdf intensity at observation point"""
@@ -223,7 +230,7 @@ class Model(object):
         l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlat * nlon), ntimes)
         j = np.tile(np.repeat(np.arange(nlat, dtype=int), nlon), ntimes * nmembers)
         k = np.tile(np.arange(nlon, dtype=int), ntimes * nmembers * nlat)
-        p = Pool(cores)
+        p = Pool(CORES)
         p.clear()
 
         def evaluo_pdf_normal(i, l, j, k, obs=observation, media=forecast,
@@ -246,21 +253,40 @@ class Model(object):
 
     def probabilidad_terciles(self, forecast, epsilon, tercil):
         """computes cumulative probability until tercile limites"""
-        [ntimes, nmembers, nlats, nlons] = forecast.shape
-        i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
-        l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats * nlons), ntimes)
-        j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
-        k = np.tile(np.arange(nlons, dtype=int), ntimes* nmembers* nlats)
-        p = Pool(cores)
-        p.clear()
-        def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-            pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k], scale=np.sqrt(
-                sigma[j, k]))
-            return pdf_cdf
-        res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
-        p.close()
-        prob_terciles = np.rollaxis(np.reshape(np.squeeze(np.stack(res)),
-                                               [ntimes, nmembers, nlats, nlons, 2]), 4, 0)
+        if forecast.ndim == 4:
+            [ntimes, nmembers, nlats, nlons] = forecast.shape
+            i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
+            l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats * nlons), ntimes)
+            j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
+            k = np.tile(np.arange(nlons, dtype=int), ntimes* nmembers* nlats)
+            p = Pool(CORES)
+            p.clear()
+            def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
+                pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k], scale=np.sqrt(
+                    sigma[j, k]))
+                return pdf_cdf
+            res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
+            p.close()
+            prob_terciles = np.rollaxis(np.reshape(np.squeeze(np.stack(res)),
+                                                   [ntimes, nmembers, nlats, nlons, 2]), 4, 0)
+
+        else:
+            [nmembers, nlats, nlons] = forecast.shape
+            l = np.repeat(np.arange(nmembers, dtype=int), nlats * nlons)
+            j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), nmembers)
+            k = np.tile(np.arange(nlons, dtype=int), nmembers* nlats)
+            p = Pool(CORES)
+            p.clear()
+            def evaluo_pdf_normal(l, j, k, terc=tercil, media=forecast, sigma=epsilon):
+                pdf_cdf = norm.cdf(terc[:, j, k], loc=media[l, j, k], scale=np.sqrt(
+                    sigma[j, k]))
+                return pdf_cdf
+            res = p.map(evaluo_pdf_normal, l.tolist(), j.tolist(), k.tolist())
+            p.close()
+            prob_terciles = np.rollaxis(np.reshape(np.squeeze(np.stack(res)),
+                                                   [nmembers, nlats, nlons, 2]), 3, 0)
+
+
         return prob_terciles
 
     def computo_terciles(self, forecast, CV_opt):
@@ -268,7 +294,7 @@ class Model(object):
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         if CV_opt: #validacion cruzada ventana 1 anio
             i = np.arange(ntimes)
-            p = Pool(cores)
+            p = Pool(CORES)
             p.clear()
             print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))
@@ -287,7 +313,8 @@ class Model(object):
             p.close()
 
         else:
-            A = np.sort(np.rollaxis(np.reshape(forecast, [ntimes * nmembers, nlats, nlons]), 0, 3),
+            A = np.sort(np.rollaxis(np.reshape(forecast, [ntimes * nmembers,
+                                                          nlats, nlons]), 0, 3),
                         axis=-1, kind='quicksort')
             upper = A[:, :, np.int(np.round(ntimes * nmembers / 3) - 1)]
             lower = A[:, :, np.int(np.round(ntimes * nmembers /3 * 2) - 1)]
@@ -308,3 +335,38 @@ class Model(object):
         forecast_terciles[1, :, :, :, :] = np.logical_not(
             np.logical_or(forecast_terciles[0, :, :, :, :], forecast_terciles[2, :, :, :, :]))
         return forecast_terciles
+    def select_real_time_months(self,init_month, init_year, target, lats, latn,
+                                lonw, lone):
+        """select real time forecast season based on IC and target"""
+        #init_cond en meses y target en meses ()
+        final_month = init_month + 11
+        if final_month > 12:
+            flag_end = 1
+            final_month = final_month - 12
+        else:
+            flag_end = 0
+        ruta = '/datos/osman/nmme/monthly/real_time/'
+        #abro un archivo de ejemplo
+        forecast = np.empty([self.rt_ensembles, int(np.abs(latn - lats)) + 1,
+                             int(np.abs(lonw - lone)) + 1])
+        for j in np.arange(1, self.ensembles + 1):
+            file = ruta + 'prec_Amon_' + self.institution + '-' + self.name + '_'\
+                    + str(init_year) + '{:02d}'.format(init_month) + '01_r' +\
+                    str(j) + '_' + str(init_year) +\
+                    '{:02d}'.format(init_month) + '-' + str(init_year +\
+                                                            flag_end) +\
+                    '{:02d}'.format(final_month) + '.' + self.ext
+            [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                                                             self.lat_name, self.lon_name,
+                                                             lats, latn, lonw, lone)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('error')
+                try:
+                    forecast[j - 1, :, :] = np.nanmean(np.squeeze(
+                        np.array(variable))[target:target + 3, :, :], axis=0)
+                    #como todos tiene en el 0 el prono del propio
+                except RuntimeWarning:
+                    forecast[j - 1, :, :] = np.NaN
+            variable = []
+        return latitudes, longitudes, forecast
+
