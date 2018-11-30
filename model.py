@@ -123,7 +123,7 @@ class Model(object):
             res = np.stack(res, axis=1)
             forecast_dt = np.reshape(res[0, :], [ntimes, nmembers, nlats, nlons])
             a1 = np.reshape(res[1, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
-            b1 = np.reshape(res[0, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
+            b1 = np.reshape(res[2, :], [ntimes, nmembers, nlats, nlons])[0, 0, :, :]
             del(filtro_tendencia, res)
             p.close()
             return forecast_dt, a1, b1

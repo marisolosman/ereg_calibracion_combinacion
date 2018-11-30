@@ -75,7 +75,7 @@ def main():
                      terciles=terciles, cat_obs=categoria_obs) #Save observed variables
     if np.logical_not(args.CV):
         archivo2 = Path('/datos/osman/nmme_output/obs_' + args.variable[0] + '_' +\
-                       str(year_verif) + '_' + SSS + '_parameter.npz')
+                       str(year_verif) + '_' + SSS + '_parameters.npz')
         if archivo2.is_file():
             data = np.load(archivo2)
             obs_dt = data['obs_dt']

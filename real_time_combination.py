@@ -84,7 +84,7 @@ def main():
     print(SSS, args.ctech, args.wtech[0])
     #obtengo datos observados
     archivo = Path('/datos/osman/nmme_output/obs_' + args.variable[0]+'_'+\
-                   str(year_verif) + '_' + SSS + '_parameter.npz')
+                   str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
     if args.ctech == 'wsereg':
@@ -112,21 +112,17 @@ def main():
         #remove trend
         T = iniy - 1982
         f_dt = pronos - (b1 + T * a1)
-        print(pronos[:, 10, 10])
-        print(f_dt[:, 10, 10])
         if args.ctech == 'wpdf':
             a2 = data['a2']
             b2 = data['b2']
             K = data['K'][0, :, :, :]
             eps = data['eps']
             f_dt = f_dt * K + (1 - K) * np.mean(f_dt, axis = 0)
-            print(f_dt[:, 10, 10])
             for_cr = b2 + f_dt * a2
-            print(for_cr[:, 10, 10])
             #integro en los limites de terciles
             prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
             prob_terc = np.nanmean(prob_terc, axis=1)
-            print(prob_terc[:, 10, 10])
+            print("categoria pronosticada", prob_terc[:, 30, 30])
             #junto todos pronos calibrados
             prob_terciles = np.concatenate((prob_terciles,
                                             prob_terc[:, :, :, np.newaxis]),
@@ -211,14 +207,11 @@ def main():
         K_mme = K_mme[0, :, :, :]
         prono_actual_dt = prono_actual_dt * K_mme + (1 - K_mme) *\
                 np.mean(prono_actual_dt, axis = 0)
-        print(prono_actual_dt[:, 10, 10])
         #corrijo prono
         prono_cr = b_mme + a_mme * prono_actual_dt
-        print(prono_cr[:, 10, 10])
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(prono_cr, eps_mme, terciles)
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
-        print(prob_terc_comb[:, 10, 10])
 
     #guardo los pronos
     archivo = Path('/datos/osman/nmme_output/rt_forecast/' +\
