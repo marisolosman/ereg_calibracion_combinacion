@@ -35,3 +35,8 @@ Ensemble regression is a technique used to calibrate climate models. Developed b
 ## Usage ##
 
 ## Way forward ##
+* Unify files extension: Moved Canadian models from netCDF4 to regular netCDF
+* Deal with different ensemble members between IC and between hindcast phase and operational phase
+* Unify variable names
+* Improve parser
+* Include changes in model spread
