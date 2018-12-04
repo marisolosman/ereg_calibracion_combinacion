@@ -164,7 +164,6 @@ def main():
             output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
                     + INIM + '_' + str(iniy) + '_' + i + '_' + j + '.png'
             for_terciles = np.squeeze(data['prob_terc_comb'][:, :, :])
-            print(for_terciles.shape)
             #agrego el prono de la categoria above normal
             below = ndimage.filters.gaussian_filter(for_terciles[0, :,
                                                                  :], 1,

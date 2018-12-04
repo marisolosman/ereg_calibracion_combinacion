@@ -34,9 +34,18 @@ Ensemble regression is a technique used to calibrate climate models. Developed b
 
 ## Usage ##
 
+#Hindcast#
+
+#Operational Forecast#
+* Obtain observed and forecasted parameter using calibration without CV option (15 min if parameters have not been obtained yet, else 12sec)
+* Run operational combination forecast (40sec each)
+* Plot forecast (36sec each)
+
 ## Way forward ##
-* Unify files extension: Moved Canadian models from netCDF4 to regular netCDF
+
+* Unify files extension: Move Canadian models from netCDF4 to regular netCDF
 * Deal with different ensemble members between IC and between hindcast phase and operational phase
-* Unify variable names
 * Improve parser
 * Include changes in model spread
+* Parallelize verification and plotting
+* Automatization

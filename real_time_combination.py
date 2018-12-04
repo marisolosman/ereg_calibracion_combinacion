@@ -122,7 +122,6 @@ def main():
             #integro en los limites de terciles
             prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
             prob_terc = np.nanmean(prob_terc, axis=1)
-            print("categoria pronosticada", prob_terc[:, 30, 30])
             #junto todos pronos calibrados
             prob_terciles = np.concatenate((prob_terciles,
                                             prob_terc[:, :, :, np.newaxis]),
