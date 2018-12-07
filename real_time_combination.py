@@ -17,7 +17,7 @@ def main():
     """Defines parser data"""
     parser = argparse.ArgumentParser(description='Combining models')
     parser.add_argument('variable', type=str, nargs=1,\
-            help='Variable to calibrate (prec or temp)')
+            help='Variable to calibrate (prec or tref)')
     parser.add_argument('--IC', dest='IC', metavar='Date', type=str, nargs=1,
                         help='Initial conditions in "YYYY-MM-DD"')
     parser.add_argument('--leadtime', dest='leadtime', type=int, nargs=1,
@@ -126,6 +126,7 @@ def main():
             prob_terciles = np.concatenate((prob_terciles,
                                             prob_terc[:, :, :, np.newaxis]),
                                            axis=3)
+            print(np.sum(np.isnan(prob_terciles)))
         elif args.ctech == 'wsereg':
             #junto pronos actual
             prono_actual_dt = np.concatenate((prono_actual_dt,
@@ -163,13 +164,13 @@ def main():
         weight = []
         peso = np.empty([nlats, nlons, nmodels])
         for i in np.arange(nmodels):
-            peso[:, :, i] = np.sum(maximo == i, axis=0) / ntimes
+            peso[:, :, i] = np.nanmean(maximo == i, axis=0)
         weight = np.tile(peso, (2, 1, 1, 1)) #2 nlat nlon nmodels
 
     elif args.wtech[0] == 'mean_cor':
         rmean[np.where(rmean < 0)] = 0
-        rmean[np.sum(rmean[:, :, :], axis=2) == 0, :] = 1
-        peso = rmean / np.tile(np.sum(rmean, axis=2)[:, :, np.newaxis], [1, 1, nmodels])
+        rmean[np.nansum(rmean[:, :, :], axis=2) == 0, :] = 1
+        peso = rmean / np.tile(np.nansum(rmean, axis=2)[:, :, np.newaxis], [1, 1, nmodels])
         weight = np.tile(peso, (2, 1, 1, 1))  #2 nlat nlon nmodels
 
     elif args.wtech[0] == 'same': #mismo peso para todos
@@ -183,7 +184,7 @@ def main():
         archivo = Path('/datos/osman/nmme_output/comb_forecast/' +\
                        args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                        '_' + SSS + 'gp_01_' + args.wtech[0]+'_' + args.ctech +\
-                       '_hind_paramters.npz')
+                       '_hind_parameters.npz')
         if archivo.is_file():
             data = np.load(archivo)
             a_mme = data['a_mme']
@@ -195,6 +196,7 @@ def main():
             for_dt = np.rollaxis(for_dt * np.repeat(weight, nmembers, axis=3), 3, 1)
             [a_mme, b_mme, R_mme, Rb_mme, eps_mme, Kmax_mme,
              K_mme] = ereg.ensemble_regression(for_dt, obs_dt, False)
+            print(np.sum(np.isnan(obs_dt)))
             np.savez(archivo, a_mme=a_mme, b_mme=b_mme, R_mme=R_mme,
                      Rb_mme=Rb_mme, eps_mme=eps_mme, Kmax_mme=Kmax_mme,
                      K_mme=K_mme)
@@ -205,12 +207,16 @@ def main():
                                       2, 0)
         K_mme = K_mme[0, :, :, :]
         prono_actual_dt = prono_actual_dt * K_mme + (1 - K_mme) *\
-                np.mean(prono_actual_dt, axis = 0)
+                np.nanmean(prono_actual_dt, axis = 0)
         #corrijo prono
+        print(np.sum(np.isnan(a_mme)))
         prono_cr = b_mme + a_mme * prono_actual_dt
+        print(np.sum(np.isnan(prono_cr)))
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(prono_cr, eps_mme, terciles)
+        print(np.sum(np.isnan(terciles)))
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
+        print(np.sum(np.isnan(prob_terc_comb)))
 
     #guardo los pronos
     archivo = Path('/datos/osman/nmme_output/rt_forecast/' +\

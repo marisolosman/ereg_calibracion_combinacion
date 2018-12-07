@@ -6,7 +6,8 @@ from pathos.multiprocessing import ProcessingPool as Pool
 CORES = 9
 
 def ensemble_regression(forecast, observation, CV_opt):
-
+    """Calibrates forecast using ensemble regression"""
+    print("Calibrating ensemble members")
     [ntimes, nmembers, nlats, nlons] = forecast.shape
     p = Pool(CORES)
     p.clear()
@@ -15,8 +16,8 @@ def ensemble_regression(forecast, observation, CV_opt):
         CV_matrix = np.logical_not(np.identity(ntimes))
         def compute_clim(i, CV_m=CV_matrix, obs=observation, forec=forecast):
             #computes climatologies under CV
-            obs_c = np.mean(obs[CV_m[:, i], :, :], axis=0)
-            em_c = np.mean(np.mean(forec[CV_m[:, i], :, :, :], axis=1),
+            obs_c = np.nanmean(obs[CV_m[:, i], :, :], axis=0)
+            em_c = np.nanmean(np.nanmean(forec[CV_m[:, i], :, :, :], axis=1),
                            axis=0)
             return obs_c, em_c
         res = p.map(compute_clim, i.tolist())
@@ -24,12 +25,12 @@ def ensemble_regression(forecast, observation, CV_opt):
         obs_c = res[0, :, :, :]
         em_c = res[1, :, :, :]
     else:
-        obs_c = np.mean(observation, axis=0)
-        em_c = np.mean(np.mean(forecast, axis=1), axis=0)
+        obs_c = np.nanmean(observation, axis=0)
+        em_c = np.nanmean(np.mean(forecast, axis=1), axis=0)
 
-    em = np.mean(forecast, axis=1)
-    obs_var = np.sum(np.power(observation - obs_c, 2), axis=0) / ntimes
-    signal = np.sum(np.power(em - em_c, 2), axis=0) / ntimes
+    em = np.nanmean(forecast, axis=1)
+    obs_var = np.nansum(np.power(observation - obs_c, 2), axis=0) / ntimes
+    signal = np.nansum(np.power(em - em_c, 2), axis=0) / ntimes
     Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
         obs_var * signal)
     noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
@@ -74,10 +75,17 @@ def ensemble_regression(forecast, observation, CV_opt):
         print("Validacion cruzada")
         CV_matrix = np.logical_not(np.identity(ntimes))
         def ens_reg(i, l, j, k, CV_m=CV_matrix, obs=observation, forec=forecast_inf):
-            y = np.nanmean(forec[:, :, j, k], axis=1)
-            A = np.vstack([y[CV_m[:, i]], np.ones((y.shape[0] - 1))])
-            m, c = np.linalg.lstsq(A.T, obs[CV_m[:, i], j, k])[0]
-            for_cr = m * forec[i, l, j, k] + c
+            if np.logical_or(np.isnan(obs[:, j, k]).all(),
+                             np.sum(np.isnan(obs[:, j, k])) / obs.shape[0] > 0.15):
+                for_cr = np.nan
+            else:
+                missing = np.isnan(obs[:, j, k])
+                obs_new = obs[np.logical_and(~missing, CV_m[:, i], j, k)]
+                y = np.nanmean(forec[:, :, j, k], axis=1)
+                y_new = y[np.logical_and(~missing, CV_m[:, i])]
+                A = np.vstack([y_new, np.ones(y_new,shape[0] - 1)])
+                m, c = np.linalg.lstsq(A.T, obs_new)[0]
+                for_cr = m * forec[i, l, j, k] + c
             return for_cr
 
         res = p.map(ens_reg, i.tolist(), l.tolist(), j.tolist(), k.tolist())
@@ -89,10 +97,15 @@ def ensemble_regression(forecast, observation, CV_opt):
         j = np.repeat(np.arange(nlats, dtype=int), nlons)
         k = np.tile(np.arange(nlons, dtype=int), nlats)
         def ens_reg(j, k, obs=observation, forec=forecast_inf): #forecast 4D
-            y = np.nanmean(forec[:, :, j, k], axis=1)
-            A = np.vstack([y, np.ones(y.shape[0])])
-            m, c = np.linalg.lstsq(A.T, obs[:, j, k])[0]
-            #for_cr = m * forec[i, l, j, k] + c
+            if np.logical_or(np.isnan(obs[:, j, k]).all(),
+                             np.sum(np.isnan(obs[:, j, k])) / obs.shape[0] > 0.15):
+                m = np.nan
+                c = np.nan
+            else:
+                missing = np.isnan(obs[:, j, k])
+                y = np.nanmean(forec[:, :, j, k], axis=1)
+                A = np.vstack([y[~missing], np.ones(y[~missing].shape[0])])
+                m, c = np.linalg.lstsq(A.T, obs[~missing, j, k])[0]
             return m, c
         res = p.map(ens_reg, j.tolist(), k.tolist())
         res = np.stack(res, axis=1)
@@ -103,7 +116,8 @@ def ensemble_regression(forecast, observation, CV_opt):
         return a2, b2, Rm, Rbest, epsbn, kmax, K
 
 def probabilidad_terciles(forecast, epsilon, tercil):
-    """computes cpdf until tercil limits"""
+    """computes cpdf until tercile limits"""
+    print("Computing cpdf for tercile limits")
     if np.ndim(forecast) == 4:
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
@@ -115,8 +129,13 @@ def probabilidad_terciles(forecast, epsilon, tercil):
         p = Pool (CORES)
         p.clear()
         def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-            pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k],
-                               scale=np.sqrt(sigma[j, k]))
+            if np.logical_or(np.logical_or(np.isnan(tercil[:, i, j, k]).any(),
+                                           np.isnan(media[i, l, j, k])),
+                             np.isnan(sigma[j, k])):
+                pdf_cdf = np.array([np.nan, np.nan])
+            else:
+                pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k],
+                                   scale=np.sqrt(sigma[j, k]))
             return pdf_cdf
 
         res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(),
@@ -133,7 +152,12 @@ def probabilidad_terciles(forecast, epsilon, tercil):
         p = Pool (CORES)
         p.clear()
         def evaluo_pdf_normal(l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-            pdf_cdf = norm.cdf(terc[:, j, k], loc=media[l, j, k],
+            if np.logical_or(np.logical_or(np.isnan(terc[:, j, k]).any(),
+                                           np.isnan(media[l, j, k])),
+                             np.isnan(sigma[j, k])):
+                pdf_cdf = np.array([np.nan, np.nan])
+            else:
+                pdf_cdf = norm.cdf(terc[:, j, k], loc=media[l, j, k],
                                scale=np.sqrt(sigma[j, k]))
             return pdf_cdf
 

@@ -36,7 +36,6 @@ class Model(object):
     def __str__(self):
         return "%s is a model from %s and has %s ensemble members and %s leadtimes" % (self.name,
                 self.institution, self.ensembles, self.leadtimes)
-
 #comienzo la definición de los métodos
 
     def select_months(self, init_cond, target, lats, latn, lonw, lone):
@@ -56,8 +55,9 @@ class Model(object):
         #loop sobre los anios del hindcast period
         for i in np.arange(self.hind_begin, self.hind_end+1):
             for j in np.arange(1, self.ensembles + 1):
-                file = ruta + 'prec_Amon_' + self.institution + '-' + self.name + '_' + str(i)\
-                        + '{:02d}'.format(init_cond) + '_r' + str(j) + 'i1p1_' + str(i) +\
+                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_' + str(i)\
+                        + '{:02d}'.format(init_cond) + '01_r' + str(j) + '_' + str(i) +\
                         '{:02d}'.format(init_cond) + '-' + str(i + flag_end) + '{:02d}'.format(
                             final_month) + '.' + self.ext
 
@@ -73,9 +73,7 @@ class Model(object):
                         #como todos tiene en el 0 el prono del propio
                     except RuntimeWarning:
                         forecast[i - self.hind_begin, j - 1, :, :] = np.NaN
-                        print(i, j)
                 variable = []
-
 	# Return values of interest: latitudes longitudes forecast
         return latitudes, longitudes, forecast
 
@@ -83,6 +81,7 @@ class Model(object):
         """ remove linear trend
         forecast 4-D array ntimes nensembles nlats nlons
         CV_opt boolean"""
+        print("Detrending data")
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         anios = np.arange(ntimes)
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
@@ -110,7 +109,6 @@ class Model(object):
         else:
 
             def filtro_tendencia(i, l, j, k, anios=anios, forec=forecast): #forecast 4D
-
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 A = np.vstack([anios, np.ones(anios.shape[0])])
                 m, c = np.linalg.lstsq(A.T, y)[0]
@@ -130,6 +128,7 @@ class Model(object):
 
     def ereg(self, forecast, observation, CV_opt):
         """calibrates model using ensemble regression"""
+        print("Calibrating models")
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         p = Pool(CORES)
         p.clear()
@@ -138,8 +137,8 @@ class Model(object):
             CV_matrix = np.logical_not(np.identity(ntimes))
             def compute_clim(i, CV_m=CV_matrix, obs=observation, forec=forecast):
                 #computes climatologies under CV
-                obs_c = np.mean(obs[CV_m[:, i], :, :], axis=0)
-                em_c = np.mean(np.mean(forec[CV_m[:, i], :, :, :], axis=1),
+                obs_c = np.nanmean(obs[CV_m[:, i], :, :], axis=0)
+                em_c = np.nanmean(np.mean(forec[CV_m[:, i], :, :, :], axis=1),
                                axis=0)
                 return obs_c, em_c
             res = p.map(compute_clim, i.tolist())
@@ -147,12 +146,12 @@ class Model(object):
             obs_c = res[0, :, :, :]
             em_c = res[1, :, :, :]
         else:
-            obs_c = np.mean(observation, axis=0)
-            em_c = np.mean(np.mean(forecast, axis=1), axis=0)
+            obs_c = np.nanmean(observation, axis=0)
+            em_c = np.nanmean(np.mean(forecast, axis=1), axis=0)
 
-        em = np.mean(forecast, axis=1)
-        obs_var = np.sum(np.power(observation - obs_c, 2), axis=0) / ntimes
-        signal = np.sum(np.power(em - em_c, 2), axis=0) / ntimes
+        em = np.nanmean(forecast, axis=1)
+        obs_var = np.nanmean(np.power(observation - obs_c, 2), axis=0)
+        signal = np.nanmean(np.power(em - em_c, 2), axis=0)
         Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
             obs_var * signal)
         noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
@@ -185,7 +184,6 @@ class Model(object):
         Rbest = Rm * np.sqrt(1 + (self.ensembles / (self.ensembles - 1) * noise) / signal)
         #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
         epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-        print(np.sum(np.sum(np.sum(epsbn<0))))
         #ahora calculo la regresion
         p = Pool(CORES)
         p.clear()
@@ -197,10 +195,17 @@ class Model(object):
             print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))
             def ens_reg(i, l, j, k, CV_m=CV_matrix, obs=observation, forec=forecast_inf):
-                y = np.nanmean(forec[:, :, j, k], axis=1)
-                A = np.vstack([ y[CV_m[:, i]], np.ones((y.shape[0] - 1))])
-                m, c = np.linalg.lstsq(A.T, obs[CV_m[:, i], j, k])[0]
-                for_cr = m * forec[i, l, j, k] + c
+                if np.logical_or(np.isnan(obs[:, j, k]).all(),
+                                 np.sum(np.isnan(obs[:, j, k]) / obs.shape[0]) > 0.15):
+                    for_cr = np.nan
+                else:
+                    missing = np.isnan(obs[:, j, k])
+                    obs_new = obs[np.logical_and(~missing, CV_m[:,i]), j, k]
+                    y = np.nanmean(forec[:, :, j, k], axis=1)
+                    y_new = y[np.logical_and(~missing,CV_m[:, i])]
+                    A = np.vstack([y_new, np.ones(y_new.shape[0])])
+                    m, c = np.linalg.lstsq(A.T, obs_new)[0]
+                    for_cr = m * forec[i, l, j, k] + c
                 return for_cr
 
             res = p.map(ens_reg, i.tolist(), l.tolist(), j.tolist(), k.tolist())
@@ -212,10 +217,16 @@ class Model(object):
             j = np.repeat(np.arange(nlats, dtype=int), nlons)
             k = np.tile(np.arange(nlons, dtype=int), nlats)
             def ens_reg(j, k, obs=observation, forec=forecast_inf): #forecast 4D
-                y = np.nanmean(forec[:, :, j, k], axis=1)
-                A = np.vstack([y, np.ones(y.shape[0])])
-                m, c = np.linalg.lstsq(A.T, obs[:, j, k])[0]
-                #for_cr = m * forec[i, l, j, k] + c
+                if np.logical_or(np.isnan(obs[:,j,k]).all(),
+                                 np.sum(np.isnan(obs[:, j, k])) / obs.shape[0] > 0.15):
+                    m = np.nan
+                    c = np.nan
+                else:
+                    missing = np.isnan(obs[:, j, k])
+                    y = np.nanmean(forec[:, :, j, k], axis=1)
+                    A = np.vstack([y[~missing], np.ones(y[~missing].shape[0])])
+                    m, c = np.linalg.lstsq(A.T, obs[~missing, j, k])[0]
+                    #for_cr = m * forec[i, l, j, k] + c
                 return m, c
             res = p.map(ens_reg, j.tolist(), k.tolist())
             res = np.stack(res, axis=1)
@@ -225,6 +236,7 @@ class Model(object):
 
     def pdf_eval(self, forecast, eps, observation):
         """obtains pdf intensity at observation point"""
+        print("PDF intensity at observation value")
         [ntimes, nmembers, nlat, nlon] = forecast.shape
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlat * nlon)
         l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlat * nlon), ntimes)
@@ -235,16 +247,21 @@ class Model(object):
 
         def evaluo_pdf_normal(i, l, j, k, obs=observation, media=forecast,
                               sigma=eps):
-            with warnings.catch_warnings():
-                warnings.filterwarnings('error')
-                try:
-                    pdf_intensity = norm.pdf(obs[i, j, k], loc=media[i, l, j, k],
-                                             scale=np.sqrt(sigma[j, k]))
-                except RuntimeWarning:
-                    pdf_intensity = np.NaN
+            if np.logical_or(np.logical_or(np.isnan(obs[i, j, k]),
+                                           np.isnan(media[i, l, j, k])),
+                             np.isnan(sigma[j, k])):
+                pdf_intensity = np.NaN
+            else:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('error')
+                    try:
+                        pdf_intensity = norm.pdf(obs[i, j, k], loc=media[i, l, j, k],
+                                                 scale=np.sqrt(sigma[j, k]))
+                    except RuntimeWarning:
+                        pdf_intensity = np.NaN
 
             return pdf_intensity
-        res = p.map (evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
+        res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
         p.close()
         pdf_intensity = np.reshape(np.squeeze(np.stack(res)), [ntimes, nmembers, nlat, nlon])
         del(p, res, evaluo_pdf_normal)
@@ -253,6 +270,7 @@ class Model(object):
 
     def probabilidad_terciles(self, forecast, epsilon, tercil):
         """computes cumulative probability until tercile limites"""
+        print("CPDF for tercile limits")
         if forecast.ndim == 4:
             [ntimes, nmembers, nlats, nlons] = forecast.shape
             i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
@@ -262,8 +280,19 @@ class Model(object):
             p = Pool(CORES)
             p.clear()
             def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-                pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k], scale=np.sqrt(
-                    sigma[j, k]))
+                print(terc.shape)
+                if np.logical_or(np.logical_or(np.isnan(terc[:, i, j, k]).any(),
+                                 np.isnan(media[i, l, j, k])), np.isnan(sigma[j, k])):
+                    pdf_cdf = np.array([np.nan, np.nan])
+                else:
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings('error')
+                        try:
+                            pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k],
+                                               scale=np.sqrt(sigma[j, k]))
+                        except RuntimeWarning:
+                            pdf_cdf = np.nan
+
                 return pdf_cdf
             res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
             p.close()
@@ -278,18 +307,28 @@ class Model(object):
             p = Pool(CORES)
             p.clear()
             def evaluo_pdf_normal(l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-                pdf_cdf = norm.cdf(terc[:, j, k], loc=media[l, j, k], scale=np.sqrt(
-                    sigma[j, k]))
+                if np.logical_or(np.logical_or(np.isnan(terc[:, j, k]).any(),
+                                 np.isnan(media[l, j, k])), np.isnan(sigma[j, k])):
+                    pdf_cdf = np.array([np.nan, np.nan])
+                else:
+
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings('error')
+                        try:
+                            pdf_cdf = norm.cdf(terc[:, j, k], loc=media[l, j, k],
+                                               scale=np.sqrt(sigma[j, k]))
+                        except RuntimeWarning:
+                            pdf_cdf = np.nan
+
                 return pdf_cdf
             res = p.map(evaluo_pdf_normal, l.tolist(), j.tolist(), k.tolist())
             p.close()
             prob_terciles = np.rollaxis(np.reshape(np.squeeze(np.stack(res)),
                                                    [nmembers, nlats, nlons, 2]), 3, 0)
-
-
         return prob_terciles
 
     def computo_terciles(self, forecast, CV_opt):
+        print("Tercile limits")
         #calculo los limites de los terciles para el modelo
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         if CV_opt: #validacion cruzada ventana 1 anio
@@ -350,7 +389,7 @@ class Model(object):
         forecast = np.empty([self.rt_ensembles, int(np.abs(latn - lats)) + 1,
                              int(np.abs(lonw - lone)) + 1])
         for j in np.arange(1, self.ensembles + 1):
-            file = ruta + 'prec_Amon_' + self.institution + '-' + self.name + '_'\
+            file = ruta + self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
                     + str(init_year) + '{:02d}'.format(init_month) + '01_r' +\
                     str(j) + '_' + str(init_year) +\
                     '{:02d}'.format(init_month) + '-' + str(init_year +\

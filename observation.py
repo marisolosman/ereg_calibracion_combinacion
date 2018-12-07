@@ -8,6 +8,7 @@ como atributo con xarray
 Esto afecta a la funcion manipular_nc
 """
 import datetime
+import warnings
 import numpy as np
 import xarray as xr
 from pathos.multiprocessing import ProcessingPool as Pool
@@ -77,37 +78,55 @@ class Observ(object):
         k = np.tile(np.arange(nlons, dtype=int), ntimes * nlats)
         p = Pool(CORES)
         p.clear()
-
         if CV_opt: #validacion cruzada ventana 1 anio
             print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))
-
             def filtro_tendencia(i, j, k, anios=anios, CV_m=CV_matrix,
-                                 obs=observation): #forecast 4D
-                A = np.array([anios[CV_m[:, i]], np.ones((anios.shape[0]-1))])
-                d = np.linalg.lstsq(A.T, obs[CV_m[:, i], j, k])[0]
-                obs_dt = obs[i, j, k] - (d[0] * anios[i] + d[1])
+                                 obs=observation):
+                if np.logical_or(np.isnan(obs[:, j, k]).all(),
+                                 np.sum(np.isnan(obs[:,j,k]))/obs.shape[0] > 0.15):
+                    obs_dt = np.nan
+                else:
+                    with warnings.catch_warnings():
+                            warnings.filterwarnings('error')
+                            try:
+                                obs_new = obs[CV_m[:, i], j, k]
+                                missing = np.isnan(obs_new)
+                                anios_new = anios[CV_m[:,i]]
+                                A = np.array([anios_new[~missing],
+                                              np.ones(anios_new[~missing].shape[0])])
+                                d = np.linalg.lstsq(A.T, obs_new[~missing])[0]
+                                obs_dt = obs[i, j, k] - (d[0] * anios[i] + d[1])
+                            except RuntimeWarning:
+                                obs_dt = np.nan
                 return obs_dt
-
             res = p.map(filtro_tendencia, i.tolist(), j.tolist(), k.tolist())
             observation_dt = np.reshape(np.squeeze(np.stack(res)),
                                         [ntimes, nlats, nlons])
             del(filtro_tendencia, res)
             p.close()
-
         else:
-            def filtro_tendencia(i, j, k, anios=anios, obs=observation): #forecast 4D
-                A = np.array([anios, np.ones(anios.shape[0])])
-                d = np.linalg.lstsq(A.T, obs[:, j, k])[0]
-                obs_dt = obs[i, j, k] - (d[0] * anios[i] + d[1])
+            def filtro_tendencia(i, j, k, anios=anios, obs=observation):
+                if np.logical_or(np.isnan(obs[:, j, k]).all(),
+                                 np.sum(np.isnan(obs[:,j,k]))/obs.shape[0] > 0.15):
+                    obs_dt = np.nan
+                else:
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings('error')
+                        try:
+                            missing = np.isnan(obs[:, j, k])
+                            A = np.array([anios[~missing],
+                                          np.ones(anios[~missing].shape[0])])
+                            d = np.linalg.lstsq(A.T, obs[~missing, j, k])[0]
+                            obs_dt = obs[i, j, k] - (d[0] * anios[i] + d[1])
+                        except RuntimeWarning:
+                            obs_dt = np.nan
                 return obs_dt
-
             res = p.map(filtro_tendencia, i.tolist(), j.tolist(), k.tolist())
             observation_dt = np.reshape(np.squeeze(np.stack(res)),
                                         [ntimes, nlats, nlons])
             del(filtro_tendencia, res)
             p.close()
-
         return observation_dt
 
     def computo_terciles(self, observation, CV_opt):
@@ -121,11 +140,20 @@ class Observ(object):
             print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))
             def cal_terciles(i, CV_m=CV_matrix, obs=observation):
-                A = np.sort(np.rollaxis(obs[CV_m[:, i], :, :], 0, 3), axis=-1,
-                            kind='quicksort')
-                upper = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
-                lower = A[:, :, np.int(np.round((ntimes - 1) / 3 * 2) - 1)]
-                return upper, lower
+                aux = np.rollaxis(obs[CV_m[:, i], :, :], 0, 3)
+                mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux),
+                                                                axis=2),
+                                                         np.sum(np.isnan(aux),
+                                                                axis=2)
+                                                         / (ntimes-1) > 0.15),
+                                           (1, 1, ntimes-1)), 0, 3)
+                aux = np.ma.array(aux, mask=mask)
+                A = np.ma.sort(aux, axis=-1)
+                lower = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
+                upper = A[:, :, np.int(np.round((ntimes - 1) / 3 * 2) - 1)]
+                lower = lower.filled(np.nan)
+                upper = lower.filled(np.nan)
+                return lower, upper
 
             res = p.map(cal_terciles, i.tolist())
             terciles = np.stack(res, axis=1)
@@ -133,12 +161,20 @@ class Observ(object):
             p.close()
 
         else:
-            A = np.sort(np.rollaxis(observation, 0, 3), axis=-1,
-                        kind='quicksort')
-            upper = A[:, :, np.int(np.round((observation.shape[0]) / 3) - 1)]
-            lower = A[:, :, np.int(np.round((observation.shape[0]) / 3 * 2)
-                                   - 1)]
-            terciles = np.rollaxis(np.stack([upper, lower], axis=2), 2, 0)
+            aux = np.rollaxis(observation, 0, 3)
+            mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux),
+                                                            axis=2),
+                                                     np.sum(np.isnan(aux),
+                                                            axis=2)
+                                                     / (ntimes-1) > 0.15),
+                                       (ntimes, 1, 1)), 0, 3)
+            aux = np.ma.array(aux, mask=mask)
+            A = np.ma.sort(aux, axis=-1)
+            lower = A[:, :, np.int(np.round(ntimes / 3) - 1)]
+            lower = lower.filled(np.nan)
+            upper = A[:, :, np.int(np.round(ntimes / 3 * 2) - 1)]
+            upper = upper.filled(np.nan)
+            terciles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
         return terciles
 
     def computo_categoria(self, observation, tercil):

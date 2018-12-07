@@ -10,7 +10,10 @@ import xarray as xr
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import mpl_toolkits.basemap as bm
-
+from astropy.io import fits
+from astropy.utils.data import get_pkg_data_filename
+from astropy.convolution import Gaussian2DKernel
+from astropy.convolution import convolve
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
     dataset = xr.open_dataset(archivo, decode_times=False)
@@ -127,13 +130,21 @@ def main():
     wtech = ['pdf_int', 'mean_cor', 'same']
     ctech = ['wpdf', 'wsereg']
     #custom colorbar
-    colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141., 60.],
-                        [253., 190., 133.], [227., 227., 227.], [204., 204.,
-                                                                 204.],
-                        [150., 150., 150.], [82., 82., 82.], [186., 228.,
-                                                              179.],
-                        [116., 196., 118.], [49., 163., 84.], [0., 109.,
-                                                               44.]]) / 255
+    if args.variable[0] == 'prec':
+        colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141.,
+                                                                60.],
+                            [253., 190., 133.], [227., 227., 227.],
+                            [204., 204., 204.], [150., 150., 150.],
+                            [82., 82., 82.], [186., 228., 179.],
+                            [116., 196., 118.], [49., 163., 84.],
+                            [0., 109., 44.]]) / 255
+    else:
+        colores = np.array([[8., 81., 156.], [49., 130., 189.],
+                            [107., 174., 214.], [189., 215., 231.],
+                            [227., 227., 227.], [204., 204., 204.],
+                            [150., 150., 150.], [82., 82., 82.],
+                            [252., 174., 145.], [251., 106., 74.],
+                            [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
@@ -164,20 +175,30 @@ def main():
             output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
                     + INIM + '_' + str(iniy) + '_' + i + '_' + j + '.png'
             for_terciles = np.squeeze(data['prob_terc_comb'][:, :, :])
+            if args.variable[0] == 'tref':
+                for_terciles[np.isnan(for_terciles)] = 0
             #agrego el prono de la categoria above normal
-            below = ndimage.filters.gaussian_filter(for_terciles[0, :,
-                                                                 :], 1,
-                                                    order=0, output=None,
-                                                    mode='reflect')
-            near = ndimage.filters.gaussian_filter(for_terciles[1, :, :]\
-                                                         - for_terciles[0, :,\
-                                                                        :], 1,
-                                                   order=0, output=None,
-                                                   mode='reflect')
-            above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
+            if args.variable[0] == 'prec':
+                below = ndimage.filters.gaussian_filter(for_terciles[0, :,
                                                                      :], 1,
-                                                    order=0, output=None,
-                                                    mode='reflect')
+                                                        order=0, output=None,
+                                                        mode='constant')
+                near = ndimage.filters.gaussian_filter(for_terciles[1, :, :]\
+                                                             - for_terciles[0, :,\
+                                                                            :], 1,
+                                                       order=0, output=None,
+                                                       mode='constant')
+                above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
+                                                                         :], 1,
+                                                        order=0, output=None,
+                                                        mode='constant')
+            else:
+                kernel = Gaussian2DKernel(x_stddev=1)
+                below = convolve(for_terciles[0, :, :], kernel)
+                near = convolve(for_terciles[1, :, :] - for_terciles[0, :, :],
+                                  kernel)
+                above = convolve(1 - for_terciles[1, :, :], kernel)
+
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
@@ -185,8 +206,9 @@ def main():
             for_mask = np.ma.masked_array(for_mask,
                                           np.logical_not(land.astype(bool)))
             plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
-                             cmap, colores, SSS + ' Forecast IC ' + INIM +\
-                             '_' + str(iniy) + ' - ' + i + '-' + j, output)
+                             cmap, colores, SSS + ' ' + args.variable[0] +\
+                             ' Forecast IC ' + INIM + ' ' + str(iniy) +\
+                             ' - ' + i + '-' + j, output)
 
 #===================================================================================================
 start = time.time()
