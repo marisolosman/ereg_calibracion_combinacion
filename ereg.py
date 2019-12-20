@@ -1,9 +1,10 @@
 """functions to combine ensemble forecast using ereg"""
 import numpy as np
 from scipy.stats import norm
+import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 
-CORES = 9
+CORES = mp.cpu_count()
 
 def ensemble_regression(forecast, observation, CV_opt):
     """Calibrates forecast using ensemble regression"""
@@ -61,7 +62,6 @@ def ensemble_regression(forecast, observation, CV_opt):
     Rbest = Rm * np.sqrt(1 + (nmembers / (nmembers - 1) * noise) / signal)
     #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
     epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-    print(np.sum(np.sum(np.sum(epsbn<0))))
 
     #ahora calculo la regresion
     i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)

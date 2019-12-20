@@ -80,7 +80,7 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print(SSS, args.ctech, args.wtech[0])
+    print(calendar.month_abbr[args.IC[0]], SSS, args.ctech, args.wtech[0])
     i = 0
     for it in modelos:
         #abro archivo modelo

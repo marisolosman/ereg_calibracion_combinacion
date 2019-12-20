@@ -9,7 +9,6 @@ import glob
 from pathlib import Path
 import calendar
 import numpy as np
-
 import model
 import ereg #apply ensemble regression to multi-model ensemble
 
@@ -81,7 +80,8 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print(SSS, args.ctech, args.wtech[0])
+    print('IC:' + calendar.month_abbr[inim], 'Target season:' + SSS,
+          args.ctech, args.wtech[0])
     #obtengo datos observados
     archivo = Path('/datos/osman/nmme_output/obs_' + args.variable[0]+'_'+\
                    str(year_verif) + '_' + SSS + '_parameters.npz')

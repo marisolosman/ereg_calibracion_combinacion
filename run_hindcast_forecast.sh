@@ -15,15 +15,14 @@ for j in "${variables[@]}" ; do #loop sobre las variables a calibrar, por ahora 
 			for l in "${ctech[@]}" ; do #loop sobre manera de combinarr modelos
 				if [ "${l}" = "count" ] ; then
 					python combination.py ${j} ${n} ${k} ${l}
-					#python verification.py ${j} ${n} ${k} ${l}
 				else
 					for m in "${wtech[@]}" ; do 
 						if [ "${l}" = "wsereg" ] ; then 
 							python combination.py ${j} ${n} ${k}  ${l} --weight_tech ${m}
-							#python verification.py ${j} ${n} ${k} 1 ${l} 1 --weight_tech ${m} 
+
 						else 
 							python combination.py ${j} ${n} ${k} ${l} --weight_tech ${m}
-							#python verification.py ${j} ${n} ${k} 1 ${l} --weight_tech ${m} 
+
 						fi
 					done
 				fi

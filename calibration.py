@@ -6,7 +6,6 @@ import glob #listar archivos
 import calendar #manejar meses del calendario
 from pathlib import Path #manejar path
 import numpy as np
-
 import model #objeto y metodos asociados a los modelos
 import observation # idem observaciones
 
@@ -123,7 +122,7 @@ def main():
                                  it['latn'], it['lonn'], it['miembros'], \
                                  it['plazos'], it['fechai'], it['fechaf'],\
                                  it['ext'], it['rt_miembros'])
-            print(modelo, args.IC[0], SSS)
+            print(modelo, calendar.month_abbr[args.IC[0]], SSS)
             [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                         args.leadtime[0], \
                                                         coords['lat_s'], \
@@ -155,7 +154,7 @@ def main():
                                  it['latn'], it['lonn'], it['miembros'], \
                                  it['plazos'], it['fechai'], it['fechaf'],\
                                  it['ext'], it['rt_miembros'])
-                print(modelo, args.IC[0], SSS)
+                print(modelo, calendar.month_abbr[args.IC[0]], SSS)
                 [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                             args.leadtime[0], \
                                                             coords['lat_s'], \
