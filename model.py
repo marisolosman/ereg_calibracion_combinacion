@@ -3,9 +3,10 @@ import warnings
 import numpy as np
 import xarray as xr
 from scipy.stats import norm
+import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 
-CORES = 9
+CORES = mp.cpu_count()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -57,7 +58,7 @@ class Model(object):
             for j in np.arange(1, self.ensembles + 1):
                 file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
                         self.name + '_' + str(i)\
-                        + '{:02d}'.format(init_cond) + '01_r' + str(j) + '_' + str(i) +\
+                        + '{:02d}'.format(init_cond) + '_r' + str(j) + '_' + str(i) +\
                         '{:02d}'.format(init_cond) + '-' + str(i + flag_end) + '{:02d}'.format(
                             final_month) + '.' + self.ext
 
@@ -97,7 +98,7 @@ class Model(object):
             def filtro_tendencia(i, l, j, k, anios=anios, CV_m=CV_matrix, forec=forecast):
                 y = np.nanmean(forec[:, :, j, k], axis=1) #media del ensamble
                 A = np.vstack([anios[CV_m[:, i]], np.ones((anios.shape[0] - 1))])
-                m, c = np.linalg.lstsq(A.T,y[CV_m[:, i]])[0]
+                m, c = np.linalg.lstsq(A.T,y[CV_m[:, i]], rcond=-1)[0]
                 for_dt = forec[i, l, j, k] - (m * anios[i] + c)
                 return for_dt
             res = p.map(filtro_tendencia, i.tolist(), l.tolist(), j.tolist(), k.tolist())
@@ -111,7 +112,7 @@ class Model(object):
             def filtro_tendencia(i, l, j, k, anios=anios, forec=forecast): #forecast 4D
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 A = np.vstack([anios, np.ones(anios.shape[0])])
-                m, c = np.linalg.lstsq(A.T, y)[0]
+                m, c = np.linalg.lstsq(A.T, y, rcond=-1)[0]
                 for_dt = forec[i, l, j, k] - (m * anios[i] + c)
                 return for_dt, m, c
 
@@ -204,7 +205,7 @@ class Model(object):
                     y = np.nanmean(forec[:, :, j, k], axis=1)
                     y_new = y[np.logical_and(~missing,CV_m[:, i])]
                     A = np.vstack([y_new, np.ones(y_new.shape[0])])
-                    m, c = np.linalg.lstsq(A.T, obs_new)[0]
+                    m, c = np.linalg.lstsq(A.T, obs_new, rcond=-1)[0]
                     for_cr = m * forec[i, l, j, k] + c
                 return for_cr
 
@@ -225,7 +226,7 @@ class Model(object):
                     missing = np.isnan(obs[:, j, k])
                     y = np.nanmean(forec[:, :, j, k], axis=1)
                     A = np.vstack([y[~missing], np.ones(y[~missing].shape[0])])
-                    m, c = np.linalg.lstsq(A.T, obs[~missing, j, k])[0]
+                    m, c = np.linalg.lstsq(A.T, obs[~missing, j, k], rcond=-1)[0]
                     #for_cr = m * forec[i, l, j, k] + c
                 return m, c
             res = p.map(ens_reg, j.tolist(), k.tolist())
@@ -280,7 +281,6 @@ class Model(object):
             p = Pool(CORES)
             p.clear()
             def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-                print(terc.shape)
                 if np.logical_or(np.logical_or(np.isnan(terc[:, i, j, k]).any(),
                                  np.isnan(media[i, l, j, k])), np.isnan(sigma[j, k])):
                     pdf_cdf = np.array([np.nan, np.nan])
@@ -390,7 +390,7 @@ class Model(object):
                              int(np.abs(lonw - lone)) + 1])
         for j in np.arange(1, self.ensembles + 1):
             file = ruta + self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
-                    + str(init_year) + '{:02d}'.format(init_month) + '01_r' +\
+                    + str(init_year) + '{:02d}'.format(init_month) + '_r' +\
                     str(j) + '_' + str(init_year) +\
                     '{:02d}'.format(init_month) + '-' + str(init_year +\
                                                             flag_end) +\

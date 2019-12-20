@@ -80,11 +80,11 @@ def ensemble_regression(forecast, observation, CV_opt):
                 for_cr = np.nan
             else:
                 missing = np.isnan(obs[:, j, k])
-                obs_new = obs[np.logical_and(~missing, CV_m[:, i], j, k)]
+                obs_new = obs[np.logical_and(~missing, CV_m[:, i]), j, k]
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 y_new = y[np.logical_and(~missing, CV_m[:, i])]
-                A = np.vstack([y_new, np.ones(y_new,shape[0] - 1)])
-                m, c = np.linalg.lstsq(A.T, obs_new)[0]
+                A = np.vstack([y_new, np.ones(y_new.shape[0])])
+                m, c = np.linalg.lstsq(A.T, obs_new, rcond=-1)[0]
                 for_cr = m * forec[i, l, j, k] + c
             return for_cr
 
@@ -105,7 +105,7 @@ def ensemble_regression(forecast, observation, CV_opt):
                 missing = np.isnan(obs[:, j, k])
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 A = np.vstack([y[~missing], np.ones(y[~missing].shape[0])])
-                m, c = np.linalg.lstsq(A.T, obs[~missing, j, k])[0]
+                m, c = np.linalg.lstsq(A.T, obs[~missing, j, k], rcond=-1)[0]
             return m, c
         res = p.map(ens_reg, j.tolist(), k.tolist())
         res = np.stack(res, axis=1)

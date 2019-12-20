@@ -11,9 +11,10 @@ import datetime
 import warnings
 import numpy as np
 import xarray as xr
+import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
-CORES = 9
+CORES = mp.cpu_count()
 ruta = '/datos/osman/nmme/monthly/'
 hind_length = 28
 
@@ -32,7 +33,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro
-    var_out = ds[variable].resample('Q-' + last_month, dim='time', how='mean')
+    var_out = ds[variable].resample(time='Q-' + last_month).mean(dim='time')
     #selecciono trimestre de interes
     mes = datetime.datetime.strptime(last_month, '%b').month
     var_out = var_out.sel(time=np.logical_and(var_out['time.month'] == mes,
@@ -95,7 +96,7 @@ class Observ(object):
                                 anios_new = anios[CV_m[:,i]]
                                 A = np.array([anios_new[~missing],
                                               np.ones(anios_new[~missing].shape[0])])
-                                d = np.linalg.lstsq(A.T, obs_new[~missing])[0]
+                                d = np.linalg.lstsq(A.T, obs_new[~missing], rcond=-1)[0]
                                 obs_dt = obs[i, j, k] - (d[0] * anios[i] + d[1])
                             except RuntimeWarning:
                                 obs_dt = np.nan
@@ -117,7 +118,7 @@ class Observ(object):
                             missing = np.isnan(obs[:, j, k])
                             A = np.array([anios[~missing],
                                           np.ones(anios[~missing].shape[0])])
-                            d = np.linalg.lstsq(A.T, obs[~missing, j, k])[0]
+                            d = np.linalg.lstsq(A.T, obs[~missing, j, k], rcond=-1)[0]
                             obs_dt = obs[i, j, k] - (d[0] * anios[i] + d[1])
                         except RuntimeWarning:
                             obs_dt = np.nan
@@ -152,7 +153,7 @@ class Observ(object):
                 lower = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
                 upper = A[:, :, np.int(np.round((ntimes - 1) / 3 * 2) - 1)]
                 lower = lower.filled(np.nan)
-                upper = lower.filled(np.nan)
+                upper = upper.filled(np.nan)
                 return lower, upper
 
             res = p.map(cal_terciles, i.tolist())
