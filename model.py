@@ -139,7 +139,7 @@ class Model(object):
             def compute_clim(i, CV_m=CV_matrix, obs=observation, forec=forecast):
                 #computes climatologies under CV
                 obs_c = np.nanmean(obs[CV_m[:, i], :, :], axis=0)
-                em_c = np.nanmean(np.mean(forec[CV_m[:, i], :, :, :], axis=1),
+                em_c = np.nanmean(np.nanmean(forec[CV_m[:, i], :, :, :], axis=1),
                                axis=0)
                 return obs_c, em_c
             res = p.map(compute_clim, i.tolist())
@@ -148,7 +148,7 @@ class Model(object):
             em_c = res[1, :, :, :]
         else:
             obs_c = np.nanmean(observation, axis=0)
-            em_c = np.nanmean(np.mean(forecast, axis=1), axis=0)
+            em_c = np.nanmean(np.nanmean(forecast, axis=1), axis=0)
 
         em = np.nanmean(forecast, axis=1)
         obs_var = np.nanmean(np.power(observation - obs_c, 2), axis=0)
