@@ -66,26 +66,26 @@ class Observ(object):
         #converts obs pp unit to (mm/day) in 30-day month type
         variable = np.array(variable)
         if self.var_name == 'prec':
-            variable = variable / 30
+            variable /= 30
         return latitudes, longitudes, variable
 
     def remove_trend(self, observation, CV_opt):
         """removes trend"""
         print("Removing trend")
-        [ntimes,nlats,nlons] = observation.shape
+        [ntimes, nlats, nlons] = observation.shape
         anios = np.arange(ntimes) #en anios es un quilombo y para el caso es lo mismo
-        i = np.repeat(np.arange(ntimes ,dtype=int), nlats * nlons)
+        i = np.repeat(np.arange(ntimes, dtype=int), nlats * nlons)
         j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes)
         k = np.tile(np.arange(nlons, dtype=int), ntimes * nlats)
         p = Pool(CORES)
         p.clear()
         if CV_opt: #validacion cruzada ventana 1 anio
-            print("Validacion cruzada")
+            print("Cross-validation")
             CV_matrix = np.logical_not(np.identity(ntimes))
             def filtro_tendencia(i, j, k, anios=anios, CV_m=CV_matrix,
                                  obs=observation):
                 if np.logical_or(np.isnan(obs[:, j, k]).all(),
-                                 np.sum(np.isnan(obs[:,j,k]))/obs.shape[0] > 0.15):
+                                 np.sum(np.isnan(obs[:, j, k])) / obs.shape[0] > 0.15):
                     obs_dt = np.nan
                 else:
                     with warnings.catch_warnings():

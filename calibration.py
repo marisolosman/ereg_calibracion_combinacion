@@ -28,7 +28,7 @@ def main():
     if args.no_model is not None:
         lista = [i for i in lista if [line.rstrip('\n')
                                       for line in open(i)][0] not in args.no_model]
-
+    #debería traer los modelos viejos y meterlos en la lista para usar el argumento no-model
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
             'fechai', 'fechaf', 'ext', 'rt_miembros']
     modelos = []
@@ -38,10 +38,9 @@ def main():
                                        int(lines[4]), int(lines[5]), \
                                        int(lines[6]), int(lines[7]), \
                                        lines[8], int(lines[9])])))
-    """ref dataset (otro momento delirante): depende de CI del prono y plazo.
+    """ref dataset: depende de CI del prono y plazo.
     Ej: si IC prono es Jan y plazo 1 entonces FMA en primer tiempo 1982. Si IC
-    prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983. Deberia
-    charla con Wlad y Alfredo como resolver esto mas eficientemente"""
+    prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983."""
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983

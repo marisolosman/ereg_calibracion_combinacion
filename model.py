@@ -98,7 +98,7 @@ class Model(object):
             def filtro_tendencia(i, l, j, k, anios=anios, CV_m=CV_matrix, forec=forecast):
                 y = np.nanmean(forec[:, :, j, k], axis=1) #media del ensamble
                 A = np.vstack([anios[CV_m[:, i]], np.ones((anios.shape[0] - 1))])
-                m, c = np.linalg.lstsq(A.T,y[CV_m[:, i]], rcond=-1)[0]
+                m, c = np.linalg.lstsq(A.T, y[CV_m[:, i]], rcond=-1)[0]
                 for_dt = forec[i, l, j, k] - (m * anios[i] + c)
                 return for_dt
             res = p.map(filtro_tendencia, i.tolist(), l.tolist(), j.tolist(), k.tolist())
@@ -203,7 +203,7 @@ class Model(object):
                     missing = np.isnan(obs[:, j, k])
                     obs_new = obs[np.logical_and(~missing, CV_m[:,i]), j, k]
                     y = np.nanmean(forec[:, :, j, k], axis=1)
-                    y_new = y[np.logical_and(~missing,CV_m[:, i])]
+                    y_new = y[np.logical_and(~missing, CV_m[:, i])]
                     A = np.vstack([y_new, np.ones(y_new.shape[0])])
                     m, c = np.linalg.lstsq(A.T, obs_new, rcond=-1)[0]
                     for_cr = m * forec[i, l, j, k] + c

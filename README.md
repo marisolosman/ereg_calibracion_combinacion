@@ -50,9 +50,10 @@ Ensemble regression is a technique used to calibrate climate models. Developed b
 * Plot forecast (36sec each)
 
 ## Way forward ##
-* clean codes: Remove prints and improve dealing with nans
-* Deal with different ensemble members between IC and between hindcast phase and operational phase
+* clean codes: Improve dealing with nans
+* Real time forecast in agreement with CPC. Improve real time combination discarding models no longer operative
+* Plot forecast: switch from Basemap to cartopy
+* Deal with different ensemble members between IC and between hindcast phase and operational phase (not recommended to preserve performance between hindcast and real-time)
 * Improve parser
-* Include changes in model spread
 * Parallelize verification and plotting
-* Automatization
+* Automatization (check code in Fiona)
