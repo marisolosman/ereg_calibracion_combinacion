@@ -147,14 +147,18 @@ class Model(object):
             obs_c = res[0, :, :, :]
             em_c = res[1, :, :, :]
         else:
-            obs_c = np.nanmean(observation, axis=0)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                obs_c = np.nanmean(observation, axis=0)
             em_c = np.nanmean(np.nanmean(forecast, axis=1), axis=0)
 
         em = np.nanmean(forecast, axis=1)
-        obs_var = np.nanmean(np.power(observation - obs_c, 2), axis=0)
         signal = np.nanmean(np.power(em - em_c, 2), axis=0)
-        Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
-            obs_var * signal)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            obs_var = np.nanmean(np.power(observation - obs_c, 2), axis=0)
+            Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
+                obs_var * signal)
         noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
         #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
         Rbest = Rm * np.sqrt(1 + (self.ensembles / (self.ensembles - 1) * noise) / signal)
@@ -164,13 +168,14 @@ class Model(object):
         kmax = signal / noise * (((self.ensembles - 1)/self.ensembles) *
                                  (1 / np.power(Rm, 2) - 1))
         # si kmax es amayor a 1 lo fuerzo a que sea 1
-        kmax[kmax > 1] = 1
+        kmax[np.greater(kmax, 1, where=~np.isnan(kmax))] = 1
         #testeo
         K = np.zeros_like(epsbn)
         #if epsbn is positive spread remains the same
-        K[epsbn >= 0] = 1
+        K[np.greater_equal(epsbn, 0, where=~np.isnan(epsbn))] = 1
         #if epsbn is negative spread changes
-        K[epsbn < 0] = kmax[epsbn < 0]
+        K[np.less(epsbn, 0, where=~np.isnan(epsbn))] = kmax[np.less(epsbn, 0,
+                                                                    where=~np.isnan(epsbn))]
         K = np.repeat(np.repeat(K[np.newaxis, :, :], self.ensembles,
                                 axis=0)[np.newaxis, :, :, :], ntimes,
                       axis=0)

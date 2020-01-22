@@ -142,12 +142,10 @@ class Observ(object):
             CV_matrix = np.logical_not(np.identity(ntimes))
             def cal_terciles(i, CV_m=CV_matrix, obs=observation):
                 aux = np.rollaxis(obs[CV_m[:, i], :, :], 0, 3)
-                mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux),
-                                                                axis=2),
-                                                         np.sum(np.isnan(aux),
-                                                                axis=2)
+                mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux), axis=2),
+                                                         np.sum(np.isnan(aux), axis=2)
                                                          / (ntimes-1) > 0.15),
-                                           (1, 1, ntimes-1)), 0, 3)
+                                           (ntimes-1, 1, 1)), 0, 3)
                 aux = np.ma.array(aux, mask=mask)
                 A = np.ma.sort(aux, axis=-1)
                 lower = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
