@@ -1,4 +1,5 @@
 """functions to combine ensemble forecast using ereg"""
+import warnings
 import numpy as np
 from scipy.stats import norm
 import multiprocessing as mp
@@ -17,7 +18,9 @@ def ensemble_regression(forecast, observation, CV_opt):
         CV_matrix = np.logical_not(np.identity(ntimes))
         def compute_clim(i, CV_m=CV_matrix, obs=observation, forec=forecast):
             #computes climatologies under CV
-            obs_c = np.nanmean(obs[CV_m[:, i], :, :], axis=0)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=RuntimeWarning)
+                obs_c = np.nanmean(obs[CV_m[:, i], :, :], axis=0)
             em_c = np.nanmean(np.nanmean(forec[CV_m[:, i], :, :, :], axis=1),
                            axis=0)
             return obs_c, em_c
@@ -26,15 +29,18 @@ def ensemble_regression(forecast, observation, CV_opt):
         obs_c = res[0, :, :, :]
         em_c = res[1, :, :, :]
     else:
-        obs_c = np.nanmean(observation, axis=0)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            obs_c = np.nanmean(observation, axis=0)
         em_c = np.nanmean(np.mean(forecast, axis=1), axis=0)
 
     em = np.nanmean(forecast, axis=1)
-    obs_var = np.nansum(np.power(observation - obs_c, 2), axis=0) / ntimes
     signal = np.nansum(np.power(em - em_c, 2), axis=0) / ntimes
-    Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(
-        obs_var * signal)
     noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        obs_var = np.nansum(np.power(observation - obs_c, 2), axis=0) / ntimes
+        Rm = np.nanmean((observation - obs_c) * (em - em_c), axis=0) / np.sqrt(obs_var * signal)
     #Rbest = Rm sqrt( 1 + (m/(m - 1) * N) /S )
     Rbest = Rm * np.sqrt(1 + (nmembers / (nmembers - 1) * noise) / signal)
     #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
@@ -43,13 +49,14 @@ def ensemble_regression(forecast, observation, CV_opt):
     kmax = signal / noise * (((nmembers - 1)/nmembers) *
                              (1 / np.power(Rm, 2) - 1))
     # si kmax es amayor a 1 lo fuerzo a que sea 1
-    kmax[kmax > 1] = 1
+    kmax[np.greater(kmax, 1, where=~np.isnan(kmax))] = 1
     #testeo
     K = np.zeros_like(epsbn)
     #if epsbn is positive spread remains the same
-    K[epsbn >= 0] = 1
+    K[np.greater(epsbn, 0, where=~np.isnan(epsbn))] = 1
     #if epsbn is negative spread changes
-    K[epsbn < 0] = kmax[epsbn < 0]
+    K[np.less(epsbn, 0, where=~np.isnan(epsbn))] = kmax[np.less(epsbn, 0,
+                                                                where=~np.isnan(epsbn))]
     K = np.repeat(np.repeat(K[np.newaxis, :, :], nmembers,
                             axis=0)[np.newaxis, :, :, :], ntimes,
                   axis=0)
@@ -64,15 +71,15 @@ def ensemble_regression(forecast, observation, CV_opt):
     epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
 
     #ahora calculo la regresion
-    i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
-    l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats* nlons), ntimes)
-    j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
-    k = np.tile(np.arange(nlons, dtype=int), ntimes * nmembers * nlats)
     p = Pool(CORES)
     p.clear()
 
     if CV_opt: #validacion cruzada ventana 1 anio
         print("Validacion cruzada")
+        i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
+        l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats* nlons), ntimes)
+        j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
+        k = np.tile(np.arange(nlons, dtype=int), ntimes * nmembers * nlats)
         CV_matrix = np.logical_not(np.identity(ntimes))
         def ens_reg(i, l, j, k, CV_m=CV_matrix, obs=observation, forec=forecast_inf):
             if np.logical_or(np.isnan(obs[:, j, k]).all(),

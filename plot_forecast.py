@@ -3,11 +3,16 @@ import argparse #parse command line options
 import time #test time consummed
 import calendar
 import numpy as np
-import scipy.ndimage as ndimage
 import xarray as xr
+import scipy.ndimage as ndimage
+from astropy.io import fits
+from astropy.utils.data import get_pkg_data_filename
+from astropy.convolution import Gaussian2DKernel
+from astropy.convolution import convolve
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-import mpl_toolkits.basemap as bm
+import cartopy.crs as ccrs
+import cartopy.feature
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -59,14 +64,15 @@ def asignar_categoria(for_terciles):
 def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
                      titulo, salida):
     """Plot probabilistic forecast"""
+    limits = [lonw, lone, lats, latn]
     fig = plt.figure()
-    mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
-                         llcrnrlon=lonw, urcrnrlat=latn, urcrnrlon=lone)
-    #projection and map limits
-    mapproj.drawcoastlines()          # coast
-    mapproj.drawcountries()         #countries
-    lonproj, latproj = mapproj(dx, dy)      #poject grid
-    CS1 = mapproj.pcolor(lonproj, latproj, pronos, cmap=cmap, vmin=0.5, vmax=12.5)
+    mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) / 2)
+    ax = plt.axes(projection=mapproj)
+    ax.set_extent(limits, crs=ccrs.PlateCarree())
+    ax.coastlines(alpha=0.5, resolution='50m')
+    ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
+    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=0.5, vmax=12.5,
+                    transform=ccrs.PlateCarree())
     #genero colorbar para pronos
     plt.title(titulo)
     ax1 = fig.add_axes([0.2, 0.05, 0.2, 0.03])
@@ -111,24 +117,31 @@ def main():
             help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1,\
             help='Forecast leatime (in months, from 1 to 7)')
-
     args=parser.parse_args()
     #defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-
+    month= calendar.month_abbr[args.IC[0]]
     wtech = ['pdf_int', 'mean_cor', 'same']
     ctech = ['wpdf', 'wsereg']
     #custom colorbar
-    colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141., 60.],
-                        [253., 190., 133.], [227., 227., 227.], [204., 204.,
-                                                                 204.],
-                        [150., 150., 150.], [82., 82., 82.], [186., 228.,
-                                                              179.],
-                        [116., 196., 118.], [49., 163., 84.], [0., 109.,
-                                                               44.]]) / 255
+    if args.variable[0] == 'prec':
+        colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141., 60.],
+                            [253., 190., 133.], [227., 227., 227.], [204., 204.,
+                                                                     204.],
+                            [150., 150., 150.], [82., 82., 82.], [186., 228.,
+                                                                  179.],
+                            [116., 196., 118.], [49., 163., 84.], [0., 109.,
+                                                                   44.]]) / 255
+    else:
+        colores = np.array([[8., 81., 156.], [49., 130., 189.],
+                            [107., 174., 214.], [189., 215., 231.],
+                            [227., 227., 227.], [204., 204., 204.],
+                            [150., 150., 150.], [82., 82., 82.],
+                            [252., 174., 145.], [251., 106., 74.],
+                            [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
@@ -143,11 +156,11 @@ def main():
                                 coords['lon_e'])
     land = np.flipud(land)
     RUTA = '/datos/osman/nmme_output/comb_forecast/'
-    RUTA_IM = '/datos/osman/nmme_figuras/forecast/'
+    RUTA_IM = '/datos/osman/nmme_test/forecast/'
     for i in ctech:
         for j in wtech:
-            archivo = args.variable[0] + '_mme_' + calendar.month_abbr[
-                args.IC[0]] +'_' + SSS + '_gp_01_' + j + '_' + i + '_hind.npz'
+            archivo = args.variable[0] + '_mme_' + month +'_' + \
+                    SSS + '_gp_01_' + j + '_' + i + '_hind.npz'
             data = np.load(RUTA + archivo)
             lat = data['lat']
             lon = data['lon']
@@ -158,23 +171,24 @@ def main():
             [dx, dy] = np.meshgrid(lon, lat)
             for k in np.arange(year_verif, 2011, 1):
                 output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
-                        + calendar.month_abbr[args.IC[0]] + '_' + str(k) +\
-                        '_' + i + '_' + j + '.png'
+                        + month + '_' + str(k) + '_' + i + '_' + j + '.png'
                 for_terciles = np.squeeze(data['prob_terc_comb'][:, k - 1982, :, :])
-                #agrego el prono de la categoria above normal
-                below = ndimage.filters.gaussian_filter(for_terciles[0, :,
-                                                                     :], 1,
-                                                        order=0, output=None,
-                                                        mode='reflect')
-                near = ndimage.filters.gaussian_filter(for_terciles[1, :, :]\
-                                                             - for_terciles[0, :,\
-                                                                            :], 1,
-                                                       order=0, output=None,
-                                                       mode='reflect')
-                above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
+                if args.variable[0] == 'prec':
+                    #agrego el prono de la categoria above normal
+                    below = ndimage.filters.gaussian_filter(for_terciles[0, :,
                                                                          :], 1,
-                                                        order=0, output=None,
-                                                        mode='reflect')
+                                                            order=0, output=None,
+                                                            mode='reflect')
+
+                    above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
+                                                                             :], 1,
+                                                            order=0, output=None,
+                                                            mode='reflect')
+                else:
+                    kernel = Gaussian2DKernel(x_stddev=1)
+                    below = convolve(for_terciles[0, :, :], kernel)
+                    above = convolve(1 - for_terciles[1, :, :], kernel)
+                near = 1 - below - above
                 for_terciles = np.concatenate([below[:, :, np.newaxis],
                                                near[:, :, np.newaxis],
                                                above[:, :, np.newaxis]], axis=2)
@@ -183,11 +197,10 @@ def main():
                                               np.logical_not(land.astype(bool)))
                 plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
                                  cmap, colores, SSS + ' Forecast IC ' +\
-                                 calendar.month_abbr[args.IC[0]] + '_' +\
-                                 str(k) + ' - ' + i + '-' + j, output)
+                                 month + '-' + str(k) + ' - ' + i + '-' + j, output)
 
-    archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]] +\
-            '_' + SSS + '_gp_01_same_count_hind.npz'
+    archivo = args.variable[0] + '_mme_' + month + '_' + SSS + \
+            '_gp_01_same_count_hind.npz'
     data = np.load(RUTA + archivo)
     lat = data['lat']
     lon = data['lon']
@@ -197,9 +210,8 @@ def main():
     lone = np.max(lon)
     [dx, dy] = np.meshgrid (lon, lat)
     for k in np.arange(1982, 2010, 1):
-
         output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_' + \
-                calendar.month_abbr[args.IC[0]] + '_' + str(k) + '_count.png'
+                month + '_' + str(k) + '_count.png'
         for_terciles = np.squeeze(data['prob_terc_comb'][:, k-1982, :, :])
         #agrego el prono de la categoria above normal
         for_terciles = np.concatenate([for_terciles[0, :, :][:, :, np.newaxis],
@@ -214,7 +226,7 @@ def main():
                                       np.logical_not(land.astype(bool)))
         plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
                                  cmap, colores, SSS + ' Forecast IC ' +\
-                         calendar.month_abbr[args.IC[0]] + '_' + str(k) +\
+                         month + '-' + str(k) +\
                          ' - Uncalibrated', output)
 #===================================================================================================
 start = time.time()

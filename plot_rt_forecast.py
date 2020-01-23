@@ -5,15 +5,16 @@ import calendar
 import datetime
 from pathlib import Path
 import numpy as np
-import scipy.ndimage as ndimage
 import xarray as xr
-import matplotlib as mpl
-from matplotlib import pyplot as plt
-import mpl_toolkits.basemap as bm
+import scipy.ndimage as ndimage
 from astropy.io import fits
 from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel
 from astropy.convolution import convolve
+import matplotlib as mpl
+from matplotlib import pyplot as plt
+import cartopy.crs as ccrs
+import cartopy.feature
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
     dataset = xr.open_dataset(archivo, decode_times=False)
@@ -64,14 +65,15 @@ def asignar_categoria(for_terciles):
 def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
                      titulo, salida):
     """Plot probabilistic forecast"""
+    limits = [lonw, lone, lats, latn]
     fig = plt.figure()
-    mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats,
-                         llcrnrlon=lonw, urcrnrlat=latn, urcrnrlon=lone)
-    #projection and map limits
-    mapproj.drawcoastlines()          # coast
-    mapproj.drawcountries()         #countries
-    lonproj, latproj = mapproj(dx, dy)      #poject grid
-    CS1 = mapproj.pcolor(lonproj, latproj, pronos, cmap=cmap, vmin=0.5, vmax=12.5)
+    mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) / 2)
+    ax = plt.axes(projection=mapproj)
+    ax.set_extent(limits, crs=ccrs.PlateCarree())
+    ax.coastlines(alpha=0.5, resolution='50m')
+    ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
+    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=0.5, vmax=12.5, 
+                   transform=ccrs.PlateCarree())
     #genero colorbar para pronos
     plt.title(titulo)
     ax1 = fig.add_axes([0.2, 0.05, 0.2, 0.03])
@@ -175,19 +177,12 @@ def main():
             output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
                     + INIM + '_' + str(iniy) + '_' + i + '_' + j + '.png'
             for_terciles = np.squeeze(data['prob_terc_comb'][:, :, :])
-            if args.variable[0] == 'tref':
-                for_terciles[np.isnan(for_terciles)] = 0
             #agrego el prono de la categoria above normal
             if args.variable[0] == 'prec':
                 below = ndimage.filters.gaussian_filter(for_terciles[0, :,
                                                                      :], 1,
                                                         order=0, output=None,
                                                         mode='constant')
-                near = ndimage.filters.gaussian_filter(for_terciles[1, :, :]\
-                                                             - for_terciles[0, :,\
-                                                                            :], 1,
-                                                       order=0, output=None,
-                                                       mode='constant')
                 above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
                                                                          :], 1,
                                                         order=0, output=None,
@@ -195,10 +190,8 @@ def main():
             else:
                 kernel = Gaussian2DKernel(x_stddev=1)
                 below = convolve(for_terciles[0, :, :], kernel)
-                near = convolve(for_terciles[1, :, :] - for_terciles[0, :, :],
-                                  kernel)
                 above = convolve(1 - for_terciles[1, :, :], kernel)
-
+            near = 1 - below - above
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
