@@ -5,12 +5,13 @@ forecasts using wpdf and wsereg techniques to calibrated models
 #!/usr/bin/env python
 import argparse #parse command line options
 import time #test time consummed
+import warnings
 import glob
 from pathlib import Path
 import calendar
 import numpy as np
 import ereg #apply ensemble regression to multi-model ensemble
-
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 def main():
     """Defines parser data"""
     parser = argparse.ArgumentParser(description='Combining models')
@@ -160,7 +161,7 @@ def main():
         weight = np.tile(peso, (2, 1, 1, 1, 1)) #2 ntimes nlat nlon nmodels
 
     elif args.wtech[0] == 'mean_cor':
-        rmean[np.where(rmean < 0)] = 0
+        rmean[np.where(np.logical_and(rmean < 0, ~np.isnan(rmean)))] = 0
         rmean[np.sum(rmean[:, :, :], axis=2) == 0, :] = 1
         peso = rmean / np.tile(np.sum(rmean, axis=2)[:, :, np.newaxis], [1, 1, nmodels])
         weight = np.tile(peso, (2, ntimes, 1, 1, 1))  #2 ntimes nlat nlon nmodels

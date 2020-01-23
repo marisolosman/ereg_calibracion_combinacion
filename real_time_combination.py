@@ -5,12 +5,14 @@ real time forecast using combination techniques developedin combination.py
 import argparse #parse command line options
 import time #test time consummed
 import datetime
+import warnings
 import glob
 from pathlib import Path
 import calendar
 import numpy as np
 import model
 import ereg #apply ensemble regression to multi-model ensemble
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def main():
     """Defines parser data"""
@@ -168,7 +170,7 @@ def main():
         weight = np.tile(peso, (2, 1, 1, 1)) #2 nlat nlon nmodels
 
     elif args.wtech[0] == 'mean_cor':
-        rmean[np.where(rmean < 0)] = 0
+        rmean[np.where(np.logical_and(rmean < 0, ~np.isnan(rmean)))] = 0
         rmean[np.nansum(rmean[:, :, :], axis=2) == 0, :] = 1
         peso = rmean / np.tile(np.nansum(rmean, axis=2)[:, :, np.newaxis], [1, 1, nmodels])
         weight = np.tile(peso, (2, 1, 1, 1))  #2 nlat nlon nmodels
