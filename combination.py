@@ -81,7 +81,8 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print(calendar.month_abbr[args.IC[0]], SSS, args.ctech, args.wtech[0])
+    print("Combining forecasts: ", SSS, args.variable[0], "Initializaed in ",
+          caledar.month_abbr[args.IC[0]], " using ", args.ctech, args.wtech[0])
     i = 0
     for it in modelos:
         #abro archivo modelo
@@ -130,7 +131,7 @@ def main():
             elif args.wtech[0] == 'mean_cor':
                 Rm = data['Rm']
                 rmean = np.concatenate((rmean, Rm[:, :, np.newaxis]), axis=2)
-            i = i + 1
+            i += 1
 
     lat = data['lats']
     lon = data['lons']

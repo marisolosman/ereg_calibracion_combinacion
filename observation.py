@@ -138,7 +138,6 @@ class Observ(object):
             i = np.arange(ntimes)
             p = Pool(CORES)
             p.clear()
-            print("Validacion cruzada")
             CV_matrix = np.logical_not(np.identity(ntimes))
             def cal_terciles(i, CV_m=CV_matrix, obs=observation):
                 aux = np.rollaxis(obs[CV_m[:, i], :, :], 0, 3)

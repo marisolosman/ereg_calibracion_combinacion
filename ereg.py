@@ -9,7 +9,7 @@ CORES = mp.cpu_count()
 
 def ensemble_regression(forecast, observation, CV_opt):
     """Calibrates forecast using ensemble regression"""
-    print("Calibrating ensemble members")
+    print("Applying Ensemble Regression")
     [ntimes, nmembers, nlats, nlons] = forecast.shape
     p = Pool(CORES)
     p.clear()
@@ -50,11 +50,16 @@ def ensemble_regression(forecast, observation, CV_opt):
                              (1 / np.power(Rm, 2) - 1))
     # si kmax es amayor a 1 lo fuerzo a que sea 1
     kmax[np.greater(kmax, 1, where=~np.isnan(kmax))] = 1
+    print("kmax", kmax.shape)
     #testeo
     K = np.zeros_like(epsbn)
+    print(K.shape, epsbn.shape)
     #if epsbn is positive spread remains the same
     K[np.greater(epsbn, 0, where=~np.isnan(epsbn))] = 1
+    print(np.greater(epsbn, 0, where=~np.isnan(epsbn)).shape)
     #if epsbn is negative spread changes
+    print(np.greater(epsbn, 0, where=~np.isnan(epsbn)).shape)
+
     K[np.less(epsbn, 0, where=~np.isnan(epsbn))] = kmax[np.less(epsbn, 0,
                                                                 where=~np.isnan(epsbn))]
     K = np.repeat(np.repeat(K[np.newaxis, :, :], nmembers,
@@ -75,7 +80,7 @@ def ensemble_regression(forecast, observation, CV_opt):
     p.clear()
 
     if CV_opt: #validacion cruzada ventana 1 anio
-        print("Validacion cruzada")
+        print("Getting cross-validated forecasts")
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
         l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats* nlons), ntimes)
         j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
@@ -101,6 +106,7 @@ def ensemble_regression(forecast, observation, CV_opt):
         p.close()
         return forecast_cr, Rm, Rbest, epsbn, kmax, K
     else:
+        print("Getting hindcast parameters")
         j = np.repeat(np.arange(nlats, dtype=int), nlons)
         k = np.tile(np.arange(nlons, dtype=int), nlats)
         def ens_reg(j, k, obs=observation, forec=forecast_inf): #forecast 4D
