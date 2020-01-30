@@ -45,23 +45,19 @@ def ensemble_regression(forecast, observation, CV_opt):
     Rbest = Rm * np.sqrt(1 + (nmembers / (nmembers - 1) * noise) / signal)
     #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
     epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
+    epsbn = np.ma.array(epsbn, mask=~np.isfinite(epsbn))
     #kmax**2 S/N * (m-1/m) * (1/R**2-1)
     kmax = signal / noise * (((nmembers - 1)/nmembers) *
                              (1 / np.power(Rm, 2) - 1))
-    # si kmax es amayor a 1 lo fuerzo a que sea 1
-    kmax[np.greater(kmax, 1, where=~np.isnan(kmax))] = 1
-    print("kmax", kmax.shape)
-    #testeo
-    K = np.zeros_like(epsbn)
-    print(K.shape, epsbn.shape)
-    #if epsbn is positive spread remains the same
-    K[np.greater(epsbn, 0, where=~np.isnan(epsbn))] = 1
-    print(np.greater(epsbn, 0, where=~np.isnan(epsbn)).shape)
-    #if epsbn is negative spread changes
-    print(np.greater(epsbn, 0, where=~np.isnan(epsbn)).shape)
+    kmax = np.ma.array(kmax, mask=~np.isfinite(kmax))
 
-    K[np.less(epsbn, 0, where=~np.isnan(epsbn))] = kmax[np.less(epsbn, 0,
-                                                                where=~np.isnan(epsbn))]
+    # si kmax es amayor a 1 lo fuerzo a que sea 1
+    kmax = np.ma.where(kmax <= 1, kmax, 1)
+    #testeo
+    K = np.ones_like(kmax)
+    K = np.ma.array(K, mask=~np.isfinite(epsbn))
+    #if epsbn is negative spread changes
+    K = np.ma.where(epsbn>=0, K, kmax)
     K = np.repeat(np.repeat(K[np.newaxis, :, :], nmembers,
                             axis=0)[np.newaxis, :, :, :], ntimes,
                   axis=0)

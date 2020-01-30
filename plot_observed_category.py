@@ -6,7 +6,8 @@ import numpy as np
 import xarray as xr
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-import mpl_toolkits.basemap as bm
+import cartopy.crs as ccrs
+import cartopy.feature
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -37,7 +38,6 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-
     #defino ref dataset y target season
     seas = range(args.IC[0], args.IC[0] + 3)
     sss = [i-12 if i>12 else i for i in seas]
@@ -54,14 +54,20 @@ def main():
     nlons = obs_terciles.shape[3]
     lat = data['lats_obs']
     lon = data['lons_obs']
-    lats = np.min(lat)
     obs = np.zeros([nlats, nlons])
+    lats = np.min(lat)
     latn = np.max(lat)
     lonw = np.min(lon)
     lone = np.max(lon)
+    limits = [lonw, lone, lats, latn]
     [dx,dy] = np.meshgrid(lon,lat)
-    cmap = mpl.colors.ListedColormap(np.array([[217, 95, 14], [189, 189, 189],
-                                               [44, 162, 95]]) / 256)
+    if args.variable[0] == 'prec':
+        cmap = mpl.colors.ListedColormap(np.array([[217, 95, 14], [189, 189, 189],
+                                                   [44, 162, 95]]) / 256)
+    else:
+        cmap = mpl.colors.ListedColormap(np.array([[8., 81., 156.], [189, 189, 189],
+                                                   [165., 15., 21.]]) / 256)
+
     for k in np.arange(year_verif, 2011):
         output = RUTA_FIG + 'obs_' + args.variable[0] + '_' + SSS + '_' + str(k)\
                 + '.png'
@@ -71,15 +77,14 @@ def main():
         obs[obs_cat[0, :, :] == 1] = 0
         obs = np.ma.masked_array(obs, np.logical_not(land.astype(bool)))
         fig = plt.figure()
-        mapproj = bm.Basemap(projection='cyl', llcrnrlat=lats, llcrnrlon=lonw,
-                             urcrnrlat=latn, urcrnrlon=lone)
-        #projection and map limits
-        mapproj.drawcoastlines()          # coast
-        mapproj.drawcountries()         #countries
-        lonproj, latproj = mapproj(dx, dy)      #poject grid
-        CS1 = mapproj.pcolor(lonproj, latproj, obs, cmap=cmap, alpha=0.6,
-                             vmin=-0.5, vmax=2.5)
-        plt.title(SSS + ' Observed Category - ' + str(k))
+        mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) /2)
+        ax = plt.axes(projection=mapproj)
+        ax.set_extent(limits, crs=ccrs.PlateCarree())
+        ax.coastlines(alpha=0.5, resolution='50m')
+        ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
+        CS1 = ax.pcolor(dx, dy, obs, cmap=cmap, alpha=0.6,
+                             vmin=-0.5, vmax=2.5, transform=ccrs.PlateCarree())
+        plt.title(SSS + " " + args.variable[0] + ' Observed Category - ' + str(k))
         ax = fig.add_axes([0.42, 0.05, 0.2, 0.03])
         bounds = [-0.5, 0.5, 1.5, 2.5]
         norm = mpl.colors.BoundaryNorm(bounds, cmap.N)

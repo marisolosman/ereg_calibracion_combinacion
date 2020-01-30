@@ -10,6 +10,7 @@ from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel
 from astropy.convolution import convolve
 import matplotlib as mpl
+mpl.use('agg')
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
@@ -185,9 +186,12 @@ def main():
                                                             order=0, output=None,
                                                             mode='reflect')
                 else:
+                    for_terciles[0, np.logical_not(land.astype(bool))] = np.nan
+                    above = 1 - for_terciles[1, :, :]
+                    above[np.logical_not(land.astype(bool))] = np.nan
                     kernel = Gaussian2DKernel(x_stddev=1)
                     below = convolve(for_terciles[0, :, :], kernel)
-                    above = convolve(1 - for_terciles[1, :, :], kernel)
+                    above = convolve(above, kernel)
                 near = 1 - below - above
                 for_terciles = np.concatenate([below[:, :, np.newaxis],
                                                near[:, :, np.newaxis],
@@ -209,7 +213,7 @@ def main():
     lonw = np.min(lon)
     lone = np.max(lon)
     [dx, dy] = np.meshgrid (lon, lat)
-    for k in np.arange(1982, 2010, 1):
+    for k in np.arange(1982, 2011, 1):
         output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_' + \
                 month + '_' + str(k) + '_count.png'
         for_terciles = np.squeeze(data['prob_terc_comb'][:, k-1982, :, :])
