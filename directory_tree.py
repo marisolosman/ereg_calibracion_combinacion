@@ -23,11 +23,13 @@ def main():
                                                                          exist_ok=True)
     pathlib.Path(os.path.join(TREE, 'DATA', 'real_time_forecasts')).mkdir(parents=True,
                                                                           exist_ok=True)
+    pathlib.Path(os.path.join(TREE, 'DATA', 'hindcast_forecasts')).mkdir(parents=True,
+                                                                         exist_ok=True)
     #FIGURES
     pathlib.Path(os.path.join(TREE, 'FIGURES')).mkdir(parents=True, exist_ok=True)
     print("Directories created")
     file1 = open("configuracion", "w")
-    file1.write(TREE)
+    file1.write(TREE + "\n")
     file1.close()
 
 #================================================================================================

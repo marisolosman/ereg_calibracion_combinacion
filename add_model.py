@@ -8,6 +8,8 @@
     end of hindcast period
     ensemble members in operational mode
 """
+import os
+import glob
 from datetime import datetime
 
 Model = input("Write Model name: ")
@@ -71,5 +73,14 @@ file1.close()
 
 file1 = open("updates", "a")
 file1.write(datetime.now().strftime("%d/%m/%Y") + ": Model " + Model + " addedd \n")
+
+#remove combined forecasts
+file1 = open("configuracion", 'r')
+PATH = file1.readline()
+file1.close()
+files = glob.glob(PATH + 'DATA/combined_forecasts/*')
+for f in files:
+    os.remove(f)
+
 
 
