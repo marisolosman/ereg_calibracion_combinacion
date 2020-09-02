@@ -50,7 +50,10 @@ def main():
     initialDate = datetime.datetime.strptime(args.IC[0], '%Y-%m-%d')
     iniy = initialDate.year
     inim = initialDate.month
-    lista = glob.glob("/home/osman/proyectos/postdoc/modelos/*")
+    file1 = open("configuracion", 'r')
+    PATH = file1.readline().rstrip('\n')
+    file1.close()
+    lista = glob.glob(PATH + "modelos/*")
     if args.no_model is not None: #si tengo que descartar modelos
         lista = [i for i in lista if [line.rstrip('\n') 
                                       for line in open(i)][0] not in args.no_model]
@@ -85,7 +88,7 @@ def main():
     print('IC:' + calendar.month_abbr[inim], 'Target season:' + SSS,
           args.ctech, args.wtech[0])
     #obtengo datos observados
-    archivo = Path('/datos/osman/nmme_output/obs_' + args.variable[0]+'_'+\
+    archivo = Path(PATH +  'DATA/Observations/obs_' + args.variable[0]+'_'+\
                    str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
@@ -105,7 +108,7 @@ def main():
                                                              coords['lon_w'],
                                                              coords['lon_e'])
         #abro archivo modelo
-        archivo = Path('/datos/osman/nmme_output/cal_forecasts/'+ \
+        archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
                        args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[inim] + '_' + SSS +\
                        '_gp_01_hind_parameters.npz')
@@ -122,7 +125,6 @@ def main():
             eps = data['eps']
             f_dt = f_dt * K + (1 - K) * np.mean(f_dt, axis = 0)
             for_cr = b2 + f_dt * a2
-            #integro en los limites de terciles
             prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
             prob_terc = np.nanmean(prob_terc, axis=1)
             #junto todos pronos calibrados
@@ -170,7 +172,7 @@ def main():
         weight = np.tile(peso, (2, 1, 1, 1)) #2 nlat nlon nmodels
 
     elif args.wtech[0] == 'mean_cor':
-        rmean[np.where(np.logical_and(rmean < 0, ~np.isnan(rmean)))] = 0
+        rmean[np.where(np.logical_or(rmean < 0, ~np.isfinite(rmean)))] = 0
         rmean[np.nansum(rmean[:, :, :], axis=2) == 0, :] = 1
         peso = rmean / np.tile(np.nansum(rmean, axis=2)[:, :, np.newaxis], [1, 1, nmodels])
         weight = np.tile(peso, (2, 1, 1, 1))  #2 nlat nlon nmodels
@@ -179,11 +181,11 @@ def main():
         weight = np.ones([2, nlats, nlons, nmodels]) / nmodels
 
     if args.ctech == 'wpdf':
-        prob_terc_comb = np.nansum(weight[:, :, :, :] * prob_terciles, axis=3)
+        prob_terc_comb = np.nansum(weight * prob_terciles, axis=3)
     elif args.ctech == 'wsereg':
         ntimes = np.shape(for_dt)[0]
         weight = np.tile(weight[0, :, :, :], (ntimes, 1, 1, 1)) / nmembers
-        archivo = Path('/datos/osman/nmme_output/comb_forecast/' +\
+        archivo = Path(PATH + 'DATA/combined_forecasts/' +\
                        args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                        '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech +\
                        '_hind_parameters.npz')
@@ -216,7 +218,7 @@ def main():
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
 
     #guardo los pronos
-    archivo = Path('/datos/osman/nmme_output/rt_forecast/' +\
+    archivo = Path(PATH + 'DATA/real_time_forecasts/' +\
                    args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                    str(iniy) + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' +\
                    args.ctech + '.npz')

@@ -15,8 +15,12 @@ import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
 CORES = mp.cpu_count()
-ruta = '/datos/osman/nmme/monthly/'
+file1 = open('configuracion', 'r')
+PATH = file1.readline().rstrip('\n')
+file1.close()
+ruta = PATH + 'NMME/'
 hind_length = 28
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
                  last_month, year_init):

@@ -145,7 +145,10 @@ def main():
                             [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
+    file1 = open('configuracion', 'r')
+    PATH = file1.readline().rstrip('\n')
+    file1.close()
+    lsmask = PATH + "NMME/lsmask.nc"
     coordenadas = 'coords'
     domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
     coords = {'lat_s': float(domain[1]),
@@ -156,8 +159,8 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = '/datos/osman/nmme_output/comb_forecast/'
-    RUTA_IM = '/datos/osman/nmme_test/forecast/'
+    RUTA = PATH + 'DATA/combined_forecast/'
+    RUTA_IM = PATH + 'FIGURES/'
     for i in ctech:
         for j in wtech:
             archivo = args.variable[0] + '_mme_' + month +'_' + \

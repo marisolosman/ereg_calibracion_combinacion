@@ -7,6 +7,9 @@ import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 import ereg as ensemble_regression
 CORES = mp.cpu_count()
+file1 = open("configuracion", 'r')
+PATH = file1.readline().rstrip('\n')
+file1.close()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -48,7 +51,7 @@ class Model(object):
             final_month = final_month - 12
         else:
             flag_end = 0
-        ruta = '/datos/osman/nmme/monthly/'
+        ruta = PATH + 'NMME/hindcast/'
         #abro un archivo de ejemplo
         hindcast_length = self.hind_end - self.hind_begin + 1
         forecast = np.empty([hindcast_length, self.ensembles, int(np.abs(latn - lats)) + 1,
@@ -228,28 +231,96 @@ class Model(object):
             final_month = final_month - 12
         else:
             flag_end = 0
-        ruta = '/datos/osman/nmme/monthly/real_time/'
+        ruta = PATH + 'NMME/real_time/'
         #abro un archivo de ejemplo
         forecast = np.empty([self.rt_ensembles, int(np.abs(latn - lats)) + 1,
                              int(np.abs(lonw - lone)) + 1])
-        for j in np.arange(1, self.ensembles + 1):
-            file = ruta + self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
-                    + str(init_year) + '{:02d}'.format(init_month) + '_r' +\
-                    str(j) + '_' + str(init_year) +\
-                    '{:02d}'.format(init_month) + '-' + str(init_year +\
-                                                            flag_end) +\
-                    '{:02d}'.format(final_month) + '.' + self.ext
-            [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
-                                                             self.lat_name, self.lon_name,
-                                                             lats, latn, lonw, lone)
-            with warnings.catch_warnings():
-                warnings.filterwarnings('error')
-                try:
-                    forecast[j - 1, :, :] = np.nanmean(np.squeeze(
+        if ((init_year == 2011) & (init_month <=11)) & (self.var_name == 'prec')  &\
+           (self.name == 'CFSv2'):
+            for j in np.arange(1, self.ensembles + 1):
+                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
+                        '_r' + str(j) + '_' + str(init_year) +\
+                        '{:02d}'.format(init_month) + '-' + str(init_year +\
+                                                                flag_end) +\
+                        '{:02d}'.format(final_month) + '.' + self.ext
+                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                                                                 self.lat_name, self.lon_name,
+                                                                 lats, latn, lonw, lone)
+                forecast[j - 1, :, :] = np.nanmean(np.squeeze(variable)[init_month - 4,
+                                                                        target:target + 3,
+                                                                        : , :], axis=0)
+
+        elif (init_year == 2011) & (init_month<8) & (((self.var_name == 'tref') &\
+                                                   ((self.name != 'CCSM3') &
+                                                    (self.name != 'CM2p1') &\
+                                        (self.name != 'GMAO'))) |\
+           ((self.var_name == 'prec') & ((self.name != 'CCSM3') &  (self.name != 'GMAO')))):
+            for j in np.arange(1, self.ensembles + 1):
+                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
+                        '_r' + str(j) + '_' + str(init_year) +\
+                        '{:02d}'.format(init_month) + '-' + str(init_year +\
+                                                                flag_end) +\
+                        '{:02d}'.format(final_month) + '.' + self.ext
+                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                                                                 self.lat_name, self.lon_name,
+                                                                 lats, latn, lonw, lone)
+                forecast[j - 1, :, :] = np.nanmean(np.squeeze(variable)[init_month - 1,
+                                                                        target:target + 3,
+                                                                        : , :], axis=0)
+        elif (init_year == 2011) & (init_month>=8) & (init_month <=9) & (self.name != 'GMAO'):
+            for j in np.arange(1, self.ensembles + 1):
+                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
+                        '_r' + str(j) + '_' + str(init_year) +\
+                        '{:02d}'.format(init_month) + '-' + str(init_year +\
+                                                                flag_end) +\
+                        '{:02d}'.format(final_month) + '.' + self.ext
+                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                                                                 self.lat_name,
+                                                                 self.lon_name, lats,
+                                                                 latn, lonw, lone)
+                forecast[j - 1, :, :] = np.nanmean(np.squeeze(variable)[init_month - 1,
+                                                                        target:target + 3,
+                                                                        : , :], axis=0)
+        elif (init_year == 2011) & (init_month>9) & (init_month <= 11) &\
+                ((self.var_name == 'prec') & (self.name != 'GMAO')):
+        #((self.name == 'CCSM3') | (self.name == 'FLOR-B01') |\
+        #                                      (self.name == 'CanCM4') | (self.name == 'CM2p1'))):
+            for j in np.arange(1, self.ensembles + 1):
+                file = ruta + self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
+                        '_r' + str(j) + '_' + str(init_year) +\
+                        '{:02d}'.format(init_month) + '-' + str(init_year +\
+                                                                flag_end) +\
+                        '{:02d}'.format(final_month) + '.' + self.ext
+                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                                                                 self.lat_name,
+                                                                 self.lon_name, lats,
+                                                                 latn, lonw, lone)
+                forecast[j - 1, :, :] = np.nanmean(np.squeeze(variable)[init_month - 1,
+                                                                        target:target + 3,
+                                                                        : , :], axis=0)
+        else:
+            for j in np.arange(1, self.ensembles + 1):
+                file = ruta + self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
+                        + str(init_year) + '{:02d}'.format(init_month) + '_r' +\
+                        str(j) + '_' + str(init_year) +\
+                        '{:02d}'.format(init_month) + '-' + str(init_year +\
+                                                                flag_end) +\
+                        '{:02d}'.format(final_month) + '.' + self.ext
+                [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
+                                                                 self.lat_name, self.lon_name,
+                                                                 lats, latn, lonw, lone)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('error')
+                    try:
+                        forecast[j - 1, :, :] = np.nanmean(np.squeeze(
                         np.array(variable))[target:target + 3, :, :], axis=0)
-                    #como todos tiene en el 0 el prono del propio
-                except RuntimeWarning:
-                    forecast[j - 1, :, :] = np.NaN
-            variable = []
+                        #como todos tiene en el 0 el prono del propio
+                    except RuntimeWarning:
+                        forecast[j - 1, :, :] = np.NaN
+                variable = []
         return latitudes, longitudes, forecast
 

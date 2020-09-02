@@ -39,17 +39,16 @@ def main():
     wsereg_parser.add_argument("--weight_tech", required=True, nargs=1,\
             choices=['pdf_int', 'mean_cor', 'same'], dest='wtech',
                                help='Relative weight between models')
-    wsereg_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-            'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-            help='Models to be discarded')
+#    wsereg_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
+#            'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
+#            help='Models to be discarded')
 
     # Extract dates from args
     args = parser.parse_args()
-    lista = glob.glob("/home/osman/proyectos/postdoc/modelos/*")
-    if args.no_model is not None: #si tengo que descartar modelos
-        lista = [i for i in lista if [line.rstrip('\n') 
-                                      for line in open(i)][0] not in args.no_model]
-
+    file1 = open('configuracion', 'r')
+    PATH = file1.readline().rstrip('\n')
+    file1.close()
+    lista = glob.glob(PATH + "modelos/*")
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
             'fechai', 'fechaf','ext']
     modelos = []
@@ -84,9 +83,10 @@ def main():
     print("Combining forecasts: ", SSS, args.variable[0], "Initialized in ",
           calendar.month_abbr[args.IC[0]], " using ", args.ctech, args.wtech[0])
     i = 0
+
     for it in modelos:
         #abro archivo modelo
-        archivo = Path('/datos/osman/nmme_output/cal_forecasts/'+ \
+        archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
                        args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind.npz')
@@ -136,7 +136,7 @@ def main():
     lat = data['lats']
     lon = data['lons']
     #obtengo datos observados
-    archivo = Path('/datos/osman/nmme_output/obs_'+args.variable[0]+'_'+\
+    archivo = Path(PATH + 'DATA/Observations/obs_'+args.variable[0]+'_'+\
                    str(year_verif) + '_' + SSS + '.npz')
     data = np.load(archivo)
     obs_terciles = data['cat_obs']
@@ -193,7 +193,7 @@ def main():
         prob_terc_comb = np.cumsum(for_category, axis=0)[0:2, :, :, :]
 
     #guardo los pronos
-    route = '/datos/osman/nmme_output/comb_forecast/'
+    route = PATH + 'DATA/combined_forecasts/'
     if args.ctech == 'wsereg':
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
                 + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech + \

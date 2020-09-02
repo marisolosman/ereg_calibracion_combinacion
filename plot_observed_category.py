@@ -27,7 +27,10 @@ def main():
             help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
     args=parser.parse_args()
 
-    lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
+    file1 = open("configuracion", 'r')
+    PATH = file1.readline().rstrip('\n')
+    file1.close()
+    lsmask = PATH + "NMME/lsmask.nc"
     coordenadas = 'coords'
     domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
     coords = {'lat_s': float(domain[1]),
@@ -44,8 +47,8 @@ def main():
     year_verif = 1982 if (seas[0] > 1 and seas[0] < 11) else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
-    RUTA = '/datos/osman/nmme_output/'
-    RUTA_FIG = '/datos/osman/nmme_figuras/forecast/'
+    RUTA = PATH + 'DATA/Observations/'
+    RUTA_FIG = PATH + 'FIGURES/'
     archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS +\
             '.npz'
     data = np.load(RUTA + archivo)

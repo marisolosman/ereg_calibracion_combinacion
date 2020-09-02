@@ -49,10 +49,10 @@ while True:
     else:
         break
 
-File_end = input("Enter end of forecast file (nc or nc4)")
+File_end = input("Enter end of forecast file (nc or nc4) ")
 
 while True:
-    Members_rt = input("Number of members in hindcast mode: ")
+    Members_rt = input("Number of members in real-time mode: ")
     try:
         Members_rt = int(Members_rt)
     except ValueError:
@@ -60,24 +60,27 @@ while True:
     else:
         break
 
-file1 = open("./modelos/" + Model, "w")
+file1 = open("configuracion", 'r')
+PATH = file1.readline().rstrip('\n')
+file1.close()
+
+file1 = open(PATH + "modelos/" + Model, "w")
 file1.write(Model + "\n")
 file1.write(Institution + "\n")
+file1.write(Y + "\n")
+file1.write(X + "\n")
 file1.write(str(Members) + "\n")
 file1.write(str(Leadtimes) + "\n")
 file1.write(str(Hindcast_begin) + "\n")
 file1.write(str(Hindcast_end) + "\n")
 file1.write(File_end + "\n")
-file1.write(str(Members_rt))
+file1.write(str(Members_rt) + "\n")
 file1.close()
 
 file1 = open("updates", "a")
 file1.write(datetime.now().strftime("%d/%m/%Y") + ": Model " + Model + " addedd \n")
 
 #remove combined forecasts
-file1 = open("configuracion", 'r')
-PATH = file1.readline()
-file1.close()
 files = glob.glob(PATH + 'DATA/combined_forecasts/*')
 for f in files:
     os.remove(f)

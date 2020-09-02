@@ -27,6 +27,9 @@ def main():
                                                                          exist_ok=True)
     #FIGURES
     pathlib.Path(os.path.join(TREE, 'FIGURES')).mkdir(parents=True, exist_ok=True)
+    #MODELS
+    pathlib.Path(os.path.join(TREE, 'modelos')).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(os.path.join(TREE, 'modelos_viejos')).mkdir(parents=True, exist_ok=True)
     print("Directories created")
     file1 = open("configuracion", "w")
     file1.write(TREE + "\n")
