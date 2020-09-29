@@ -14,8 +14,12 @@ import xarray as xr
 import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
+import configuration
+
+cfg = configuration.Config.Instance()
+
 CORES = mp.cpu_count()
-ruta = '/datos/osman/nmme/monthly/'
+ruta = f"{cfg.get('download_folder')}/NMME/hindcast/".replace('//','/')
 hind_length = 28
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
@@ -30,6 +34,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     #poder decodificarlo con xarray
     time = [pivot + DateOffset(months=int(x), days=15) for x in dataset['T']]
     #genero xarray con estos datos para obtener media estacional
+
     ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro

@@ -14,6 +14,9 @@ mpl.use('agg')
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+import configuration
+
+cfg = configuration.Config.Instance()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -109,6 +112,7 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
     return
+
 def main():
     # Define parser data
     parser = argparse.ArgumentParser(description='Verify combined forecast')
@@ -145,7 +149,7 @@ def main():
                             [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
+    lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
     coordenadas = 'coords'
     domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
     coords = {'lat_s': float(domain[1]),
@@ -156,8 +160,8 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = '/datos/osman/nmme_output/comb_forecast/'
-    RUTA_IM = '/datos/osman/nmme_test/forecast/'
+    RUTA = f"{cfg.get('gen_data_folder')}/nmme_output/comb_forecast/".replace("//","/")
+    RUTA_IM = f"{cfg.get('gen_data_folder')}/nmme_test/forecast/".replace("//","/")
     for i in ctech:
         for j in wtech:
             archivo = args.variable[0] + '_mme_' + month +'_' + \

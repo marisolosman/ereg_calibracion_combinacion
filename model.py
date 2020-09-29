@@ -6,7 +6,10 @@ from scipy.stats import norm
 import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 import ereg as ensemble_regression
+import configuration
+
 CORES = mp.cpu_count()
+cfg = configuration.Config.Instance()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -48,7 +51,7 @@ class Model(object):
             final_month = final_month - 12
         else:
             flag_end = 0
-        ruta = '/datos/osman/nmme/monthly/'
+        ruta = f'{cfg.get("download_folder")}/NMME/hindcast/'.replace('//','/')
         #abro un archivo de ejemplo
         hindcast_length = self.hind_end - self.hind_begin + 1
         forecast = np.empty([hindcast_length, self.ensembles, int(np.abs(latn - lats)) + 1,
@@ -228,7 +231,7 @@ class Model(object):
             final_month = final_month - 12
         else:
             flag_end = 0
-        ruta = '/datos/osman/nmme/monthly/real_time/'
+        ruta = f'{cfg.get("download_folder")}/NMME/real_time/'.replace('//','/')
         #abro un archivo de ejemplo
         forecast = np.empty([self.rt_ensembles, int(np.abs(latn - lats)) + 1,
                              int(np.abs(lonw - lone)) + 1])

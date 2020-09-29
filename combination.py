@@ -11,7 +11,12 @@ from pathlib import Path
 import calendar
 import numpy as np
 import ereg #apply ensemble regression to multi-model ensemble
+import configuration
+
+cfg = configuration.Config.Instance()
+
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 def main():
     """Defines parser data"""
     parser = argparse.ArgumentParser(description='Combining models')
@@ -45,7 +50,7 @@ def main():
 
     # Extract dates from args
     args = parser.parse_args()
-    lista = glob.glob("/home/osman/proyectos/postdoc/modelos/*")
+    lista = glob.glob("./modelos/*")
     if args.no_model is not None: #si tengo que descartar modelos
         lista = [i for i in lista if [line.rstrip('\n') 
                                       for line in open(i)][0] not in args.no_model]
@@ -86,8 +91,8 @@ def main():
     i = 0
     for it in modelos:
         #abro archivo modelo
-        archivo = Path('/datos/osman/nmme_output/cal_forecasts/'+ \
-                       args.variable[0] + '_' + it['nombre'] + '_' +\
+        archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') + \
+                       '/cal_forecasts/' + args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind.npz')
         if archivo.is_file():
@@ -136,8 +141,8 @@ def main():
     lat = data['lats']
     lon = data['lons']
     #obtengo datos observados
-    archivo = Path('/datos/osman/nmme_output/obs_'+args.variable[0]+'_'+\
-                   str(year_verif) + '_' + SSS + '.npz')
+    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
+                   args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
     data = np.load(archivo)
     obs_terciles = data['cat_obs']
     if args.ctech == 'wsereg':
@@ -193,7 +198,7 @@ def main():
         prob_terc_comb = np.cumsum(for_category, axis=0)[0:2, :, :, :]
 
     #guardo los pronos
-    route = '/datos/osman/nmme_output/comb_forecast/'
+    route = f'{cfg.get("gen_data_folder")}/nmme_output/comb_forecast/'.replace('//','/')
     if args.ctech == 'wsereg':
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
                 + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech + \
@@ -204,6 +209,7 @@ def main():
                 '_hind.npz'
 
     np.savez(route+archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
+
 #==================================================================================================
 start = time.time()
 #abro archivo donde guardo coordenadas

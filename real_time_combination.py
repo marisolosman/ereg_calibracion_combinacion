@@ -12,6 +12,10 @@ import calendar
 import numpy as np
 import model
 import ereg #apply ensemble regression to multi-model ensemble
+import configuration
+
+cfg = configuration.Config.Instance()
+
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def main():
@@ -22,7 +26,9 @@ def main():
     parser.add_argument('--IC', dest='IC', metavar='Date', type=str, nargs=1,
                         help='Initial conditions in "YYYY-MM-DD"')
     parser.add_argument('--leadtime', dest='leadtime', type=int, nargs=1,
-                        help='Forecast leatime (in months, from 1 to 7)')
+                        help='Forecast leadtime (in months, from 1 to 7)')
+    parser.add_argument('--OW', help='Overwrite previous calibrations',
+                        action= 'store_true')
     subparsers = parser.add_subparsers(help="Combination technique")
     wpdf_parser = subparsers.add_parser('wpdf', help='weighted sum of calibrated PDFs')
     wsereg_parser = subparsers.add_parser('wsereg',
@@ -50,7 +56,7 @@ def main():
     initialDate = datetime.datetime.strptime(args.IC[0], '%Y-%m-%d')
     iniy = initialDate.year
     inim = initialDate.month
-    lista = glob.glob("/home/osman/proyectos/postdoc/modelos/*")
+    lista = glob.glob("./modelos/*")
     if args.no_model is not None: #si tengo que descartar modelos
         lista = [i for i in lista if [line.rstrip('\n') 
                                       for line in open(i)][0] not in args.no_model]
@@ -85,8 +91,8 @@ def main():
     print('IC:' + calendar.month_abbr[inim], 'Target season:' + SSS,
           args.ctech, args.wtech[0])
     #obtengo datos observados
-    archivo = Path('/datos/osman/nmme_output/obs_' + args.variable[0]+'_'+\
-                   str(year_verif) + '_' + SSS + '_parameters.npz')
+    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
+                   args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
     if args.ctech == 'wsereg':
@@ -105,10 +111,9 @@ def main():
                                                              coords['lon_w'],
                                                              coords['lon_e'])
         #abro archivo modelo
-        archivo = Path('/datos/osman/nmme_output/cal_forecasts/'+ \
-                       args.variable[0] + '_' + it['nombre'] + '_' +\
-                       calendar.month_abbr[inim] + '_' + SSS +\
-                       '_gp_01_hind_parameters.npz')
+        archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
+                       '/cal_forecasts/' + args.variable[0] + '_' + it['nombre'] + '_' +\
+                       calendar.month_abbr[inim] + '_' + SSS + '_gp_01_hind_parameters.npz')
         data = np.load(archivo)
         a1 = data['a1']
         b1 = data['b1']
@@ -183,11 +188,11 @@ def main():
     elif args.ctech == 'wsereg':
         ntimes = np.shape(for_dt)[0]
         weight = np.tile(weight[0, :, :, :], (ntimes, 1, 1, 1)) / nmembers
-        archivo = Path('/datos/osman/nmme_output/comb_forecast/' +\
-                       args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
+        archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
+                       '/comb_forecast/' + args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                        '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech +\
                        '_hind_parameters.npz')
-        if archivo.is_file():
+        if archivo.is_file() and not args.OW:
             data = np.load(archivo)
             a_mme = data['a_mme']
             b_mme = data['b_mme']
@@ -216,8 +221,8 @@ def main():
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
 
     #guardo los pronos
-    archivo = Path('/datos/osman/nmme_output/rt_forecast/' +\
-                   args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
+    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
+                   '/rt_forecast/' + args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                    str(iniy) + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' +\
                    args.ctech + '.npz')
     np.savez(archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)

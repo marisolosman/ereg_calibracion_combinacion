@@ -15,6 +15,10 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+import configuration
+
+cfg = configuration.Config.Instance()
+
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
     dataset = xr.open_dataset(archivo, decode_times=False)
@@ -149,7 +153,7 @@ def main():
                             [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
+    lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
     coordenadas = 'coords'
     domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
     coords = {'lat_s': float(domain[1]),
@@ -160,8 +164,8 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = '/datos/osman/nmme_output/rt_forecast/'
-    RUTA_IM = '/datos/osman/nmme_figuras/rt_forecast/'
+    RUTA = f"{cfg.get('gen_data_folder')}/nmme_output/rt_forecast/".replace("//","/")
+    RUTA_IM = f"{cfg.get('gen_data_folder')}/nmme_figuras/rt_forecast/".replace("//","/")
     for i in ctech:
         for j in wtech:
             archivo = Path(RUTA + args.variable[0] + '_mme_' + INIM + str(iniy)\

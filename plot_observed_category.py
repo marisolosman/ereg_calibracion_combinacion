@@ -8,6 +8,9 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+import configuration
+
+cfg = configuration.Config.Instance()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -27,7 +30,7 @@ def main():
             help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
     args=parser.parse_args()
 
-    lsmask = "/datos/osman/nmme/monthly/lsmask.nc"
+    lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
     coordenadas = 'coords'
     domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
     coords = {'lat_s': float(domain[1]),
@@ -44,10 +47,9 @@ def main():
     year_verif = 1982 if (seas[0] > 1 and seas[0] < 11) else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
-    RUTA = '/datos/osman/nmme_output/'
-    RUTA_FIG = '/datos/osman/nmme_figuras/forecast/'
-    archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS +\
-            '.npz'
+    RUTA = f"{cfg.get('gen_data_folder')}/nmme_output/".replace("//","/")
+    RUTA_FIG = f"{cfg.get('gen_data_folder')}/nmme_figuras/forecast/".replace("//","/")
+    archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz'
     data = np.load(RUTA + archivo)
     obs_terciles = data['cat_obs']
     nlats = obs_terciles.shape[2]

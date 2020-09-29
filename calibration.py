@@ -8,6 +8,9 @@ from pathlib import Path #manejar path
 import numpy as np
 import model #objeto y metodos asociados a los modelos
 import observation # idem observaciones
+import configuration
+
+cfg = configuration.Config.Instance()
 
 def main():
     parser = argparse.ArgumentParser(description='Calibrates model using Ensemble Regression.')
@@ -19,12 +22,14 @@ def main():
             help='Forecast leatime (in months, from 1 to 7)')
     parser.add_argument('--CV', help='Croos-validated mode',
                         action= 'store_true')
+    parser.add_argument('--OW', help='Overwrite previous calibrations',
+                        action= 'store_true')
     parser.add_argument('--no-model', required=False, nargs='+', choices=\
                         ['CFSv2', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06',\
                          'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'],
                         dest='no_model', help="Models to be discarded")
     args = parser.parse_args()   # Extract dates from args
-    lista = glob.glob("/home/osman/proyectos/postdoc/modelos/*")
+    lista = glob.glob("./modelos/*")
     if args.no_model is not None:
         lista = [i for i in lista if [line.rstrip('\n')
                                       for line in open(i)][0] not in args.no_model]
@@ -46,12 +51,12 @@ def main():
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     print("Calibrating " + args.variable[0] + " forecasts for " + SSS + " initialized in "
-          + args.IC[0] )
+          + str(args.IC[0]) )
 
     print("Processing Observations")
-    archivo = Path('/datos/osman/nmme_output/obs_' + args.variable[0] + '_' +\
-                       str(year_verif) + '_' + SSS + '.npz')
-    if archivo.is_file():
+    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
+                   args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
+    if archivo.is_file() and not args.OW:
         if args.CV:
             data = np.load(archivo)
             obs_dt = data['obs_dt']
@@ -80,9 +85,9 @@ def main():
             np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
                      terciles=terciles, cat_obs=categoria_obs)
     if np.logical_not(args.CV):
-        archivo2 = Path('/datos/osman/nmme_output/obs_' + args.variable[0] + '_' +\
-                       str(year_verif) + '_' + SSS + '_parameters.npz')
-        if archivo2.is_file():
+        archivo2 = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
+                       args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
+        if archivo2.is_file() and not args.OW:
             data = np.load(archivo2)
             obs_dt = data['obs_dt']
             terciles =data['terciles']
@@ -107,12 +112,12 @@ def main():
                      terciles=terciles) #Save observed variables
 
     print("Processing Models")
-    RUTA = '/datos/osman/nmme_output/cal_forecasts/'
+    RUTA = f'{cfg.get("gen_data_folder")}/nmme_output/cal_forecasts/'.replace('//','/')
     for it in modelos:
         output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
                       calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                       '_gp_01_hind.npz')
-        if output.is_file():
+        if output.is_file() and not args.OW:
             if args.CV:
                 pass
             else:
@@ -148,7 +153,7 @@ def main():
             output2 = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
                           calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                           '_gp_01_hind_parameters.npz')
-            if output2.is_file():
+            if output2.is_file() and not args.OW:
                 pass
             else:
                 modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
