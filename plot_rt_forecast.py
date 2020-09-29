@@ -193,8 +193,10 @@ def main():
                                                         mode='constant')
             else:
                 kernel = Gaussian2DKernel(x_stddev=1)
-                below = convolve(for_terciles[0, :, :], kernel)
-                above = convolve(1 - for_terciles[1, :, :], kernel)
+                below = convolve(for_terciles[0, :, :], kernel,
+                                 nan_treatment='interpolate', preserve_nan=True)
+                above = convolve(1 - for_terciles[1, :, :], kernel,
+                                 nan_treatment='interpolate', preserve_nan=True)
             near = 1 - below - above
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
