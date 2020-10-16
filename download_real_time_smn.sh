@@ -5,8 +5,8 @@ ruta+="NMME/real_time/"
 ruta_iri="http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/"
 MONTHS=(ZERO Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)
 declare -a variables=("tref" "prec")
-k="2020" #$(date +"%Y")
-l="07" #$(date +%m)
+k=$(date + "%Y")
+l=$(date + "%m")
 echo $k
 echo $l
 for j in "${variables[@]}" ; do
@@ -44,14 +44,12 @@ for j in "${variables[@]}" ; do
 				#CMC-Can4i
 				wget -O "$FILE" "${ruta_iri}.CanCM4i/.FORECAST/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%20%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
 			fi
-		fi
-		if [ $m -le 20 ] ; then
-			#CMC-CanSIPSv2
-			FILE=${ruta}${j}_Amon_CMC-CanSIPSv2_${k}${l}_r${m}_${k}${l}-${FY}${mespr}.nc
+			#GEM-NEMO
+			FILE=${ruta}${j}_Amon_CMC-GEM-NEMO_${k}${l}_r${m}_${k}${l}-${FY}${mespr}.nc
 			if [ ! -f "$FILE" ] ; then 
-				wget -O "$FILE" "${ruta_iri}.CanSIPSv2/.FORECAST/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%20%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
+				wget -O "$FILE" "${ruta_iri}.GEM-NEMO/.FORECAST/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%20%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
 			fi
-		fi 
+		fi
 		if [ $m -le 12 ] ; then 
 			#GFDL FLOR-A06
 			FILE=${ruta}${j}_Amon_GFDL-FLOR-A06_${k}${l}_r${m}_${k}${l}-${FY}${mespr}.nc

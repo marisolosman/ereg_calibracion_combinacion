@@ -43,6 +43,11 @@ for l in `seq -f "%02g" 1 12`; do
 						#CMC-Can4i
 						wget -O "$FILE" "${ruta_iri}.CanCM4i/.HINDCAST/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%20%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
 					fi
+					FILE=${ruta}${j}_Amon_CMC-GEM-NEMO_${k}${l}_r${m}_${k}${l}-${FY}${mespr}.nc
+					if [ ! -f "$FILE" ] ; then
+						#CMC-GEM-NEMO
+						wget -O "$FILE" "${ruta_iri}.GEM-NEMO/.HINDCAST/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%20%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
+					fi
 				fi
 				if [ $m -le 12 ] ; then 
 					#GFDL FLOR-A06
@@ -56,13 +61,6 @@ for l in `seq -f "%02g" 1 12`; do
 						wget -O  "$FILE" "${ruta_iri}.GFDL-CM2p5-FLOR-B01/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
 					fi
 				fi 
-				if [ $m -le 20 ] ; then 
-				#CMC-CanSIPSv2
-					FILE=${ruta}${j}_Amon_CMC-CanSIPSv2_${k}${l}_r${m}_${k}${l}-${FY}${mespr}.nc
-					if [ ! -f "$FILE" ] ; then
-					wget -O "$FILE" "${ruta_iri}.CanSIPSv2/.HINDCAST/.MONTHLY/.${j}/S/%280000%201%20${MONTHS[${l#0}]}%20${k}%20%29VALUES/M/%28${m}.0%20%29VALUES/data.nc"
-					fi
-				fi
 				if [ $m -gt 24 ] && [ ${l} -eq 11 ] ; then
 					#CFS
 					FILE=${ruta}${j}_Amon_NCEP-CFSv2_${k}${l}_r${m}_${k}${l}-${FY}${mespr}.nc
