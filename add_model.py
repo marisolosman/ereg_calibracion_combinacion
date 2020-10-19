@@ -67,6 +67,8 @@ if not os.path.isfile(f"./modelos/{Model}"):
     with open(f"./modelos/{Model}", "w") as modelfile:
         modelfile.write(Model + "\n")
         modelfile.write(Institution + "\n")
+        modelfile.write(X + "\n")
+        modelfile.write(Y + "\n")
         modelfile.write(str(Members) + "\n")
         modelfile.write(str(Leadtimes) + "\n")
         modelfile.write(str(Hindcast_begin) + "\n")
