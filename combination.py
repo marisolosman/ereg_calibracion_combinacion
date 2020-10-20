@@ -12,6 +12,7 @@ import calendar
 import numpy as np
 import ereg #apply ensemble regression to multi-model ensemble
 import configuration
+import pandas as pd
 
 cfg = configuration.Config.Instance()
 
@@ -20,50 +21,51 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 def main():
     """Defines parser data"""
     parser = argparse.ArgumentParser(description='Combining models')
-    parser.add_argument('variable', type=str, nargs=1,\
-            help='Variable to calibrate (prec or temp)')
-    parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('variable', type=str, nargs=1, 
+        help='Variable to calibrate (prec or temp)')
+    parser.add_argument('IC', type=int, nargs=1, 
+        help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type=int, nargs=1, 
+        help='Forecast leatime (in months, from 1 to 7)')
     subparsers = parser.add_subparsers(help="Combination technique")
     wpdf_parser = subparsers.add_parser('wpdf', help='weighted sum of calibrated PDFs')
     wsereg_parser = subparsers.add_parser('wsereg', help='Ereg with the weighted superensemble')
     count_parser = subparsers.add_parser('count', help='Count members in each bin')
     count_parser.set_defaults(ctech='count', wtech=['same'])
-    count_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-           'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-            help='Models to be discarded')
+    count_parser.add_argument('--no-model', nargs='+', dest='no_model', 
+        choices=['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'], 
+        help='Models to be discarded')
     wpdf_parser.set_defaults(ctech='wpdf')
-    wpdf_parser.add_argument("--weight_tech", required=True, nargs=1,\
-            choices=['pdf_int', 'mean_cor', 'same'], dest='wtech')
-    wpdf_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-           'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-            help='Models to be discarded')
+    wpdf_parser.add_argument("--weight_tech", required=True, nargs=1, 
+        choices=['pdf_int', 'mean_cor', 'same'], dest='wtech',
+        help='')
+    wpdf_parser.add_argument('--no-model', nargs='+', dest='no_model', 
+        choices=['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'], 
+        help='Models to be discarded')
     wsereg_parser.set_defaults(ctech='wsereg')
-    wsereg_parser.add_argument("--weight_tech", required=True, nargs=1,\
-            choices=['pdf_int', 'mean_cor', 'same'], dest='wtech',
-                               help='Relative weight between models')
-    wsereg_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-            'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-            help='Models to be discarded')
-
+    wsereg_parser.add_argument("--weight_tech", required=True, nargs=1, dest='wtech', 
+        choices=['pdf_int', 'mean_cor', 'same'], 
+        help='Relative weight between models')
+    wsereg_parser.add_argument('--no-model', nargs='+', dest='no_model', 
+        choices=['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'], 
+        help='Models to be discarded')
     # Extract dates from args
     args = parser.parse_args()
-    lista = glob.glob("./modelos/*")
+    
+    coords = cfg.get('coords')
+    conf_modelos = cfg.get('models')
+    
+    df_modelos = pd.DataFrame(conf_modelos[1:], columns=conf_modelos[0])
+    
     if args.no_model is not None: #si tengo que descartar modelos
-        lista = [i for i in lista if [line.rstrip('\n') 
-                                      for line in open(i)][0] not in args.no_model]
+        df_modelos = df_modelos.query(f"model not in {args.no_model}")
 
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
-            'fechai', 'fechaf','ext']
-    modelos = []
-    for i in lista:
-        lines = [line.rstrip('\n') for line in open(i)]
-        modelos.append(dict(zip(keys, [lines[0], lines[1], lines[2], lines[3],
-                                       int(lines[4]), int(lines[5]),
-                                       int(lines[6]), int(lines[7]),
-                                       lines[8]])))
+            'fechai', 'fechaf','ext', 'rt_miembros']
+    df_modelos.columns = keys
+    
+    modelos = df_modelos.to_dict('records')
+    
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
     nx = int(np.abs (coords['lon_e'] - coords['lon_w']) + 1) #does for domains beyond greenwich
@@ -210,18 +212,11 @@ def main():
 
     np.savez(route+archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
 
-#==================================================================================================
-start = time.time()
-#abro archivo donde guardo coordenadas
-coordenadas = 'coords'
-domain = [line.rstrip('\n') for line in open(coordenadas)]
-coords = {'lat_s' : float(domain[1]),
-        'lat_n' : float(domain[2]),
-        'lon_w' : float(domain[3]),
-        'lon_e' : float(domain[4])}
 
-main()
-end = time.time()
-print(end - start)
-# =================================================================================
+# ==================================================================================================
+if __name__ == "__main__":
+  start = time.time()
+  main()
+  end = time.time()
+  print(end - start)
 

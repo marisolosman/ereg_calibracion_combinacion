@@ -14,35 +14,35 @@ cfg = configuration.Config.Instance()
 
 def main():
     parser = argparse.ArgumentParser(description='Calibrates model using Ensemble Regression.')
-    parser.add_argument('variable', type=str, nargs=1,\
-            help='Variable to calibrate (prec or tref)')
-    parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
-    parser.add_argument('--CV', help='Croos-validated mode',
-                        action= 'store_true')
-    parser.add_argument('--OW', help='Overwrite previous calibrations',
-                        action= 'store_true')
-    parser.add_argument('--no-model', required=False, nargs='+', choices=\
-                        ['CFSv2', 'CanCM3', 'CanCM4', 'CM2p1', 'FLOR-A06',\
-                         'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'],
-                        dest='no_model', help="Models to be discarded")
+    parser.add_argument('variable', type=str, nargs=1, 
+        help='Variable to calibrate (prec or tref)')
+    parser.add_argument('IC', type=int, nargs=1, 
+        help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type=int, nargs=1, 
+        help='Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('--CV', action='store_true', 
+        help='Croos-validated mode')
+    parser.add_argument('--OW', action='store_true', 
+        help='Overwrite previous calibrations')
+    parser.add_argument('--no-model', required=False, nargs='+', dest='no_model', 
+        choices= ['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'],
+        help="Models to be discarded")
     args = parser.parse_args()   # Extract dates from args
-    lista = glob.glob("./modelos/*")
-    if args.no_model is not None:
-        lista = [i for i in lista if [line.rstrip('\n')
-                                      for line in open(i)][0] not in args.no_model]
-    #debería traer los modelos viejos y meterlos en la lista para usar el argumento no-model
+    
+    coords = cfg.get('coords')
+    conf_modelos = cfg.get('models')
+    
+    df_modelos = pd.DataFrame(conf_modelos[1:], columns=conf_modelos[0])
+    
+    if args.no_model is not None: #si tengo que descartar modelos
+        df_modelos = df_modelos.query(f"model not in {args.no_model}")
+        
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
-            'fechai', 'fechaf', 'ext', 'rt_miembros']
-    modelos = []
-    for i in lista:
-        lines = [line.rstrip('\n') for line in open(i)]
-        modelos.append(dict(zip(keys, [lines[0], lines[1], lines[2], lines[3],\
-                                       int(lines[4]), int(lines[5]), \
-                                       int(lines[6]), int(lines[7]), \
-                                       lines[8], int(lines[9])])))
+            'fechai', 'fechaf','ext', 'rt_miembros']
+    df_modelos.columns = keys
+    
+    modelos = df_modelos.to_dict('records')
+    
     """ref dataset: depende de CI del prono y plazo.
     Ej: si IC prono es Jan y plazo 1 entonces FMA en primer tiempo 1982. Si IC
     prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983."""
@@ -173,15 +173,12 @@ def main():
                 np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
                          a1=a1, b1=b1, a2=a2, b2=b2, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
                          peso=pdf_intensity)
-#================================================================================================
-start = time.time()
-if __name__=="__main__":
-    coordenadas = 'coords'
-    domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
-    coords = {'lat_s': float(domain[1]),
-              'lat_n': float(domain[2]),
-              'lon_w': float(domain[3]),
-              'lon_e': float(domain[4])}
-    main()
-end = time.time()
-print(end - start)
+
+
+# ==================================================================================================
+if __name__ == "__main__":
+  start = time.time()
+  main()
+  end = time.time()
+  print(end - start)
+

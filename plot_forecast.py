@@ -240,10 +240,12 @@ def main():
                                  cmap, colores, SSS + ' Forecast IC ' +\
                          month + '-' + str(k) +\
                          ' - Uncalibrated', output)
-#===================================================================================================
-start = time.time()
-main()
-end = time.time()
-print(end - start)
 
+
+# ==================================================================================================
+if __name__ == "__main__":
+  start = time.time()
+  main()
+  end = time.time()
+  print(end - start)
 

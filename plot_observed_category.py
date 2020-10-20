@@ -98,8 +98,12 @@ def main():
         cb.ax.tick_params(labelsize=7)
         plt.savefig(output, dpi=600, bbox_inches='tight', papertype='A4')
         plt.close()
-#==========================================================================
-start = time.time()
-main()
-end = time.time()
-print(end - start)
+
+
+# ==================================================================================================
+if __name__ == "__main__":
+  start = time.time()
+  main()
+  end = time.time()
+  print(end - start)
+  
