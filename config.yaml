@@ -10,25 +10,26 @@ coords:
   lon_e: 330
   
 # models glossary:
-# model          -> Model name
-# institution    -> Institution name
-# latitude       -> Latitude name
-# longitude      -> Longitude name
-# members        -> Number of members in hindcast mode
-# leadtimes      -> Number of leadtimes
-# hindcast_begin -> Year begining hindcast period
-# hindcast_end   -> Year end hindcast period
-# file_end       -> End of forecast file (nc or nc4)
-# rt_members     -> Number of members in hindcast mode
+# model            -> Model name
+# institution      -> Institution name
+# latitude         -> Latitude name
+# longitude        -> Longitude name
+# members          -> Number of members in hindcast mode
+# leadtimes        -> Number of leadtimes
+# hindcast_begin   -> Year begining hindcast period
+# hindcast_end     -> Year end hindcast period
+# file_end         -> End of forecast file (nc or nc4)
+# rt_members       -> Number of members in hindcast mode
+# iridl_model_name -> Model name in the IRI Data Library 
 models:
-  - [    model, institution, latitude, logitude, members, leadtimes, hindcast_begin, hindcast_end, file_end, rt_members ] 
-  - [  CanCM4i,         CMM,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
-  - [ GEM-NEMO,         CMM,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
-  # [CanSIPSv2,         CMM,        Y,        X,      20,        12,           1982,         2010,       nc,         20 ] 
-  - [    CCSM4,        COLA,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
-  - [    CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
-  - [    CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
-  - [ FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ] 
-  - [ FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ] 
-  - [    GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2010,       nc,          4 ] 
+  - [    model, institution, latitude, logitude, members, leadtimes, hindcast_begin, hindcast_end, file_end, rt_members,    iridl_model_name ] 
+  - [  CanCM4i,         CMC,        Y,        X,      10,        12,           1982,         2010,       nc,         10,             CanCM4i ] 
+  - [ GEM-NEMO,         CMC,        Y,        X,      10,        12,           1982,         2010,       nc,         10,            GEM-NEMO ] 
+  # [CanSIPSv2,         CMC,        Y,        X,      20,        12,           1982,         2010,       nc,         20,           CanSIPSv2 ] 
+  - [    CCSM4,        COLA,        Y,        X,      10,        12,           1982,         2010,       nc,         10,    COLA-RSMAS-CCSM4 ] 
+  - [    CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2010,       nc,         24,          NCEP-CFSv2 ] 
+  - [    CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10,          GFDL-CM2p1 ] 
+  - [ FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12, GFDL-CM2p5-FLOR-A06 ] 
+  - [ FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12, GFDL-CM2p5-FLOR-B01 ] 
+  - [    GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2010,       nc,          4,        NASA-GEOSS2S ] 
 

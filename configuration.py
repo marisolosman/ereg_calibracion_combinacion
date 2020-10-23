@@ -1,39 +1,76 @@
+
 import singleton
 import yaml
 import glob
 import datetime
+import os
+import logging.config
+import logging
+import sys
+        
 
+def progress(count, total, status=''):
+    bar_len = 100
+    filled_len = int(round(bar_len * count / float(total)))
 
-def load_yaml(filename):
-    with open(filename, 'r') as yamlfile:
-        loaded_yaml = yaml.load(yamlfile, Loader=yaml.FullLoader)
-    return loaded_yaml
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+    sys.stdout.flush()
+    
+def close_progress():
+  sys.stdout.write('\n')
 
 
 @singleton.Singleton
 class Config():
     """Class that manage the configuration file.  """
 
-    def __init__(self, filename = 'config.yaml'):
-        self.file = filename
-        self.yaml = load_yaml(filename)
+    def __init__(self, config = 'config.yaml', logger_config = 'logging.yaml'):
+        self.file = config
+        self.config = self._load_ereg_config(config)
+        self.logger = self._load_logging_config(logger_config)
         self._update_models()
         self._check_models()
 
     def get(self, keyname):
-        if keyname not in self.yaml:
-            raise InvalidConfiguration(f"{self.file} don't contain this entry: {keyname}")
-        return self.yaml.get(keyname)
+        if keyname not in self.config:
+            raise InvalidConfiguration(f"Yaml file \"{self.file}\" don't contain this entry: {keyname}")
+        return self.config.get(keyname)
+    
+    def _load_ereg_config(self, yaml_file):
+        if not os.path.exists(yaml_file):
+            raise InvalidConfiguration(f"Configuration file (i.e. {yaml_file}) not found!")
+        with open(yaml_file, 'r') as f:
+            return yaml.safe_load(f)
+                                   
+    def _load_logging_config(self, yaml_file, default_level=logging.INFO):
+      logger, message = None, None
+      if os.path.exists(yaml_file):
+          with open(yaml_file, 'rt') as f:
+              try:
+                  config = yaml.safe_load(f.read())
+                  logging.config.dictConfig(config)
+              except Exception as e:
+                  logging.basicConfig(level=default_level)
+                  message = f'Error loading logging configuration file. Using default configs!'
+      else:
+          logging.basicConfig(level=default_level)
+          message = f'Logging configuration file (i.e. {yaml_file}) not found!. Using default configs!'
+      logger = logging.getLogger('ereg')
+      logger.warning(message) if message else None
+      return logger
     
     @property
     def _is_there_comb_forecasts(self):
-      gen_data_folder = self.yaml.get('gen_data_folder')
+      gen_data_folder = self.config.get('gen_data_folder')
       PATH = f"{gen_data_folder}/nmme_output/comb_forecast/*".replace("//","/")
       return any(glob.glob(PATH))
     
     @property
     def _models_in_config(self):
-      return [ item[0] for item in self.yaml.get('models')[1:] ]
+      return [ item[0] for item in self.config.get('models')[1:] ]
     
     @property
     def _combined_models(self):
@@ -41,7 +78,7 @@ class Config():
         return f.read().strip().split("\n")
     
     def _delete_combined_forecasts(self):
-      gen_data_folder = self.yaml.get('gen_data_folder')
+      gen_data_folder = self.config.get('gen_data_folder')
       PATH = f"{gen_data_folder}/nmme_output/comb_forecast/*".replace("//","/")
       for filename in glob.glob(PATH):
         os.remove(filename)
