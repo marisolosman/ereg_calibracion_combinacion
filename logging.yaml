@@ -1,0 +1,37 @@
+version: 1
+
+disable_existing_loggers: True
+
+formatters:
+    default:
+        format: "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+    complete:
+        datefmt: "%m/%d/%Y %I:%M:%S %p"
+        format: "[ %(asctime)s ][ PID %(process)3d-%(threadName)-7s ][%(name)5s::%(lineno)-4d][ %(levelname)5s ] %(message)s"
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: complete
+        stream: ext://sys.stdout
+
+    file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: complete
+        filename: ereg.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 2
+        encoding: utf8
+
+loggers:
+    ereg:
+        level: DEBUG
+        handlers: [console, file_handler]
+        propagate: no
+
+root:
+    level: NOTSET
+    handlers: [console, file_handler]
+    propagate: yes
