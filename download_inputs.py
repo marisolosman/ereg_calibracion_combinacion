@@ -8,12 +8,15 @@ import pandas as pd
 import urllib.request
 import urllib.parse
 import xarray as xr
+import os
 import os.path
 import datetime
 import time
 import yaml
 import logging
 import sys
+import cdo
+import netCDF4
 
 
 cfg = configuration.Config.Instance()
@@ -124,28 +127,37 @@ def links_to_download_observation(recheck):
 
 def modify_observation_files():
   #
+  cdo = cdo.Cdo()
   FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
   #
   FILENAME = f"{FOLDER}/prec_monthly_nmme_cpc.nc".replace("//","/")
+  TEMPFILE = f"{FOLDER}/prec_monthly_nmme_cpc_TMP.nc".replace("//","/")
   if os.path.isfile(FILENAME):
-    pass
+    with netCDF4.Dataset(FILENAME, "r+", format="NETCDF4") as nc:
+      nc.renameVariable('prate', 'prec')
+    cdo.selyear('1982/2011', input=FILENAME, output=TEMPFILE)
+    os.replace(TEMPFILE, FILENAME)
   #
   FILENAME = f"{FOLDER}/tref_monthly_nmme_ghcn_cams.nc".replace("//","/")
+  TEMPFILE = f"{FOLDER}/tref_monthly_nmme_ghcn_cams_TMP.nc".replace("//","/")
   if os.path.isfile(FILENAME):
-    pass
+    with netCDF4.Dataset(FILENAME, "r+", format="NETCDF4") as nc:
+      nc.renameVariable('t2m', 'tref')
+    cdo.addc("273.15",input=FILENAME, output=TEMPFILE)
+    os.replace(TEMPFILE, FILENAME)
 
 
 def download_file(download_url, filename):
   #
   download_url = urllib.parse.quote(download_url, safe=':/')
   # Download file
-  #f, h = urllib.request.urlretrieve(download_url, filename)
+  f, h = urllib.request.urlretrieve(download_url, filename)
   # Check file size
-  #assert os.stat(file_name).st_size != 0
+  assert os.stat(file_name).st_size != 0
   # Check if file can be opened
-  #if filename.endswith('.nc'):
-  #  d = xr.open_dataset(file_name, decode_times=False)
-  #  d.close()
+  if filename.endswith('.nc'):
+    d = xr.open_dataset(file_name, decode_times=False)
+    d.close()
 
 
 # ==================================================================================================
