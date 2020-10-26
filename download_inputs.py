@@ -237,8 +237,8 @@ if __name__ == "__main__":
         continue
       else:
         df_links.at[row.Index, 'DOWNLOADED'] = True
-        configuration.progress(count_downloaded_files, n_files_to_download, status='Downloading files')
-  configuration.close_progress()
+        helpers.progress_bar(count_downloaded_files, n_files_to_download, status='Downloading files')
+  helpers.close_progress_bar()
   cfg.logger.info(f'{count_downloaded_files} files were downloaded successfully and '+
                   f'{n_files_to_download - count_downloaded_files} downloads failed!')
 
