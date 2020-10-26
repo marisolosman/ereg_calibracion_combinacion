@@ -48,7 +48,7 @@ for j in "${variables[@]}" ; do #loop sobre las variables a calibrar, por ahora 
               python combination.py ${j} ${n} ${k} ${l} --weight_tech ${w}
             else
               echo ${yellow}"$(date +'%D-%T') -- Running -- python combination.py ${j} ${n} ${k} ${l} --weight_tech ${w}"${reset}
-              python combination.py ${j} ${n} ${k} ${l} --weight_tech ${}
+              python combination.py ${j} ${n} ${k} ${l} --weight_tech ${w}
             fi
           done
         fi
