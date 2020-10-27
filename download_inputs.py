@@ -175,8 +175,6 @@ if __name__ == "__main__":
     help='Indicates input data of which months should be downloaded for real-time execution')
   parser.add_argument('--recheck', type=bool, default=True,
     help='Indicates if previously downloaded files must be checked or not')
-  parser.add_argument('--recheck-hindcast', type=bool, default=False, dest='recheck_hindcast',
-    help='Indicates if previously downloaded hindcasts files must be checked or not')
   args = parser.parse_args()  # Extract dates from args
   # args = argparse.Namespace(download=['all'], year=2020, month=6, re-check=False)
   
@@ -193,10 +191,10 @@ if __name__ == "__main__":
   df_links = pd.DataFrame(columns=['FILENAME','DOWNLOAD_URL','DOWNLOADED','TYPE'])
   if any(item in ['hindcast', 'all'] for item in args.download):
     start = time.time()
-    links = links_to_download_hindcast(df_modelos, args.recheck_hindcast)
+    links = links_to_download_hindcast(df_modelos, args.recheck)
     df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
     end = time.time()
-    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck_hindcast else " "}hindcast links: {end - start}')
+    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}hindcast links: {end - start}')
   if any(item in ['operational', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_operational(df_modelos, args.year, args.recheck)
