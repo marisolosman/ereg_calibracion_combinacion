@@ -125,26 +125,26 @@ def links_to_download_observation(recheck):
          'DOWNLOADED': check_file(FOLDER+FILENAME, recheck), 'TYPE': 'observation'}
 
 
-def modify_observation_files():
+def modify_downloaded_file_if_needed(downloaded_file):
   #
-  cdo = cdo.Cdo()
-  FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
+  tempfile = downloaded_file.replace('.nc', '_TMP.nc')
   #
-  FILENAME = f"{FOLDER}/prec_monthly_nmme_cpc.nc".replace("//","/")
-  TEMPFILE = f"{FOLDER}/prec_monthly_nmme_cpc_TMP.nc".replace("//","/")
-  if os.path.isfile(FILENAME):
-    with netCDF4.Dataset(FILENAME, "r+", format="NETCDF4") as nc:
+  filename = 'prec_monthly_nmme_cpc.nc'
+  if downloaded_file.endswith(filename) and os.path.isfile(filename):
+    with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('prate', 'prec')
-    cdo.selyear('1982/2011', input=FILENAME, output=TEMPFILE)
-    os.replace(TEMPFILE, FILENAME)
+    cdo.Cdo().selyear('1982/2011', input=downloaded_file, output=tempfile)
+    os.replace(tempfile, downloaded_file)
   #
-  FILENAME = f"{FOLDER}/tref_monthly_nmme_ghcn_cams.nc".replace("//","/")
-  TEMPFILE = f"{FOLDER}/tref_monthly_nmme_ghcn_cams_TMP.nc".replace("//","/")
-  if os.path.isfile(FILENAME):
-    with netCDF4.Dataset(FILENAME, "r+", format="NETCDF4") as nc:
+  filename = 'tref_monthly_nmme_ghcn_cams.nc'
+  if downloaded_file.endswith(filename) and os.path.isfile(filename):
+    with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('t2m', 'tref')
-    cdo.addc("273.15",input=FILENAME, output=TEMPFILE)
-    os.replace(TEMPFILE, FILENAME)
+    cdo.Cdo().addc("273.15",input=downloaded_file, output=tempfile)
+    os.replace(tempfile, downloaded_file)
+  #
+  if os.path.isfile(tempfile):
+    os.remove(tempfile)
 
 
 def download_file(download_url, filename):
@@ -153,11 +153,12 @@ def download_file(download_url, filename):
   # Download file
   f, h = urllib.request.urlretrieve(download_url, filename)
   # Check file size
-  assert os.stat(file_name).st_size != 0
+  assert os.stat(filename).st_size != 0
   # Check if file can be opened
   if filename.endswith('.nc'):
-    d = xr.open_dataset(file_name, decode_times=False)
+    d = xr.open_dataset(filename, decode_times=False)
     d.close()
+  modify_downloaded_file_if_needed(filename)
 
 
 # ==================================================================================================
@@ -176,7 +177,7 @@ if __name__ == "__main__":
   parser.add_argument('--recheck', type=bool, default=True,
     help='Indicates if previously downloaded files must be checked or not')
   args = parser.parse_args()  # Extract dates from args
-  # args = argparse.Namespace(download=['all'], year=2020, month=6, re-check=False)
+  # args = argparse.Namespace(download=['all'], year=2020, month=6, recheck=False)
   
   
   # INFORMAR SOBRE VERIFICACIÓN DE ARCHIVOS
@@ -215,39 +216,40 @@ if __name__ == "__main__":
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}observation links: {end - start}')
   
   total_files = df_links['DOWNLOADED'].count()
-  downloaded_files = df_links['DOWNLOADED'].value_counts()
-  n_downloaded_files = downloaded_files[True]
-  n_files_to_download = downloaded_files[False]
+  n_downloaded_files = df_links['DOWNLOADED'].sum()
+  n_files_to_download = total_files - n_downloaded_files
   cfg.logger.info(f"Total files: {total_files}, "+
                   f"Downloaded files: {n_downloaded_files}, "+
                   f"Not yet downloaded files: {n_files_to_download}")
   
   # DESCARGAR ARCHIVOS
-  count_downloaded_files = 0
-  for row in df_links.query('DOWNLOADED == False').itertuples():
-    if not check_file(row.FILENAME, True):
-      try:
-        download_file(row.DOWNLOAD_URL, row.FILENAME)
-        count_downloaded_files += 1
-      except Exception as e:
-        cfg.logger.error(e)
-        cfg.logger.warning(f'Failed to download file "{row.FILENAME}" from url "{row.DOWNLOAD_URL}"')
-        continue
-      else:
-        df_links.at[row.Index, 'DOWNLOADED'] = True
-        helpers.progress_bar(count_downloaded_files, n_files_to_download, status='Downloading files')
-  helpers.close_progress_bar()
-  cfg.logger.info(f'{count_downloaded_files} files were downloaded successfully and '+
-                  f'{n_files_to_download - count_downloaded_files} downloads failed!')
-
-  if any(item in ['observation', 'all'] for item in args.download):
-    modify_observation_files()
+  count_downloaded_files, count_failed_downloads = 0, 0
+  if n_files_to_download:
+    helpers.progress_bar(count_downloaded_files, n_files_to_download, status='Downloading files')
+    for row in df_links.query('DOWNLOADED == False').itertuples():
+      if not check_file(row.FILENAME, True):
+        try:
+          download_file(row.DOWNLOAD_URL, row.FILENAME)
+          count_downloaded_files += 1
+        except Exception as e:
+          helpers.progress_bar_clear_line()
+          cfg.logger.error(e)
+          cfg.logger.warning(f'Failed to download file "{row.FILENAME}" from url "{row.DOWNLOAD_URL}"')
+          count_failed_downloads += 1
+        else:
+          df_links.at[row.Index, 'DOWNLOADED'] = True
+      helpers.progress_bar(count_downloaded_files+count_failed_downloads, n_files_to_download, status='Downloading files')
+    helpers.progress_bar_close()
+    cfg.logger.info(f"{count_downloaded_files} files were downloaded successfully and "+
+                    f"{count_failed_downloads} downloads failed!")
+  else:
+    cfg.logger.info("There isn't files to download!!")
     
-  if cfg.email:
+  if cfg.email and count_failed_downloads:
     helpers.send_email(
-      from_addr = cfg.email.address, 
-      password = cfg.email.password, 
-      to_addr = cfg.email.to_addrs, 
+      from_addr = cfg.email.get('address'), 
+      password = cfg.email.get('password'), 
+      to_addrs = cfg.email.get('to_addrs'), 
       subject = 'Archivos no descargados - EREG SMN', 
-      message = df_links.query('DOWNLOADED == False').to_string()             
+      body = df_links.query('DOWNLOADED == False').to_html()             
     )
