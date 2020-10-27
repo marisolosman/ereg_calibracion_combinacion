@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 import locale
+import smtplib
 
 from contextlib import contextmanager
+from email.message import EmailMessage
 
 
 @contextmanager
@@ -25,4 +27,17 @@ def progress_bar(count, total, status=''):
 
     
 def close_progress_bar():
-  sys.stdout.write('\n')
+    sys.stdout.write('\n')
+  
+
+def send_email(from_addr, password, to_addrs: list, subject, message):
+    msg = EmailMessage()
+    msg.set_content(message)
+    msg['Subject'] = subject
+    msg['From'] = from_addr
+    msg['To'] = ','.join(to_addrs)
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(from_addr, password)
+    server.sendmail(msg)
+    server.quit()

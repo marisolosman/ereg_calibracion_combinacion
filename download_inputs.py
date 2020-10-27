@@ -244,3 +244,12 @@ if __name__ == "__main__":
 
   if any(item in ['observation', 'all'] for item in args.download):
     modify_observation_files()
+    
+  if cfg.email:
+    helpers.send_email(
+      from_addr = cfg.email.address, 
+      password = cfg.email.password, 
+      to_addr = cfg.email.to_addrs, 
+      subject = 'Archivos no descargados - EREG SMN', 
+      message = df_links.query('DOWNLOADED == False').to_string()             
+    )
