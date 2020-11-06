@@ -6,6 +6,7 @@ import glob #listar archivos
 import calendar #manejar meses del calendario
 from pathlib import Path #manejar path
 import numpy as np
+import pandas as pd
 import model #objeto y metodos asociados a los modelos
 import observation # idem observaciones
 import configuration
