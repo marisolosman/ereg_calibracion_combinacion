@@ -189,7 +189,7 @@ if __name__ == "__main__":
   parser.add_argument('--re-download', action='store_true', dest='redownload',
     help='Indicates if previously downloaded files must be downloaded again')
   parser.add_argument('--models', nargs='+', default=[],
-    help='Indicates which models should be considered when downloading')
+    help='Indicates which models should be considered when downloading input files')
   args = parser.parse_args()  # Extract dates from args
   # args = argparse.Namespace(download=['all'], year=2020, month=6, recheck=False, redownload=True)
   
@@ -249,9 +249,11 @@ if __name__ == "__main__":
                   f"Not yet downloaded files: {n_files_to_download}")
   
   # DESCARGAR ARCHIVOS
+  cfg.logger.info("Running files download process ... ")
   count_downloaded_files, count_failed_downloads = 0, 0
   if n_files_to_download:
-    helpers.progress_bar(count_downloaded_files, n_files_to_download, status='Downloading files')
+    run_status = f'Downloading ereg input files (PID: {os.getpid()})'
+    helpers.progress_bar(count_downloaded_files, n_files_to_download, status=run_status)
     for row in df_links.query('DOWNLOADED == False').itertuples():
       try:
         download_file(row.DOWNLOAD_URL, row.FILENAME)
@@ -263,7 +265,7 @@ if __name__ == "__main__":
       else:
         df_links.at[row.Index, 'DOWNLOADED'] = True
         count_downloaded_files += 1
-      helpers.progress_bar(count_downloaded_files+count_failed_downloads, n_files_to_download, status='Downloading files')
+      helpers.progress_bar(count_downloaded_files+count_failed_downloads, n_files_to_download, status=run_status)
     helpers.progress_bar_close()
     cfg.logger.info(f"{count_downloaded_files} files were downloaded successfully and "+
                     f"{count_failed_downloads} downloads failed!")
@@ -271,6 +273,7 @@ if __name__ == "__main__":
     cfg.logger.info("There isn't files to download!!")
     
   if cfg.email and count_failed_downloads:
+    cfg.logger.info("Sending email with download failures")
     helpers.send_email(
       from_addr = cfg.email.get('address'), 
       password = cfg.email.get('password'), 

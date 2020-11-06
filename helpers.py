@@ -18,7 +18,7 @@ def localized(code):
 
 
 def progress_bar(count, total, status=''):
-    bar_len = 100
+    bar_len = 70
     filled_len = int(round(bar_len * count / float(total)))
 
     percents = round(100.0 * count / float(total), 1)
