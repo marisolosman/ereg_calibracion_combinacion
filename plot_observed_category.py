@@ -31,12 +31,7 @@ def main():
     args=parser.parse_args()
 
     lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
-    coordenadas = 'coords'
-    domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
-    coords = {'lat_s': float(domain[1]),
-              'lat_n': float(domain[2]),
-              'lon_w': float(domain[3]),
-              'lon_e': float(domain[4])}
+    coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
