@@ -32,6 +32,6 @@ loggers:
         propagate: no
 
 root:
-    level: NOTSET
+    level: WARNING
     handlers: [console, file_handler]
     propagate: yes

@@ -32,6 +32,10 @@ models:
   - [ FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
   - [    GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2010,       nc,          4 ] 
 
+
+# URL where to download the models files from
+iri_url: http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/
+
 # models_url glossary:
 # model              -> Model name (and ID)
 # url_model_part     -> Any model in http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/

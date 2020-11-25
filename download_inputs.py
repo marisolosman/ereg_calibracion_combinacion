@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import argparse #parse command line options
+import argparse  # parse command line options
 import calendar
 import helpers
 import configuration
@@ -18,25 +18,18 @@ import sys
 import cdo
 import netCDF4
 
-
 cfg = configuration.Config.Instance()
 
-RUTA_IRI = "http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/"
-
-with helpers.localized("en_US.utf8"):
-  MONTHS_ABBR = list(calendar.month_abbr)
-
-
-def generate_download_url(variable, forecast_start_year, forecast_start_month_abbr, member_or_realization, model_config_data, data_type):
+def generate_download_url(variable, forecast_start_year, forecast_start_month, member_or_realization, model_config_data, data_type):
   model_specific_url = (f"{model_config_data.url_model_part}/" + 
       (f"{model_config_data.url_hindcast_part}" if data_type == 'hindcast' else f"{model_config_data.url_forecast_part}")) 
   # Forecast Start Time (forecast_reference_time)
   #   grid: /S (months since 1960-01-01) ordered (0000 1 Feb 1981) to (0000 1 Jan 2017) by 1.0 N= 432 pts :grid
-  forecast_start_time = f"(0000 1 {forecast_start_month_abbr} {forecast_start_year} )"
+  forecast_start_time = f"(0000 1 {calendar.month_abbr[forecast_start_month]} {forecast_start_year} )"
   # Ensemble Member (realization)
   #   grid: /M (unitless) ordered (1.0) to (x.0) by 1.0 N= x pts :grid
   ensemble_member = f"({member_or_realization}.0 )"
-  return f"{RUTA_IRI}{model_specific_url}/.{variable}/S/{forecast_start_time}VALUES/M/{ensemble_member}VALUES/data.nc"
+  return f"{cfg.get('iri_url')}{model_specific_url}/.{variable}/S/{forecast_start_time}VALUES/M/{ensemble_member}VALUES/data.nc"
 
 
 def generate_filename(variable, year, month, member, model_config_data, data_type):
@@ -74,9 +67,9 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
         for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
-          for month, month_abbr in zip(range(1,13), MONTHS_ABBR[1:]):
+          for month in range(1, 12+1, 1):
             FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
-            DOWNLOAD_URL = generate_download_url(variable, year, month_abbr, member, model_data, "hindcast")
+            DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
             yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
@@ -89,9 +82,9 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
-        for month, month_abbr in zip(range(1, now.month+1 if year == now.year else 13), MONTHS_ABBR[1:]):
+        for month in range(1, now.month+1 if year == now.year else 12+1, 1):
           FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
-          DOWNLOAD_URL = generate_download_url(variable, year, month_abbr, member, model_data, "operational")
+          DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
           yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
@@ -100,12 +93,11 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
 
 def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
   # 
-  month_abbr = MONTHS_ABBR[month]
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
         FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
-        DOWNLOAD_URL = generate_download_url(variable, year, month_abbr, member, model_data, "real_time")
+        DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
         yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
@@ -117,19 +109,19 @@ def links_to_download_observation(recheck, redownload):
   FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
   #
   FILENAME = "prec_monthly_nmme_cpc.nc"
-  DOWNLOAD_URL = f"{RUTA_IRI}.CPC-CMAP-URD/.prate/data.nc"
+  DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.prate/data.nc"
   DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
   yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation'}
   #
   FILENAME = "tref_monthly_nmme_ghcn_cams.nc"
-  DOWNLOAD_URL = f"{RUTA_IRI}.GHCN_CAMS/.updated/data.nc"
+  DOWNLOAD_URL = f"{cfg.get('iri_url')}.GHCN_CAMS/.updated/data.nc"
   DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
   yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation'}
   #
   FILENAME = "lsmask.nc"
-  DOWNLOAD_URL = f"{RUTA_IRI}.LSMASK/.land/data.nc"
+  DOWNLOAD_URL = f"{cfg.get('iri_url')}.LSMASK/.land/data.nc"
   DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
   yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation'}
@@ -189,8 +181,12 @@ if __name__ == "__main__":
   parser.add_argument('--re-download', action='store_true', dest='redownload',
     help='Indicates if previously downloaded files must be downloaded again')
   parser.add_argument('--models', nargs='+', default=[],
+    choices=[item[0] for item in cfg.get('models')[1:]],
     help='Indicates which models should be considered when downloading input files')
-  args = parser.parse_args()  # Extract dates from args
+  
+  # EXTRACT DATE FROM ARGS
+  args = parser.parse_args()
+  # Args for testing purposes
   # args = argparse.Namespace(download=['all'], year=2020, month=6, recheck=False, redownload=True)
   
   
