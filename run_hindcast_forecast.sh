@@ -53,7 +53,7 @@ if [ "${CO}" = "true" ]; then
   for j in "${variables[@]}" ; do #loop sobre las variables a calibrar, por ahora me enfoco en prec
     for n in {1..12} ; do # loop over IC
       for k in {1..7} ; do #loop over leadtime
-        for l in "${ctech[@]}" ; do #loop sobre manera de combinarr modelos
+        for l in "${ctech[@]}" ; do #loop sobre manera de combinar modelos
           if [ "${l}" = "count" ] ; then
             echo ${yellow}"$(date +'%D-%T') -- Running -- python combination.py ${j} ${n} ${k} ${l}"${reset}
             python combination.py ${j} ${n} ${k} ${l}

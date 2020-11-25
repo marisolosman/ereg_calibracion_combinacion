@@ -42,7 +42,7 @@ if [ "${CA}" = "true" ]; then
     for n in {1..12} ; do # loop over IC
       for k in {1..7} ; do #loop over leadtime
         echo ${yellow}"$(date +'%D-%T') -- Running -- python calibration.py ${j} ${n} ${k} ${OW}"${reset}
-        python calibration.py ${j} ${n} ${k} ${CV} ${OW}
+        python calibration.py ${j} ${n} ${k} ${OW}
       done
     done
   done

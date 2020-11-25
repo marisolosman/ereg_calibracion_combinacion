@@ -13,6 +13,7 @@ import numpy as np
 import model
 import ereg #apply ensemble regression to multi-model ensemble
 import configuration
+import pandas as pd
 
 cfg = configuration.Config.Instance()
 
