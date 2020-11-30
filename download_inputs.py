@@ -132,17 +132,21 @@ def modify_downloaded_file_if_needed(downloaded_file):
   tempfile = downloaded_file.replace('.nc', '_TMP.nc')
   #
   filename = 'prec_monthly_nmme_cpc.nc'
-  if downloaded_file.endswith(filename) and os.path.isfile(filename):
+  if downloaded_file.endswith(filename) and os.path.isfile(downloaded_file):
+    cfg.logger.info(f'Modifying file {filename}. Renaming variable "prate" to "prec".')
     with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('prate', 'prec')
+    cfg.logger.info(f'Modifying file {filename}. Selecting years (from 1982 to 2011).')
     cdo.Cdo().selyear('1982/2011', input=downloaded_file, output=tempfile)
     os.replace(tempfile, downloaded_file)
   #
   filename = 'tref_monthly_nmme_ghcn_cams.nc'
-  if downloaded_file.endswith(filename) and os.path.isfile(filename):
+  if downloaded_file.endswith(filename) and os.path.isfile(downloaded_file):
+    cfg.logger.info(f'Modifying file {filename}. Renaming variable "t2m" to "tref".')
     with netCDF4.Dataset(downloaded_file, "r+", format="NETCDF4") as nc:
       nc.renameVariable('t2m', 'tref')
-    cdo.Cdo().addc("273.15",input=downloaded_file, output=tempfile)
+    cfg.logger.info(f'Modifying file {filename}. Adding 273.15 to values in file.')
+    cdo.Cdo().addc("273.15", input=downloaded_file, output=tempfile)
     os.replace(tempfile, downloaded_file)
   #
   if os.path.isfile(tempfile):
