@@ -1,4 +1,7 @@
 
+use_logger: !!bool "true"
+
+# folders in which the data will be saved
 download_folder: /data/ereg/descargas/
 gen_data_folder: /data/ereg/generados/
 

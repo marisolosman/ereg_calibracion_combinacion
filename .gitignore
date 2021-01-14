@@ -7,3 +7,7 @@ __pycache__/
 *.log*
 
 email.yaml
+
+# To edit files with RStudio
+*.R*
+.Rproj.user

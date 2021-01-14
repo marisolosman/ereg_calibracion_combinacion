@@ -1,5 +1,5 @@
-#grafico pronostico
-import argparse #para hacer el llamado desde consola
+# grafico pronostico
+import argparse  # para hacer el llamado desde consola
 import time
 import calendar
 import numpy as np
@@ -20,15 +20,8 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     lat = dataset[lat_name].sel(**{lat_name: slice(lats, latn)})
     return var_out, lat, lon
 
-def main():
+def main(args):
     """Plot observed category"""
-    # Define parser data
-    parser = argparse.ArgumentParser(description='Plot observed category')
-    parser.add_argument('variable',type=str, nargs=1,\
-            help='Variable to verify (prec or temp)')
-    parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
-    args=parser.parse_args()
 
     lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
     coords = cfg.get('coords')
@@ -97,8 +90,30 @@ def main():
 
 # ==================================================================================================
 if __name__ == "__main__":
-  start = time.time()
-  main()
-  end = time.time()
-  print(end - start)
   
+    # Define parser data
+    parser = argparse.ArgumentParser(description='Plot observed category')
+    parser.add_argument('variable',type=str, nargs=1,\
+            help='Variable to verify (prec or temp)')
+    parser.add_argument('IC', type=int, nargs=1,\
+            help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
+    
+    # Extract data from args
+    args = parser.parse_args()
+  
+    # Run plotting
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"plot_observed_category.py\". Error: {e}.")
+        raise
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"plot_observed_category.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+

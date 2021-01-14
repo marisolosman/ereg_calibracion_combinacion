@@ -2,8 +2,8 @@
 real time forecast using combination techniques developedin combination.py
 """
 #!/usr/bin/env python
-import argparse #parse command line options
-import time #test time consummed
+import argparse  # parse command line options
+import time  # test time consummed
 import datetime
 import warnings
 import glob
@@ -11,7 +11,7 @@ from pathlib import Path
 import calendar
 import numpy as np
 import model
-import ereg #apply ensemble regression to multi-model ensemble
+import ereg  # apply ensemble regression to multi-model ensemble
 import configuration
 import pandas as pd
 
@@ -19,41 +19,7 @@ cfg = configuration.Config.Instance()
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-def main():
-    """Defines parser data"""
-    parser = argparse.ArgumentParser(description='Combining models')
-    parser.add_argument('variable', type=str, nargs=1, 
-        help='Variable to calibrate (prec or tref)')
-    parser.add_argument('--IC', dest='IC', metavar='Date', type=str, nargs=1,
-        help='Initial conditions in "YYYY-MM-DD"')
-    parser.add_argument('--leadtime', dest='leadtime', type=int, nargs=1,
-        help='Forecast leadtime (in months, from 1 to 7)')
-    parser.add_argument('--OW', 
-        help='Overwrite previous calibrations', action='store_true')
-    subparsers = parser.add_subparsers(help="Combination technique")
-    wpdf_parser = subparsers.add_parser('wpdf', help='weighted sum of calibrated PDFs')
-    wsereg_parser = subparsers.add_parser('wsereg', help='Ereg with the weighted superensemble')
-    count_parser = subparsers.add_parser('count', help='Count members in each bin')
-    count_parser.set_defaults(ctech='count', wtech=['same'])
-    count_parser.add_argument('--no-model', nargs='+', dest='no_model', 
-        choices=['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'], 
-        help='Models to be discarded')
-    wpdf_parser.set_defaults(ctech='wpdf')
-    wpdf_parser.add_argument("--weight_tech", required=True, nargs=1,
-        choices=['pdf_int', 'mean_cor', 'same'], dest='wtech', 
-        help = '')
-    wpdf_parser.add_argument('--no-model', nargs='+', dest='no_model', 
-        choices=['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'], 
-        help='Models to be discarded')
-    wsereg_parser.set_defaults(ctech='wsereg')
-    wsereg_parser.add_argument("--weight_tech", required=True, nargs=1, 
-        choices=['pdf_int', 'mean_cor', 'same'], dest='wtech', 
-        help='Relative weight between models')
-    wsereg_parser.add_argument('--no-model', nargs='+', dest='no_model', 
-        choices=['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'], 
-        help='Models to be discarded')
-    # Extract dates from args
-    args = parser.parse_args()
+def main(args):
     
     initialDate = datetime.datetime.strptime(args.IC[0], '%Y-%m-%d')
     iniy = initialDate.year
@@ -64,8 +30,8 @@ def main():
     
     df_modelos = pd.DataFrame(conf_modelos[1:], columns=conf_modelos[0])
     
-    if args.no_model is not None: #si tengo que descartar modelos
-        df_modelos = df_modelos.query(f"model not in {args.no_model}")
+    if args.no_models:  # si hay que descartar algunos modelos
+        df_modelos = df_modelos.query(f"model not in {args.no_models}")
         
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
             'fechai', 'fechaf','ext', 'rt_miembros']
@@ -92,8 +58,9 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print('IC:' + calendar.month_abbr[inim], 'Target season:' + SSS,
-          args.ctech, args.wtech[0])
+    message = 'Var:' + args.variable[0] + ' IC:' + calendar.month_abbr[inim] +\
+              ' Target season:' + SSS + ' ' + args.ctech + ' ' + args.wtech[0]
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     #obtengo datos observados
     archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
                    args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
@@ -107,7 +74,8 @@ def main():
                             it['latn'], it['lonn'], it['miembros'], \
                             it['plazos'], it['fechai'], it['fechaf'],\
                             it['ext'], it['rt_miembros'])
-        print(it['nombre'])
+        message = f"Current model: {it['nombre']}"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [lats, lons, pronos] = modelo.select_real_time_months(inim, iniy,\
                                                              args.leadtime[0],
                                                              coords['lat_s'],
@@ -234,8 +202,56 @@ def main():
 
 # ==================================================================================================
 if __name__ == "__main__":
-  start = time.time()
-  main()
-  end = time.time()
-  print(end - start)
+    
+    # Defines parser data
+    parser = argparse.ArgumentParser(description='Combining models')
+    parser.add_argument('variable', type=str, nargs=1, 
+        help='Variable to calibrate (prec or tref)')
+    parser.add_argument('--IC', dest='IC', metavar='Date', type=str, nargs=1,
+        help='Initial conditions in "YYYY-MM-DD"')
+    parser.add_argument('--leadtime', dest='leadtime', type=int, nargs=1,
+        help='Forecast leadtime (in months, from 1 to 7)')
+    parser.add_argument('--OW', 
+        help='Overwrite previous calibrations', action='store_true')
+    parser.add_argument('--no-models', nargs='+', dest='no_models', default=[],
+        choices=[item[0] for item in cfg.get('models')[1:]], 
+        help='Models to be discarded')
+        
+    subparsers = parser.add_subparsers(help="Combination technique")
+    
+    wpdf_parser = subparsers.add_parser('wpdf', help='weighted sum of calibrated PDFs')
+    wsereg_parser = subparsers.add_parser('wsereg', help='Ereg with the weighted superensemble')
+    count_parser = subparsers.add_parser('count', help='Count members in each bin')
+    
+    wpdf_parser.set_defaults(ctech='wpdf')
+    wpdf_parser.add_argument("--weight_tech", required=True, nargs=1,
+        choices=['pdf_int', 'mean_cor', 'same'], dest='wtech', 
+        help = '')
+    wsereg_parser.set_defaults(ctech='wsereg')
+    wsereg_parser.add_argument("--weight_tech", required=True, nargs=1, 
+        choices=['pdf_int', 'mean_cor', 'same'], dest='wtech', 
+        help='Relative weight between models')
+    count_parser.set_defaults(ctech='count')
+    count_parser.add_argument("--weight_tech", required=False, nargs=1, dest='wtech', 
+        choices=['same'], default=['same'],
+        help='Relative weight between models')
+    
+    # Extract data from args
+    args = parser.parse_args()
+  
+    # Run real time combination
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"real_time_combination.py\". Error: {e}.")
+        raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"real_time_combination.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 

@@ -7,7 +7,7 @@ formatters:
         format: "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
     complete:
         datefmt: "%m/%d/%Y %I:%M:%S %p"
-        format: "[ %(asctime)s ][ PID %(process)3d-%(threadName)-7s ][%(name)5s::%(lineno)-4d][ %(levelname)5s ] %(message)s"
+        format: "[ %(asctime)s ][ PID %(process)5d ] [ %(filename).7s::%(lineno)-3d ][ %(levelname)5s ] %(message)s"
 
 handlers:
     console:
@@ -25,13 +25,22 @@ handlers:
         backupCount: 2
         encoding: utf8
 
+    file_handler_only_errors:
+        class: logging.handlers.RotatingFileHandler
+        level: WARNING
+        formatter: complete
+        filename: ereg-errors.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 2
+        encoding: utf8
+
 loggers:
     ereg:
         level: DEBUG
-        handlers: [console, file_handler]
+        handlers: [console, file_handler, file_handler_only_errors]
         propagate: no
 
 root:
     level: WARNING
-    handlers: [console, file_handler]
+    handlers: [console, file_handler, file_handler_only_errors]
     propagate: yes

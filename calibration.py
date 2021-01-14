@@ -1,42 +1,30 @@
 #!/usr/bin/env python
 """open forecast and observations and calibrates models using ensemble regression"""
-import argparse #para hacer el llamado desde consola
-import time #tomar el tiempo que lleva el codigo
-import glob #listar archivos
-import calendar #manejar meses del calendario
-from pathlib import Path #manejar path
+import argparse  # para hacer el llamado desde consola
+import time  # tomar el tiempo que lleva el codigo
+import glob  # listar archivos
+import calendar  # manejar meses del calendario
+from pathlib import Path  # manejar path
 import numpy as np
-import pandas as pd
-import model #objeto y metodos asociados a los modelos
+import model  # objeto y metodos asociados a los modelos
 import observation # idem observaciones
 import configuration
+import pandas as pd
 
 cfg = configuration.Config.Instance()
 
-def main():
-    parser = argparse.ArgumentParser(description='Calibrates model using Ensemble Regression.')
-    parser.add_argument('variable', type=str, nargs=1, 
-        help='Variable to calibrate (prec or tref)')
-    parser.add_argument('IC', type=int, nargs=1, 
-        help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('leadtime', type=int, nargs=1, 
-        help='Forecast leatime (in months, from 1 to 7)')
-    parser.add_argument('--CV', action='store_true', 
-        help='Croos-validated mode')
-    parser.add_argument('--OW', action='store_true', 
-        help='Overwrite previous calibrations')
-    parser.add_argument('--no-model', required=False, nargs='+', dest='no_model', 
-        choices= ['CanCM4i','CCSM4','CFSv2','CM2p1','FLOR-A06','FLOR-B01','GEM-NEMO','GEOS5'],
-        help="Models to be discarded")
-    args = parser.parse_args()   # Extract dates from args
+def main(args):
     
     coords = cfg.get('coords')
     conf_modelos = cfg.get('models')
     
     df_modelos = pd.DataFrame(conf_modelos[1:], columns=conf_modelos[0])
     
-    if args.no_model is not None: #si tengo que descartar modelos
-        df_modelos = df_modelos.query(f"model not in {args.no_model}")
+    if args.no_models:  # si hay que descartar algunos modelos
+        df_modelos = df_modelos.query(f"model not in {args.no_models}")
+    
+    if args.models:  # si hay que incluir solo algunos modelos
+        df_modelos = df_modelos.query(f"model in {args.models}")
         
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
             'fechai', 'fechaf','ext', 'rt_miembros']
@@ -51,10 +39,12 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print("Calibrating " + args.variable[0] + " forecasts for " + SSS + " initialized in "
-          + str(args.IC[0]) )
+    message = "Calibrating " + args.variable[0] + " forecasts for " + SSS +\
+              " initialized in " + str(args.IC[0]) 
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
-    print("Processing Observations")
+    message = "Processing Observations"
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
                    args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
     if archivo.is_file() and not args.OW:
@@ -112,7 +102,8 @@ def main():
             np.savez(archivo2, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
                      terciles=terciles) #Save observed variables
 
-    print("Processing Models")
+    message = "Processing Models"
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     RUTA = f'{cfg.get("gen_data_folder")}/nmme_output/cal_forecasts/'.replace('//','/')
     for it in modelos:
         output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
@@ -178,8 +169,43 @@ def main():
 
 # ==================================================================================================
 if __name__ == "__main__":
-  start = time.time()
-  main()
-  end = time.time()
-  print(end - start)
+    
+    # Defines parser data
+    parser = argparse.ArgumentParser(description='Calibrates model using Ensemble Regression.')
+    parser.add_argument('variable', type=str, nargs=1, 
+        help='Variable to calibrate (prec or tref)')
+    parser.add_argument('IC', type=int, nargs=1, 
+        help='Month of initial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type=int, nargs=1, 
+        help='Forecast leadtime (in months, from 1 to 7)')
+    parser.add_argument('--CV', action='store_true', 
+        help='Croos-validated mode')
+    parser.add_argument('--OW', action='store_true', 
+        help='Overwrite previous calibrations')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--models', nargs='+', dest='models', default=[],
+        choices=[item[0] for item in cfg.get('models')[1:]],
+        help="Models to be included")
+    group.add_argument('--no-models', nargs='+', dest='no_models', default=[],
+        choices=[item[0] for item in cfg.get('models')[1:]],
+        help="Models to be discarded")
+    
+    # Extract data from args
+    args = parser.parse_args()
+    
+    # Run calibration
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"calibration.py\". Error: {e}.")
+        raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"calibration.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 

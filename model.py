@@ -85,7 +85,8 @@ class Model(object):
         """ remove linear trend
         forecast 4-D array ntimes nensembles nlats nlons
         CV_opt boolean"""
-        print("Detrending data")
+        message = "Detrending data"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         anios = np.arange(ntimes)
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
@@ -96,7 +97,8 @@ class Model(object):
         p.clear()
 
         if CV_opt: #validacion cruzada ventana 1 anio
-            print("Getting cross-validated data")
+            message = "Getting cross-validated data"
+            print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
             CV_matrix = np.logical_not(np.identity(ntimes))
             def filtro_tendencia(i, l, j, k, anios=anios, CV_m=CV_matrix, forec=forecast):
                 y = np.nanmean(forec[:, :, j, k], axis=1) #media del ensamble
@@ -111,7 +113,8 @@ class Model(object):
             return forecast_dt
 
         else:
-            print("Getting hindcast parameters")
+            message = "Getting hindcast parameters"
+            print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
             def filtro_tendencia(i, l, j, k, anios=anios, forec=forecast): #forecast 4D
                 y = np.nanmean(forec[:, :, j, k], axis=1)
                 A = np.vstack([anios, np.ones(anios.shape[0])])
@@ -138,7 +141,8 @@ class Model(object):
             return a2, b2, Rm, Rbest, epsbn, K
     def pdf_eval(self, forecast, eps, observation):
         """obtains pdf intensity at observation point"""
-        print("PDF intensity at observation value")
+        message = "PDF intensity at observation value"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nmembers, nlat, nlon] = forecast.shape
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlat * nlon)
         l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlat * nlon), ntimes)
@@ -175,7 +179,8 @@ class Model(object):
         return prob_terciles
 
     def computo_terciles(self, forecast, CV_opt):
-        print("Getting model tercile limits")
+        message = "Getting model tercile limits"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         #calculo los limites de los terciles para el modelo
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         if CV_opt: #validacion cruzada ventana 1 anio
@@ -207,8 +212,9 @@ class Model(object):
         return terciles
 
     def computo_categoria(self, forecast, tercil):
-        print("Counting estimate forecast")
         """clasifies each year and ensemble member according to its category"""
+        message = "Counting estimate forecast"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         #calculo el tercil pronosticado
         forecast_terciles = np.empty([3, ntimes, nmembers, nlats, nlons])
@@ -221,6 +227,7 @@ class Model(object):
         forecast_terciles[1, :, :, :, :] = np.logical_not(
             np.logical_or(forecast_terciles[0, :, :, :, :], forecast_terciles[2, :, :, :, :]))
         return forecast_terciles
+
     def select_real_time_months(self,init_month, init_year, target, lats, latn,
                                 lonw, lone):
         """select real time forecast season based on IC and target"""

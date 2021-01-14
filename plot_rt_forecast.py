@@ -1,6 +1,6 @@
 """smoth calibrated probabilities using a gaussian filter and plot forecast"""
-import argparse #parse command line options
-import time #test time consummed
+import argparse  # parse command line options
+import time  # test time consummed
 import calendar
 import datetime
 from pathlib import Path
@@ -66,6 +66,7 @@ def asignar_categoria(for_terciles):
             mascara = for_cat < 1
             for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
+
 def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
                      titulo, salida):
     """Plot probabilistic forecast"""
@@ -113,18 +114,9 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
     return
-def main():
-    # Define parser data
-    parser = argparse.ArgumentParser(description='Verify combined forecast')
-    parser.add_argument('variable',type=str, nargs= 1,\
-            help='Variable to verify (prec or temp)')
-    parser.add_argument('--IC', type=str, nargs=1,\
-            help='Date of initial conditions (in "YYYY-MM-DD")')
-    parser.add_argument('--leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
 
-    args=parser.parse_args()
-    #defino ref dataset y target season
+def main(args):
+    # Defino ref dataset y target season
     initialDate = datetime.datetime.strptime(args.IC[0], '%Y-%m-%d')
     iniy = initialDate.year
     inim = initialDate.month
@@ -207,9 +199,33 @@ def main():
 
 # ==================================================================================================
 if __name__ == "__main__":
-  start = time.time()
-  main()
-  end = time.time()
-  print(end - start)
+  
+    # Define parser data
+    parser = argparse.ArgumentParser(description='Verify combined forecast')
+    parser.add_argument('variable',type=str, nargs= 1,\
+            help='Variable to verify (prec or temp)')
+    parser.add_argument('--IC', type=str, nargs=1,\
+            help='Date of initial conditions (in "YYYY-MM-DD")')
+    parser.add_argument('--leadtime', type=int, nargs=1,\
+            help='Forecast leatime (in months, from 1 to 7)')
+
+    # Extract data from args
+    args = parser.parse_args()
+  
+    # Run plotting
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"plot_rt_forecast.py\". Error: {e}.")
+        raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"plot_rt_forecast.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
 

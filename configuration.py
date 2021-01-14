@@ -7,6 +7,7 @@ import os
 import logging.config
 import logging
 import sys
+import pathlib
 
 
 @singleton.Singleton
@@ -20,6 +21,7 @@ class Config():
         self.email = self._load_email_config(email_config)
         self._update_models()
         self._check_models()
+        self._setup_directory_tree()
 
     def get(self, keyname):
         if keyname not in self.config:
@@ -116,6 +118,31 @@ class Config():
         if added_models and self._is_there_comb_forecasts:
             raise InvalidConfiguration(f"Model/s \"{', '.join(added_models)}\" was "+
                                        f"added, but combined forecasts wasn't dropped.")
+        models_data = [m[0] for m in self.get('models')[1:]]
+        models_urls = [m[0] for m in self.get('models_url')[1:]]
+        if models_data != models_urls:
+            raise InvalidConfiguration(f"Model/s in \"model\" tag en model/s in \"model_url\" tag mismatch. "+
+                                       f"Please correct file \"{self.file}\" and try again.")
+        
+    def _setup_directory_tree(self):
+        """Create directories to storage data (if needed)"""
+
+        download_folder = self.get('download_folder')
+        if not os.access(pathlib.Path(download_folder).parent, os.W_OK):
+            sys.exit(f"{pathlib.Path(download_folder).parent} is not writable")
+        pathlib.Path(download_folder).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(download_folder, 'NMME', 'hindcast')).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(download_folder, 'NMME', 'real_time')).mkdir(parents=True, exist_ok=True)
+
+        gen_data_folder = self.get('gen_data_folder')
+        if not os.access(pathlib.Path(gen_data_folder).parent, os.W_OK):
+            sys.exit(f"{pathlib.Path(gen_data_folder).parent} is not writable")
+        pathlib.Path(gen_data_folder).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'cal_forecasts')).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'comb_forecast')).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'rt_forecast')).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'forecast')).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'rt_forecast')).mkdir(parents=True, exist_ok=True)
             
 
 

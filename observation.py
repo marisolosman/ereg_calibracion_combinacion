@@ -60,7 +60,8 @@ class Observ(object):
 #methods
     def select_months(self, last_month, year_init, lats, latn, lonw, lone):
         """computes seasonal mean"""
-        print("seasonal mean")
+        message = "seasonal mean"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         file = ruta + self.var_name + '_monthly_nmme_' + self.institution +'.nc'
         [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
                                                          self.lat_name,
@@ -76,7 +77,8 @@ class Observ(object):
 
     def remove_trend(self, observation, CV_opt):
         """removes trend"""
-        print("Removing trend")
+        message = "Removing trend"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nlats, nlons] = observation.shape
         anios = np.arange(ntimes) #en anios es un quilombo y para el caso es lo mismo
         i = np.repeat(np.arange(ntimes, dtype=int), nlats * nlons)
@@ -85,7 +87,8 @@ class Observ(object):
         p = Pool(CORES)
         p.clear()
         if CV_opt: #validacion cruzada ventana 1 anio
-            print("Cross-validation")
+            message = "Cross-validation"
+            print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
             CV_matrix = np.logical_not(np.identity(ntimes))
             def filtro_tendencia(i, j, k, anios=anios, CV_m=CV_matrix,
                                  obs=observation):
@@ -137,7 +140,8 @@ class Observ(object):
 
     def computo_terciles(self, observation, CV_opt):
         """obtains terciles limits"""
-        print("observed terciles limits")
+        message = "observed terciles limits"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         ntimes = observation.shape[0]
         if CV_opt: #validacion cruzada ventana 1 anio
             i = np.arange(ntimes)
@@ -182,7 +186,8 @@ class Observ(object):
 
     def computo_categoria(self, observation, tercil):
         """assings observed category: Below, normal, Above"""
-        print("Observed Category")
+        message = "Observed Category"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nlats, nlons] = np.shape(observation)
         #calculo el tercil observado cada anio
         obs_terciles = np.empty([3, ntimes, nlats, nlons])
