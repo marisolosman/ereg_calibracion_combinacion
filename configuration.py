@@ -10,6 +10,30 @@ import sys
 import pathlib
 
 
+class QuietError(Exception):
+    # All who inherit me shall not traceback, but be spoken of cleanly
+    pass
+            
+
+class InvalidConfiguration(QuietError):
+    # Exception raised when an invalid configuration was detected (without context)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__suppress_context__ = True
+
+
+def quiet_hook(kind, message, trace):
+    if QuietError in kind.__bases__:
+        # Only print Error Type and Message
+        print(f'\n{kind.__module__}.{kind.__name__}: {message}')  
+    else:
+        # Print Error Type, Message and Traceback
+        sys.__excepthook__(kind, message, trace)  
+
+
+sys.excepthook = quiet_hook
+
+
 @singleton.Singleton
 class Config():
     """Class that manage the configuration file.  """
@@ -25,12 +49,14 @@ class Config():
 
     def get(self, keyname):
         if keyname not in self.config:
-            raise InvalidConfiguration(f"Yaml file \"{self.file}\" don't contain this entry: {keyname}")
+            err_msg = f"Yaml file \"{self.file}\" don't contain this entry: {keyname}"
+            raise InvalidConfiguration(err_msg)
         return self.config.get(keyname)
     
     def _load_ereg_config(self, yaml_file):
         if not os.path.exists(yaml_file):
-            raise InvalidConfiguration(f"Configuration file (i.e. {yaml_file}) not found!")
+            err_msg = f"Configuration file (i.e. {yaml_file}) not found!"
+            raise InvalidConfiguration(err_msg)
         with open(yaml_file, 'r') as f:
             return yaml.safe_load(f)
                                    
@@ -43,10 +69,12 @@ class Config():
                     logging.config.dictConfig(config)
                 except Exception as e:
                     logging.basicConfig(level=default_level)
-                    message = f"Error loading logging configuration file. Using default configs!"
+                    message = f"Error loading logging configuration file. "\
+                              f"Using default configs!"
         else:
             logging.basicConfig(level=default_level)
-            message = f"Logging configuration file (i.e. {yaml_file}) not found!. Using default configs!"
+            message = f"Logging configuration file (i.e. {yaml_file}) not found!. "\
+                      f"Using default configs!"
         logger = logging.getLogger('ereg')
         logger.warning(message) if message else None
         return logger
@@ -58,7 +86,8 @@ class Config():
                 try:
                     email_config = yaml.safe_load(f.read())
                 except Exception as e:
-                    self.logger.error(f"Failed to load email configuration. File {yaml_file} couldn't be read!")
+                    self.logger.error(f"Failed to load email configuration. "+
+                                      f"File {yaml_file} couldn't be read!")
         return email_config
     
     @property
@@ -112,42 +141,48 @@ class Config():
     def _check_models(self):
         deleted_models = set(self._combined_models).difference(self._models_in_config)
         if deleted_models and self._is_there_comb_forecasts:
-            raise InvalidConfiguration(f"Model/s \"{', '.join(deleted_models)}\" was "+
-                                       f"deleted, but combined forecasts wasn't dropped.")
+            err_msg = f"Model/s \"{', '.join(deleted_models)}\" was "\
+                      f"deleted, but combined forecasts wasn't dropped."
+            raise InvalidConfiguration(err_msg)
         added_models = set(self._models_in_config).difference(self._combined_models)
         if added_models and self._is_there_comb_forecasts:
-            raise InvalidConfiguration(f"Model/s \"{', '.join(added_models)}\" was "+
-                                       f"added, but combined forecasts wasn't dropped.")
+            err_msg = f"Model/s \"{', '.join(added_models)}\" was "\
+                      f"added, but combined forecasts wasn't dropped."
+            raise InvalidConfiguration(err_msg)
         models_data = [m[0] for m in self.get('models')[1:]]
         models_urls = [m[0] for m in self.get('models_url')[1:]]
         if models_data != models_urls:
-            raise InvalidConfiguration(f"Model/s in \"model\" tag en model/s in \"model_url\" tag mismatch. "+
-                                       f"Please correct file \"{self.file}\" and try again.")
+            err_msg = f"Model/s in \"model\" tag en model/s in \"model_url\" tag mismatch. "\
+                      f"Please correct file \"{self.file}\" and try again."
+            raise InvalidConfiguration(err_msg)
         
     def _setup_directory_tree(self):
         """Create directories to storage data (if needed)"""
 
         download_folder = self.get('download_folder')
         if not os.access(pathlib.Path(download_folder).parent, os.W_OK):
-            sys.exit(f"{pathlib.Path(download_folder).parent} is not writable")
-        pathlib.Path(download_folder).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(download_folder, 'NMME', 'hindcast')).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(download_folder, 'NMME', 'real_time')).mkdir(parents=True, exist_ok=True)
+            err_msg = f"{pathlib.Path(download_folder).parent} is not writable"
+            raise InvalidConfiguration(err_msg)
+        pathlib.Path(download_folder)\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(download_folder, 'NMME', 'hindcast'))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(download_folder, 'NMME', 'real_time'))\
+          .mkdir(parents=True, exist_ok=True)
 
         gen_data_folder = self.get('gen_data_folder')
         if not os.access(pathlib.Path(gen_data_folder).parent, os.W_OK):
-            sys.exit(f"{pathlib.Path(gen_data_folder).parent} is not writable")
-        pathlib.Path(gen_data_folder).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'cal_forecasts')).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'comb_forecast')).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'rt_forecast')).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'forecast')).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'rt_forecast')).mkdir(parents=True, exist_ok=True)
-            
-
-
-class InvalidConfiguration(Exception):
-    """Exception raised when an invalid configuration was detected. """
-
-    def __init__(self, message):
-        self.message = message
+            err_msg = f"{pathlib.Path(gen_data_folder).parent} is not writable"
+            raise InvalidConfiguration(err_msg)
+        pathlib.Path(gen_data_folder)\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'cal_forecasts'))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'comb_forecast'))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'rt_forecast'))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'forecast'))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'rt_forecast'))\
+          .mkdir(parents=True, exist_ok=True)
