@@ -17,6 +17,7 @@ import logging
 import sys
 import cdo
 import netCDF4
+import numpy as np
 
 cfg = configuration.Config.Instance()
 
@@ -264,7 +265,7 @@ if __name__ == "__main__":
     helpers.progress_bar(count_downloaded_files, n_files_to_download, status=run_status)
     for row in df_links.query('DOWNLOADED == False').itertuples():
       try:
-        download_file(row.DOWNLOAD_URL, row.VARIABLE, row.FILENAME)
+        download_file(row.DOWNLOAD_URL, row.FILENAME, row.VARIABLE)
       except Exception as e:
         helpers.progress_bar_clear_line()
         cfg.logger.error(e)
