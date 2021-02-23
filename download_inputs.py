@@ -43,7 +43,7 @@ def generate_filename(variable, year, month, member, model_config_data, data_typ
   return f"{variable}_Amon_{model_inst}-{model_name}_{year}{m_str}_r{member}_{year}{m_str}-{forecast_year}{fm_str}.nc"
 
 
-def check_file(filename, recheck=False):
+def check_file(filename, variable, recheck=False):
   #
   if not os.path.isfile(filename):
     return False
@@ -51,13 +51,19 @@ def check_file(filename, recheck=False):
     # Check file size
     if os.stat(filename).st_size == 0:
       return False
-    # Check if file can be opened
+    # Check if file can be opened and contains valid values
     if filename.endswith('.nc'):
       try:
+        # Check if file can be opened
         d = xr.open_dataset(filename, decode_times=False)
-        d.close()
       except Exception as e:
         return False
+      else:
+        # Check if file contains valid values
+        v = d.get(variable)
+        if not v or np.isnan(float(v.max())):
+          return False
+        d.close()
   return True
 
 
@@ -71,9 +77,9 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
             FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
             DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
-            DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
+            DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
             yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
-                   'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'hindcast'}
+                   'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'hindcast', 'VARIABLE': variable}
 
 
 def links_to_download_operational(df_modelos, year, recheck, redownload):
@@ -86,9 +92,9 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
           FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
           DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
-          DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
+          DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
           yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
-                 'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'operational'}
+                 'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'operational', 'VARIABLE': variable}
 
 
 def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
@@ -99,9 +105,9 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
         FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
         DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
-        DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
+        DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
         yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
-               'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time'}
+               'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'real_time', 'VARIABLE': variable}
 
 
 def links_to_download_observation(recheck, redownload):
@@ -110,21 +116,21 @@ def links_to_download_observation(recheck, redownload):
   #
   FILENAME = "prec_monthly_nmme_cpc.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.prate/data.nc"
-  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
+  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, 'prec', recheck) if not redownload else False
   yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec'}
   #
   FILENAME = "tref_monthly_nmme_ghcn_cams.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.GHCN_CAMS/.updated/data.nc"
-  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
+  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, 'tref', recheck) if not redownload else False
   yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref'}
   #
   FILENAME = "lsmask.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.LSMASK/.land/data.nc"
-  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, recheck) if not redownload else False
+  DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, 'land', recheck) if not redownload else False
   yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'land'}
 
 
 def modify_downloaded_file_if_needed(downloaded_file):
@@ -153,18 +159,20 @@ def modify_downloaded_file_if_needed(downloaded_file):
     os.remove(tempfile)
 
 
-def download_file(download_url, filename):
+def download_file(download_url, filename, variable):
   #
   download_url = urllib.parse.quote(download_url, safe=':/')
   # Download file
   f, h = urllib.request.urlretrieve(download_url, filename)
   # Check file size
   assert os.stat(filename).st_size != 0
-  # Check if file can be opened
+  # Modify files when needed
+  modify_downloaded_file_if_needed(filename)
+  # Check if file can be opened and contains valid values
   if filename.endswith('.nc'):
     d = xr.open_dataset(filename, decode_times=False)
+    assert not np.isnan(float(d.get(variable).max()))
     d.close()
-  modify_downloaded_file_if_needed(filename)
 
 
 # ==================================================================================================
@@ -256,7 +264,7 @@ if __name__ == "__main__":
     helpers.progress_bar(count_downloaded_files, n_files_to_download, status=run_status)
     for row in df_links.query('DOWNLOADED == False').itertuples():
       try:
-        download_file(row.DOWNLOAD_URL, row.FILENAME)
+        download_file(row.DOWNLOAD_URL, row.VARIABLE, row.FILENAME)
       except Exception as e:
         helpers.progress_bar_clear_line()
         cfg.logger.error(e)
