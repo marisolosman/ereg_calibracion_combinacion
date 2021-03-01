@@ -181,6 +181,8 @@ def main():
                 '_hind.npz'
 
     np.savez(route+archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
+    cfg.set_correct_group_to_file(route+archivo)  # Change group of file
+    
 
 
 # ==================================================================================================

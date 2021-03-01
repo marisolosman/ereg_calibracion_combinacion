@@ -8,6 +8,7 @@ import logging.config
 import logging
 import sys
 import pathlib
+import grp
 
 
 class QuietError(Exception):
@@ -46,6 +47,7 @@ class Config():
         self._update_models()
         self._check_models()
         self._setup_directory_tree()
+        self._check_file_group()
 
     def get(self, keyname):
         if keyname not in self.config:
@@ -186,3 +188,27 @@ class Config():
           .mkdir(parents=True, exist_ok=True)
         pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'rt_forecast'))\
           .mkdir(parents=True, exist_ok=True)
+    
+    def _check_file_group(self):
+        """Check if group specified in the configuration file exists"""
+        
+        file_group = self.get('group_for_files')
+        
+        if sys.platform != "win32" and file_group:
+            try:
+                grp.getgrnam(file_group)
+            except Exeption as e:
+                err_msg = "The group that has been specified as the group to be "\
+                          "applied to created or downloaded files don't exist"
+                raise InvalidConfiguration(err_msg)
+   
+    def set_correct_group_to_file(self, file_name):
+        """Set the group specified in the configuration file, to the file received as parameter"""
+        
+        file_group = self.get('group_for_files')
+        
+        if sys.platform != "win32" and file_group: 
+            try:
+                shutil.chown(file_name, group=file_group)
+            except Exception as e:
+                self.logger.error(f"Failed to set file group of file {file_name}. Error: {e}.")

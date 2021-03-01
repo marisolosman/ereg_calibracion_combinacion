@@ -165,6 +165,8 @@ def download_file(download_url, filename, variable):
   download_url = urllib.parse.quote(download_url, safe=':/')
   # Download file
   f, h = urllib.request.urlretrieve(download_url, filename)
+  # Change group of file
+  cfg.set_correct_group_to_file(filename)
   # Check file size
   assert os.stat(filename).st_size != 0
   # Modify files when needed

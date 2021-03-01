@@ -75,6 +75,7 @@ def main(args):
             categoria_obs = obs.computo_categoria(obs_dt, terciles)  #Define observed category
             np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
                      terciles=terciles, cat_obs=categoria_obs)
+            cfg.set_correct_group_to_file(archivo)  # Change group of file
     if np.logical_not(args.CV):
         archivo2 = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
                        args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
@@ -101,6 +102,7 @@ def main(args):
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
             np.savez(archivo2, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
                      terciles=terciles) #Save observed variables
+            cfg.set_correct_group_to_file(archivo2)  # Change group of file
 
     message = "Processing Models"
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
@@ -141,6 +143,7 @@ def main(args):
                          pronos_cr=forecast_cr, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
                          peso=pdf_intensity, prob_terc=prob_terc,
                          forecasted_category=forecasted_category)
+                cfg.set_correct_group_to_file(output)  # Change group of file
         if np.logical_not(args.CV):
             output2 = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
                           calendar.month_abbr[args.IC[0]] + '_' + SSS + \
@@ -165,6 +168,7 @@ def main(args):
                 np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
                          a1=a1, b1=b1, a2=a2, b2=b2, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
                          peso=pdf_intensity)
+                cfg.set_correct_group_to_file(output2)  # Change group of file
 
 
 # ==================================================================================================

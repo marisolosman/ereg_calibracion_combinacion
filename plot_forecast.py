@@ -112,6 +112,7 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
     cb3.set_label('Upper')
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
+    cfg.set_correct_group_to_file(salida)  # Change group of file
     return
 
 def main(args):

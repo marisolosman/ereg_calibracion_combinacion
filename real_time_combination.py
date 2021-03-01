@@ -178,6 +178,7 @@ def main(args):
             np.savez(archivo, a_mme=a_mme, b_mme=b_mme, R_mme=R_mme,
                      Rb_mme=Rb_mme, eps_mme=eps_mme, Kmax_mme=Kmax_mme,
                      K_mme=K_mme)
+            cfg.set_correct_group_to_file(archivo)  # Change group of file
         #peso prono actual
         prono_actual_dt = np.rollaxis(prono_actual_dt * np.repeat(weight[0, :, :, :],
                                                                   nmembers,
@@ -198,6 +199,7 @@ def main(args):
                    str(iniy) + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' +\
                    args.ctech + '.npz')
     np.savez(archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
+    cfg.set_correct_group_to_file(archivo)  # Change group of file
 
 
 # ==================================================================================================

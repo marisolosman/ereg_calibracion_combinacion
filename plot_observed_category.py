@@ -86,6 +86,7 @@ def main(args):
         cb.ax.tick_params(labelsize=7)
         plt.savefig(output, dpi=600, bbox_inches='tight', papertype='A4')
         plt.close()
+        cfg.set_correct_group_to_file(output)  # Change group of file
 
 
 # ==================================================================================================
