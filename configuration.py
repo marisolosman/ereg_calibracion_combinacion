@@ -9,6 +9,7 @@ import logging
 import sys
 import pathlib
 import grp
+import shutil
 
 
 class QuietError(Exception):
@@ -44,6 +45,7 @@ class Config():
         self.config = self._load_ereg_config(config)
         self.logger = self._load_logging_config(logger_config)
         self.email = self._load_email_config(email_config)
+        self.ignore_combined_forecasts_error = False
         self._update_models()
         self._check_models()
         self._setup_directory_tree()
@@ -139,22 +141,29 @@ class Config():
                 self._delete_combined_forecasts()
                 self._update_updates_file()
                 self._update_combined_models_file()
+            else:
+                self.ignore_combined_forecasts_error = True
+                warn_msg = "The existing combined forecasts were not deleted, so "\
+                           "combined_models file that combine models other than those "\
+                           "specified in the configuration file will be used."
+                self.logger.warning(warn_msg)
+                    
         
     def _check_models(self):
         deleted_models = set(self._combined_models).difference(self._models_in_config)
-        if deleted_models and self._is_there_comb_forecasts:
+        if deleted_models and self._is_there_comb_forecasts and not self.ignore_combined_forecasts_error:
             err_msg = f"Model/s \"{', '.join(deleted_models)}\" was "\
                       f"deleted, but combined forecasts wasn't dropped."
             raise InvalidConfiguration(err_msg)
         added_models = set(self._models_in_config).difference(self._combined_models)
-        if added_models and self._is_there_comb_forecasts:
+        if added_models and self._is_there_comb_forecasts and not self.ignore_combined_forecasts_error:
             err_msg = f"Model/s \"{', '.join(added_models)}\" was "\
                       f"added, but combined forecasts wasn't dropped."
             raise InvalidConfiguration(err_msg)
         models_data = [m[0] for m in self.get('models')[1:]]
         models_urls = [m[0] for m in self.get('models_url')[1:]]
         if models_data != models_urls:
-            err_msg = f"Model/s in \"model\" tag en model/s in \"model_url\" tag mismatch. "\
+            err_msg = f"Model/s in \"model\" tag and model/s in \"model_url\" tag mismatch. "\
                       f"Please correct file \"{self.file}\" and try again."
             raise InvalidConfiguration(err_msg)
         
@@ -207,8 +216,10 @@ class Config():
         
         file_group = self.get('group_for_files')
         
-        if sys.platform != "win32" and file_group: 
-            try:
-                shutil.chown(file_name, group=file_group)
-            except Exception as e:
-                self.logger.error(f"Failed to set file group of file {file_name}. Error: {e}.")
+        if sys.platform != "win32" and file_group and pathlib.Path(file_name).group() != file_group:
+                try:
+                    shutil.chown(file_name, group=file_group)
+                except Exception as e:
+                    warn_msg = f"Failed to set file group of file {file_name} (you'll "\
+                               f"have to do it manually later). Failure Reason: {e}. "
+                    self.logger.warning(warn_msg)
