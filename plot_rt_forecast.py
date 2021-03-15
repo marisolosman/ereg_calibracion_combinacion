@@ -192,13 +192,16 @@ def main():
                                                         order=0, output=None,
                                                         mode='constant')
             else:
+                for_terciles[:, for_terciles[1, :, :] == 0] = np.nan
                 kernel = Gaussian2DKernel(x_stddev=1)
-                below = convolve(for_terciles[0, :, :], kernel)
-                above = convolve(1 - for_terciles[1, :, :], kernel)
-            near = 1 - below - above
+                below = convolve(for_terciles[0, :, :], kernel, preserve_nan=True)
+                near = convolve(for_terciles[1, :, :], kernel, preserve_nan=True)
+            above = 1 - near
+            near = near - below
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
+            print(np.nanmax(for_terciles), np.nanmin(for_terciles))
             for_mask = asignar_categoria(for_terciles)
             for_mask = np.ma.masked_array(for_mask,
                                           np.logical_not(land.astype(bool)))

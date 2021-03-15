@@ -107,6 +107,7 @@ def main():
                                                              coords['lat_n'],
                                                              coords['lon_w'],
                                                              coords['lon_e'])
+        print(np.sum(np.isnan(pronos)))
         #abro archivo modelo
         archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
                        args.variable[0] + '_' + it['nombre'] + '_' +\
@@ -127,6 +128,7 @@ def main():
             for_cr = b2 + f_dt * a2
             prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
             prob_terc = np.nanmean(prob_terc, axis=1)
+            print(prob_terc[:, :, 10])
             #junto todos pronos calibrados
             prob_terciles = np.concatenate((prob_terciles,
                                             prob_terc[:, :, :, np.newaxis]),
@@ -143,7 +145,7 @@ def main():
         #extraigo info del peso segun la opcion por la que elijo pesar
         if args.wtech[0] == 'pdf_int':
             peso = data['peso']
-            weight = np.concatenate((weight, peso[:, 0, :, :][:, :, :,
+            weight = np.concatenate((weight, peso[:, :, :][:, :, :,
                                                               np.newaxis]),
                                     axis=3)
             peso = []
@@ -182,6 +184,7 @@ def main():
 
     if args.ctech == 'wpdf':
         prob_terc_comb = np.nansum(weight * prob_terciles, axis=3)
+        print(np.nanmax(prob_terc_comb), np.nanmin(prob_terc_comb))
     elif args.ctech == 'wsereg':
         ntimes = np.shape(for_dt)[0]
         weight = np.tile(weight[0, :, :, :], (ntimes, 1, 1, 1)) / nmembers
