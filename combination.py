@@ -18,7 +18,7 @@ cfg = configuration.Config.Instance()
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-def main():
+def main(args):
     
     coords = cfg.get('coords')
     conf_modelos = cfg.get('models')
