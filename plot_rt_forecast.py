@@ -187,7 +187,7 @@ def main():
                                                                      :], 1,
                                                         order=0, output=None,
                                                         mode='constant')
-                above = ndimage.filters.gaussian_filter(1 - for_terciles[1, :,
+                near = ndimage.filters.gaussian_filter(for_terciles[1, :,
                                                                          :], 1,
                                                         order=0, output=None,
                                                         mode='constant')
@@ -201,7 +201,6 @@ def main():
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
-            print(np.nanmax(for_terciles), np.nanmin(for_terciles))
             for_mask = asignar_categoria(for_terciles)
             for_mask = np.ma.masked_array(for_mask,
                                           np.logical_not(land.astype(bool)))

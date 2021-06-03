@@ -85,7 +85,7 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print('IC:' + calendar.month_abbr[inim], 'Target season:' + SSS,
+    print(args.variable[0] + ' IC:' + calendar.month_abbr[inim], 'Target season:' + SSS,
           args.ctech, args.wtech[0])
     #obtengo datos observados
     archivo = Path(PATH +  'DATA/Observations/obs_' + args.variable[0]+'_'+\
@@ -100,14 +100,18 @@ def main():
                             it['latn'], it['lonn'], it['miembros'], \
                             it['plazos'], it['fechai'], it['fechaf'],\
                             it['ext'], it['rt_miembros'])
-        print(it['nombre'])
         [lats, lons, pronos] = modelo.select_real_time_months(inim, iniy,\
                                                              args.leadtime[0],
                                                              coords['lat_s'],
                                                              coords['lat_n'],
                                                              coords['lon_w'],
                                                              coords['lon_e'])
-        print(np.sum(np.isnan(pronos)))
+        print(it['nombre'], np.sum(np.isnan(pronos)))
+        """
+        #aca deberia meter codigo que: -marque los pronosticos que son nan. cuente cuantos son nan
+        #saque el modelo si todos los pronos son nan y pase al siguiente modelo. Reduzca el tamaño
+        de los modelos
+        """
         #abro archivo modelo
         archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
                        args.variable[0] + '_' + it['nombre'] + '_' +\
@@ -128,7 +132,6 @@ def main():
             for_cr = b2 + f_dt * a2
             prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
             prob_terc = np.nanmean(prob_terc, axis=1)
-            print(prob_terc[:, :, 10])
             #junto todos pronos calibrados
             prob_terciles = np.concatenate((prob_terciles,
                                             prob_terc[:, :, :, np.newaxis]),
@@ -184,7 +187,6 @@ def main():
 
     if args.ctech == 'wpdf':
         prob_terc_comb = np.nansum(weight * prob_terciles, axis=3)
-        print(np.nanmax(prob_terc_comb), np.nanmin(prob_terc_comb))
     elif args.ctech == 'wsereg':
         ntimes = np.shape(for_dt)[0]
         weight = np.tile(weight[0, :, :, :], (ntimes, 1, 1, 1)) / nmembers
