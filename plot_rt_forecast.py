@@ -12,6 +12,9 @@ from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel
 from astropy.convolution import convolve
 import matplotlib as mpl
+### Modificado M
+mpl.use('agg')
+###
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
@@ -179,16 +182,32 @@ def main(args):
                                                                          :], 1,
                                                         order=0, output=None,
                                                         mode='constant')
+                #### Modificado Mechi
+                near = 1 - below - above
+                ####
             else:
+                ### Modificado M
+                for_terciles[:, for_terciles[1, :, :] == 0] = np.nan
+                ###
                 kernel = Gaussian2DKernel(x_stddev=1)
-                below = convolve(for_terciles[0, :, :], kernel,
-                                 nan_treatment='interpolate', preserve_nan=True)
-                above = convolve(1 - for_terciles[1, :, :], kernel,
-                                 nan_treatment='interpolate', preserve_nan=True)
-            near = 1 - below - above
+                ### Modificado M
+                # below = convolve(for_terciles[0, :, :], kernel,
+                # nan_treatment='interpolate', preserve_nan=True)
+                # above = convolve(1 - for_terciles[1, :, :], kernel,
+                #  nan_treatment='interpolate', preserve_nan=True)
+                below = convolve(for_terciles[0, :, :], kernel, preserve_nan=True)
+                near = convolve(for_terciles[1, :, :], kernel, preserve_nan=True)
+                above = 1 - near
+                # near = 1 - below - above
+                near = near - below 
+                ###
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
+            ### Modificado M
+            message = f"max: {np.nanmax(for_terciles)}, min: {np.nanmin(for_terciles)}"
+            print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+            ###
             for_mask = asignar_categoria(for_terciles)
             for_mask = np.ma.masked_array(for_mask,
                                           np.logical_not(land.astype(bool)))
@@ -204,7 +223,7 @@ if __name__ == "__main__":
     # Define parser data
     parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
-            help='Variable to verify (prec or temp)')
+            help='Variable to verify (prec or tref)')
     parser.add_argument('--IC', type=str, nargs=1,\
             help='Date of initial conditions (in "YYYY-MM-DD")')
     parser.add_argument('--leadtime', type=int, nargs=1,\

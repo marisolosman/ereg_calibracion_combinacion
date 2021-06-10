@@ -67,6 +67,8 @@ def main(args):
                        '/cal_forecasts/' + args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind.npz')
+        message = f"Se va a intentar abrir el archivo: {archivo}. Además archivo.is_file() = {archivo.is_file()}." 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         if archivo.is_file():
             data = np.load(archivo)
             """
@@ -191,7 +193,7 @@ if __name__ == "__main__":
     # Defines parser data
     parser = argparse.ArgumentParser(description='Combining models')
     parser.add_argument('variable', type=str, nargs=1, 
-        help='Variable to calibrate (prec or temp)')
+        help='Variable to calibrate (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1, 
         help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1, 

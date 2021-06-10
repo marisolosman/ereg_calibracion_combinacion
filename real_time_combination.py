@@ -118,9 +118,14 @@ def main(args):
         #extraigo info del peso segun la opcion por la que elijo pesar
         if args.wtech[0] == 'pdf_int':
             peso = data['peso']
-            weight = np.concatenate((weight, peso[:, 0, :, :][:, :, :,
-                                                              np.newaxis]),
+            ### Modificado M
+            # weight = np.concatenate((weight, peso[:, 0, :, :][:, :, :,
+            #                                                   np.newaxis]),
+            #                         axis=3)
+            weight = np.concatenate((weight, peso[:, :, :][:, :, :,
+                                                           np.newaxis]),
                                     axis=3)
+            ###
             peso = []
         elif args.wtech[0] == 'mean_cor':
             Rm = data['Rm']

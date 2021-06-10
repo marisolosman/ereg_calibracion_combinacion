@@ -95,7 +95,7 @@ if __name__ == "__main__":
     # Define parser data
     parser = argparse.ArgumentParser(description='Plot observed category')
     parser.add_argument('variable',type=str, nargs=1,\
-            help='Variable to verify (prec or temp)')
+            help='Variable to verify (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1,\
             help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
     

@@ -178,16 +178,23 @@ def main(args):
                                                             order=0, output=None,
                                                             mode='reflect')
                 else:
-                    for_terciles[0, np.logical_not(land.astype(bool))] = np.nan
-                    above = 1 - for_terciles[1, :, :]
-                    above[np.logical_not(land.astype(bool))] = np.nan
+                    ### Modificado M
+                    # for_terciles[0, np.logical_not(land.astype(bool))] = np.nan
+                    for_terciles[:, np.logical_not(land.astype(bool))] = np.nan
+                    # above = 1 - for_terciles[1, :, :]
+                    # above[np.logical_not(land.astype(bool))] = np.nan
+                    ###
                     kernel = Gaussian2DKernel(x_stddev=1)
-                    below = convolve(for_terciles[0, :, :], kernel,
-                                     nan_treatment='interpolate',
-                                     preserve_nan=True)
-                    above = convolve(above, kernel,
-                                     nan_treatment='interpolate',
-                                     preserve_nan=True)
+                    ### Modificado M
+                    # below = convolve(for_terciles[0, :, :], kernel,
+                    #                  nan_treatment='interpolate',
+                    #                  preserve_nan=True)
+                    # above = convolve(above, kernel,
+                    #                  nan_treatment='interpolate',
+                    #                  preserve_nan=True)
+                    below = convolve(for_terciles[0, :, :], kernel)
+                    above = 1 - convolve(for_terciles[1, :, :], kernel)
+                    ###
                 near = 1 - below - above
                 for_terciles = np.concatenate([below[:, :, np.newaxis],
                                                near[:, :, np.newaxis],
@@ -236,7 +243,7 @@ if __name__ == "__main__":
     # Define parser data
     parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
-            help='Variable to verify (prec or temp)')
+            help='Variable to verify (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1,\
             help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1,\

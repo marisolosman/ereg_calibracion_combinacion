@@ -170,6 +170,9 @@ class Model(object):
         res = p.map(evaluo_pdf_normal, i.tolist(), l.tolist(), j.tolist(), k.tolist())
         p.close()
         pdf_intensity = np.reshape(np.squeeze(np.stack(res)), [ntimes, nmembers, nlat, nlon])
+        ### Modificado M
+        pdf_intensity = np.nanmean(pdf_intensity, axis=1)
+        ###
         del(p, res, evaluo_pdf_normal)
         #return res
         return pdf_intensity
