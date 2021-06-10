@@ -11,6 +11,7 @@ import itertools
 import datetime
 
 from calibration import main as calibration
+from get_mme_parameters import main as get_mme_parameters
 from real_time_combination import main as real_time_combination
 from plot_rt_forecast import main as plot_rt_forecast
 
@@ -26,13 +27,21 @@ def main(args):
                     calibration(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], CV=args.cross_validate,
                                                    OW=args.overwrite, no_models=args.no_models, models=args.models))
 
+    if args.mme_param_gen:
+        cfg.logger.info("Starting mme parameters generation")
+        for v in args.variables:  # loop sobre las variables a calibrar
+            for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
+                for w in args.weighting: 
+                    get_mme_parameters(argparse.Namespace(variable=[v], IC=[args.month], leadtime=[l], 
+                                                          OW=args.overwrite, no_models=[], wtech=[w]))
+
     if args.combine:
         cfg.logger.info("Starting combination")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
                 for c, w in itertools.product(args.combination, args.weighting): 
-                    real_time_combination(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l], 
-                                                             OW=args.overwrite, no_models=[], ctech=c, wtech=[w]))
+                    real_time_combination(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], 
+                                                             leadtime=[l], no_models=[], ctech=c, wtech=[w]))
   
     if args.plot:
         cfg.logger.info("Starting plotting")
@@ -74,6 +83,8 @@ if __name__ == "__main__":
         help='Indicates if the calibration step should be performed or not.')
     groupc.add_argument('--ignore-calibration', action='store_false', dest='calibrate', 
         help='Indicates if the calibration step should be ignored or not.')
+    parser.add_argument('--ignore-mme-param-gen', action='store_false', dest='mme_param_gen', 
+        help='Indicates if the mme parameters generation step should be ignored or not.')
     parser.add_argument('--ignore-combination', action='store_false', dest='combine', 
         help='Indicates if the combination step should be ignored or not.')
     parser.add_argument('--ignore-plotting', action='store_false', dest='plot', 
