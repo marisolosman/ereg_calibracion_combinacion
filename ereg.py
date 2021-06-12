@@ -36,10 +36,10 @@ def ensemble_regression(forecast, observation, CV_opt):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=RuntimeWarning)
             obs_c = np.nanmean(observation, axis=0)
-        em_c = np.nanmean(np.mean(forecast, axis=1), axis=0)
+        em_c = np.nanmean(np.nanmean(forecast, axis=1), axis=0)
 
     em = np.nanmean(forecast, axis=1)
-    signal = np.nansum(np.power(em - em_c, 2), axis=0) / ntimes
+    signal = np.nanmean(np.power(em - em_c, 2), axis=0)
     noise = np.nanmean(np.nanvar(forecast, axis=1), axis=0) #noise
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -49,19 +49,18 @@ def ensemble_regression(forecast, observation, CV_opt):
     Rbest = Rm * np.sqrt(1 + (nmembers / (nmembers - 1) * noise) / signal)
     #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
     epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-    epsbn = np.ma.array(epsbn, mask=~np.isfinite(epsbn))
     #kmax**2 S/N * (m-1/m) * (1/R**2-1)
     kmax = signal / noise * (((nmembers - 1)/nmembers) *
                              (1 / np.power(Rm, 2) - 1))
-    kmax = np.ma.array(kmax, mask=~np.isfinite(kmax))
+    #kmax = np.ma.array(kmax, mask=~np.isfinite(kmax))
 
     # si kmax es amayor a 1 lo fuerzo a que sea 1
-    kmax = np.ma.where(kmax <= 1, kmax, 1)
+    kmax[np.logical_and(np.isfinite(kmax), kmax > 1)] = 1
     #testeo
     K = np.ones_like(kmax)
-    K = np.ma.array(K, mask=~np.isfinite(epsbn))
     #if epsbn is negative spread changes
-    K = np.ma.where(epsbn>=0, K, kmax)
+    K[np.logical_and(np.isfinite(epsbn), epsbn < 0)] = kmax[np.logical_and(np.isfinite(epsbn),
+                                                                           epsbn < 0)]
     K = np.repeat(np.repeat(K[np.newaxis, :, :], nmembers,
                             axis=0)[np.newaxis, :, :, :], ntimes,
                   axis=0)
@@ -145,9 +144,7 @@ def probabilidad_terciles(forecast, epsilon, tercil):
         p = Pool (CORES)
         p.clear()
         def evaluo_pdf_normal(i, l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-            if np.logical_or(np.logical_or(np.isnan(tercil[:, i, j, k]).any(),
-                                           np.isnan(media[i, l, j, k])),
-                             np.isnan(sigma[j, k])):
+            if np.logical_or(np.isnan(media[i, l, j, k]), np.isnan(sigma[j, k])):
                 pdf_cdf = np.array([np.nan, np.nan])
             else:
                 pdf_cdf = norm.cdf(terc[:, i, j, k], loc=media[i, l, j, k],
@@ -168,9 +165,7 @@ def probabilidad_terciles(forecast, epsilon, tercil):
         p = Pool (CORES)
         p.clear()
         def evaluo_pdf_normal(l, j, k, terc=tercil, media=forecast, sigma=epsilon):
-            if np.logical_or(np.logical_or(np.isnan(terc[:, j, k]).any(),
-                                           np.isnan(media[l, j, k])),
-                             np.isnan(sigma[j, k])):
+            if np.logical_or(np.isnan(media[l, j, k]), np.isnan(sigma[j, k])):
                 pdf_cdf = np.array([np.nan, np.nan])
             else:
                 pdf_cdf = norm.cdf(terc[:, j, k], loc=media[l, j, k],

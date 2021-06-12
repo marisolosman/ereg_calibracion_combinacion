@@ -111,64 +111,70 @@ def main(args):
         output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
                       calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                       '_gp_01_hind.npz')
-        if output.is_file() and not args.OW:
-            if args.CV:
-                pass
-            else:
-                data = np.load(output)
-                pdf_intensity = data['peso']
-                data.close()
-        else:
-            modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
-                                 it['latn'], it['lonn'], it['miembros'], \
-                                 it['plazos'], it['fechai'], it['fechaf'],\
-                                 it['ext'], it['rt_miembros'])
-            [lats, lons, pronos] = modelo.select_months(args.IC[0], \
-                                                        args.leadtime[0], \
-                                                        coords['lat_s'], \
-                                                        coords['lat_n'],
-                                                        coords['lon_w'],
-                                                        coords['lon_e'])
-            pronos_dt = modelo.remove_trend(pronos, True)
-            for_terciles = modelo.computo_terciles(pronos_dt, True)
-            forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
-            [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
-                                                               obs_dt,
-                                                               True)
-            pdf_intensity = modelo.pdf_eval(forecast_cr, epsb, obs_dt)
-            if args.CV:
-                prob_terc = modelo.probabilidad_terciles(forecast_cr, epsb,\
-                                                         terciles)
-                np.savez(output, lats=lats, lons=lons, pronos_dt=pronos_dt,
-                         pronos_cr=forecast_cr, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
-                         peso=pdf_intensity, prob_terc=prob_terc,
-                         forecasted_category=forecasted_category)
-                cfg.set_correct_group_to_file(output)  # Change group of file
-        if np.logical_not(args.CV):
-            output2 = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
-                          calendar.month_abbr[args.IC[0]] + '_' + SSS + \
-                          '_gp_01_hind_parameters.npz')
-            if output2.is_file() and not args.OW:
+        if args.CV:
+            if output.is_file():
                 pass
             else:
                 modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
-                                 it['latn'], it['lonn'], it['miembros'], \
-                                 it['plazos'], it['fechai'], it['fechaf'],\
-                                 it['ext'], it['rt_miembros'])
+                                     it['latn'], it['lonn'], it['miembros'], \
+                                     it['plazos'], it['fechai'], it['fechaf'],\
+                                     it['ext'], it['rt_miembros'])
                 [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                             args.leadtime[0], \
                                                             coords['lat_s'], \
                                                             coords['lat_n'],
                                                             coords['lon_w'],
                                                             coords['lon_e'])
-                [pronos_dt, a1, b1] = modelo.remove_trend(pronos, args.CV)
-                [a2, b2, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,
-                                                              obs_dt,
-                                                              args.CV)
-                np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
-                         a1=a1, b1=b1, a2=a2, b2=b2, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
-                         peso=pdf_intensity)
-                cfg.set_correct_group_to_file(output2)  # Change group of file
+                pronos_dt = modelo.remove_trend(pronos, True)
+                for_terciles = modelo.computo_terciles(pronos_dt, True)
+                forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+                [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
+                                                                   obs_dt,
+                                                                   True)
+                pdf_intensity = modelo.pdf_eval(forecast_cr, epsb, obs_dt)
+                prob_terc = modelo.probabilidad_terciles(forecast_cr, epsb,\
+                                                         terciles)
+                np.savez(output, lats=lats, lons=lons, pronos_dt=pronos_dt,
+                         pronos_cr=forecast_cr, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
+                         peso=pdf_intensity, prob_terc=prob_terc,
+                         forecasted_category=forecasted_category)
+        else:
+            output2 = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
+                          calendar.month_abbr[args.IC[0]] + '_' + SSS + \
+                          '_gp_01_hind_parameters.npz')
+            if output2.is_file() and not args.OW:
+                pass
+            else:
+                if output.is_file():
+                    data = np.load(output)
+                    pdf_intensity = data['peso']
+                    data.close()
+                else:
+                    modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+                                         it['latn'], it['lonn'], it['miembros'], \
+                                         it['plazos'], it['fechai'], it['fechaf'],\
+                                         it['ext'], it['rt_miembros'])
+                    [lats, lons, pronos] = modelo.select_months(args.IC[0], \
+                                                                args.leadtime[0], \
+                                                                coords['lat_s'], \
+                                                                coords['lat_n'],
+                                                                coords['lon_w'],
+                                                                coords['lon_e'])
+                    pronos_dt = modelo.remove_trend(pronos, True)
+                    for_terciles = modelo.computo_terciles(pronos_dt, True)
+                    forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+                    [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
+                                                                       obs_dt,
+                                                                       True)
+                    pdf_intensity = modelo.pdf_eval(forecast_cr, epsb, obs_dt)
+                    [pronos_dt, a1, b1] = modelo.remove_trend(pronos, args.CV)
+                    [a2, b2, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,
+                                                                  obs_dt,
+                                                                  args.CV)
+                    np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
+                             a1=a1, b1=b1, a2=a2, b2=b2, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
+                             peso=pdf_intensity)
+                    cfg.set_correct_group_to_file(output2)  # Change group of file
 
 
 # ==================================================================================================

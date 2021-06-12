@@ -178,23 +178,14 @@ def main(args):
                                                             order=0, output=None,
                                                             mode='reflect')
                 else:
-                    ### Modificado M
-                    # for_terciles[0, np.logical_not(land.astype(bool))] = np.nan
+                    #for_terciles[0, np.logical_not(land.astype(bool))] = np.nan
                     for_terciles[:, np.logical_not(land.astype(bool))] = np.nan
-                    # above = 1 - for_terciles[1, :, :]
-                    # above[np.logical_not(land.astype(bool))] = np.nan
-                    ###
+                    #above = 1 - for_terciles[1, :, :]
+                    #above[np.logical_not(land.astype(bool))] = np.nan
                     kernel = Gaussian2DKernel(x_stddev=1)
-                    ### Modificado M
-                    # below = convolve(for_terciles[0, :, :], kernel,
-                    #                  nan_treatment='interpolate',
-                    #                  preserve_nan=True)
-                    # above = convolve(above, kernel,
-                    #                  nan_treatment='interpolate',
-                    #                  preserve_nan=True)
                     below = convolve(for_terciles[0, :, :], kernel)
+                    #above = convolve(above, kernel)
                     above = 1 - convolve(for_terciles[1, :, :], kernel)
-                    ###
                 near = 1 - below - above
                 for_terciles = np.concatenate([below[:, :, np.newaxis],
                                                near[:, :, np.newaxis],
