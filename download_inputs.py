@@ -113,7 +113,7 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
 
 def links_to_download_observation(recheck, redownload):
   #
-  FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
+  FOLDER = f"{cfg.get('download_folder')}/NMME/".replace("//","/")
   #
   FILENAME = "prec_monthly_nmme_cpc.nc"
   DOWNLOAD_URL = f"{cfg.get('iri_url')}.CPC-CMAP-URD/.prate/data.nc"

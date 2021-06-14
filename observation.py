@@ -19,8 +19,11 @@ import configuration
 cfg = configuration.Config.Instance()
 
 CORES = mp.cpu_count()
-ruta = f"{cfg.get('download_folder')}/NMME/hindcast/".replace('//','/')
+PATH = cfg.get("download_folder")
+ruta = PATH + 'NMME/'
 hind_length = 28
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
                  last_month, year_init):

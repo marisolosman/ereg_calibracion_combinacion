@@ -152,14 +152,15 @@ def main(args):
                             [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
+    PATH = cfg.get('download_folder')
+    lsmask = PATH + "NMME/lsmask.nc"
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = f"{cfg.get('gen_data_folder')}/nmme_output/rt_forecast/".replace("//","/")
-    RUTA_IM = f"{cfg.get('gen_data_folder')}/nmme_figuras/rt_forecast/".replace("//","/")
+    RUTA = PATH + 'DATA/real_time_forecasts/'
+    RUTA_IM = PATH + 'FIGURES/'
     for i in ctech:
         for j in wtech:
             archivo = Path(RUTA + args.variable[0] + '_mme_' + INIM + str(iniy)\

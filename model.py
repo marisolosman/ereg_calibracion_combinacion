@@ -10,6 +10,7 @@ import configuration
 
 CORES = mp.cpu_count()
 cfg = configuration.Config.Instance()
+PATH = cfg.get("download_folder")
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
@@ -54,7 +55,7 @@ class Model(object):
             final_month = final_month - 12
         else:
             flag_end = 0
-        ruta = f'{cfg.get("download_folder")}/NMME/hindcast/'.replace('//','/')
+        ruta = PATH + 'NMME/hindcast/'
         #abro un archivo de ejemplo
         hindcast_length = self.hind_end - self.hind_begin + 1
         forecast = np.empty([hindcast_length, self.ensembles, int(np.abs(latn - lats)) + 1,
@@ -242,7 +243,7 @@ class Model(object):
             final_month = final_month - 12
         else:
             flag_end = 0
-        ruta = f'{cfg.get("download_folder")}/NMME/real_time/'.replace('//','/')
+        ruta = PATH + 'NMME/real_time/'
         #abro un archivo de ejemplo
         forecast = np.empty([self.rt_ensembles, int(np.abs(latn - lats)) + 1,
                              int(np.abs(lonw - lone)) + 1])

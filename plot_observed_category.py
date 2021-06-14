@@ -26,7 +26,8 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
 def main(args):
     """Plot observed category"""
 
-    lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
+    PATH = cfg.get('download_folder')
+    lsmask = PATH + "NMME/lsmask.nc"
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
@@ -38,9 +39,10 @@ def main(args):
     year_verif = 1982 if (seas[0] > 1 and seas[0] < 11) else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
-    RUTA = f"{cfg.get('gen_data_folder')}/nmme_output/".replace("//","/")
-    RUTA_FIG = f"{cfg.get('gen_data_folder')}/nmme_figuras/forecast/".replace("//","/")
-    archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz'
+    RUTA = PATH + 'DATA/Observations/'
+    RUTA_FIG = PATH + 'FIGURES/'
+    archivo = 'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS +\
+            '.npz'
     data = np.load(RUTA + archivo)
     obs_terciles = data['cat_obs']
     nlats = obs_terciles.shape[2]

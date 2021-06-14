@@ -188,15 +188,17 @@ class Config():
             raise InvalidConfiguration(err_msg)
         pathlib.Path(gen_data_folder)\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'cal_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'Observations'))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'comb_forecast'))\
+        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'calibrated_forecasts'))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_output', 'rt_forecast'))\
+        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'combined_forecasts'))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'forecast'))\
+        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'real_time_forecasts'))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'nmme_figuras', 'rt_forecast'))\
+        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'hindcast_forecasts'))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, 'FIGURES'))\
           .mkdir(parents=True, exist_ok=True)
     
     def _check_file_group(self):

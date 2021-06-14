@@ -33,6 +33,8 @@ def main(args):
     df_modelos.columns = keys
     
     modelos = df_modelos.to_dict('records')
+
+    PATH = cfg.get("gen_data_folder")
     
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
@@ -63,8 +65,8 @@ def main(args):
     i = 0
     for it in modelos:
         #abro archivo modelo
-        archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') + \
-                       '/cal_forecasts/' + args.variable[0] + '_' + it['nombre'] + '_' +\
+        archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
+                       args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind.npz')
         message = f"Se va a intentar abrir el archivo: {archivo}. Además archivo.is_file() = {archivo.is_file()}." 
@@ -115,8 +117,8 @@ def main(args):
     lat = data['lats']
     lon = data['lons']
     #obtengo datos observados
-    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
-                   args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
+    archivo = Path(PATH + 'DATA/Observations/obs_'+args.variable[0]+'_'+\
+                   str(year_verif) + '_' + SSS + '.npz')
     data = np.load(archivo)
     obs_terciles = data['cat_obs']
     if args.ctech == 'wsereg':
@@ -172,7 +174,7 @@ def main(args):
         prob_terc_comb = np.cumsum(for_category, axis=0)[0:2, :, :, :]
 
     #guardo los pronos
-    route = f'{cfg.get("gen_data_folder")}/nmme_output/comb_forecast/'.replace('//','/')
+    route = PATH + 'DATA/combined_forecasts/'
     if args.ctech == 'wsereg':
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
                 + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech + \

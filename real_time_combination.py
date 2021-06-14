@@ -34,10 +34,12 @@ def main(args):
         df_modelos = df_modelos.query(f"model not in {args.no_models}")
         
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
-            'fechai', 'fechaf','ext', 'rt_miembros']
+            'fechai', 'fechaf', 'ext', 'rt_miembros']
     df_modelos.columns = keys
     
     modelos = df_modelos.to_dict('records')
+
+    PATH = cfg.get("gen_data_folder")
     
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
@@ -63,8 +65,8 @@ def main(args):
               ' Target season:' + SSS + ' ' + args.ctech + ' ' + args.wtech[0]
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     #obtengo datos observados
-    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
-                   args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
+    archivo = Path(PATH +  'DATA/Observations/obs_' + args.variable[0]+'_'+\
+                   str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
     j = 0
@@ -90,9 +92,10 @@ def main(args):
         vacio = np.sum(empty_forecast) == pronos.shape[0]
         if not(vacio):
             #abro archivo modelo
-            archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
-                           '/cal_forecasts/' + args.variable[0] + '_' + it['nombre'] + '_' +\
-                           calendar.month_abbr[inim] + '_' + SSS + '_gp_01_hind_parameters.npz')
+            archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
+                       args.variable[0] + '_' + it['nombre'] + '_' +\
+                       calendar.month_abbr[inim] + '_' + SSS +\
+                       '_gp_01_hind_parameters.npz')
             data = np.load(archivo)
             a1 = data['a1']
             b1 = data['b1']
@@ -167,8 +170,8 @@ def main(args):
         prob_terc_comb = np.nansum(weight * prob_terciles, axis=3)
     elif args.ctech == 'wsereg':
         weight = weight[0, :, :, :] / nmembers
-        archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
-                       '/comb_forecast/' + args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
+        archivo = Path(PATH + 'DATA/combined_forecasts/' +\
+                       args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                        '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech +\
                        '_hind_parameters.npz')
         data = np.load(archivo)
@@ -194,8 +197,8 @@ def main(args):
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
 
     #guardo los pronos
-    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
-                   '/rt_forecast/' + args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
+    archivo = Path(PATH + 'DATA/real_time_forecasts/' +\
+                   args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                    str(iniy) + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' +\
                    args.ctech + '.npz')
     np.savez(archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
