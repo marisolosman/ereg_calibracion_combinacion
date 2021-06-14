@@ -34,6 +34,8 @@ def main(args):
     df_modelos.columns = keys
     
     modelos = df_modelos.to_dict('records')
+
+    PATH = cfg.get("folders").get("gen_data_folder")
     
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
@@ -54,8 +56,8 @@ def main(args):
               ' Target season:' + SSS + ' ' + args.wtech[0]
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     #obtengo datos observados
-    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output/obs_'.replace('//','/') +\
-                   args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
+    archivo = Path(PATH, cfg.get('folders').get('data').get('observations'),
+                   'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
     obs_dt = data['obs_dt']
@@ -68,8 +70,8 @@ def main(args):
                             it['plazos'], it['fechai'], it['fechaf'],\
                             it['ext'], it['rt_miembros'])
         #abro archivo modelo
-        archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
-                       '/cal_forecasts/' + args.variable[0] + '_' + it['nombre'] + '_' +\
+        archivo = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'),
+                       args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind_parameters.npz')
         data = np.load(archivo)
@@ -118,8 +120,8 @@ def main(args):
 
     ntimes = np.shape(for_dt)[0]
     weight = np.tile(weight[0, :, :, :], (ntimes, 1, 1, 1)) / nmembers
-    archivo = Path(f'{cfg.get("gen_data_folder")}/nmme_output'.replace('//','/') +\
-                   '/comb_forecast/' + args.variable[0]+'_mme_' + calendar.month_abbr[args.IC[0]] +\
+    archivo = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'),
+                   args.variable[0]+'_mme_' + calendar.month_abbr[args.IC[0]] +\
                    '_' + SSS + '_gp_01_' + args.wtech[0] + '_wsereg' +\
                    '_hind_parameters.npz')
     if not(archivo.is_file()) or args.OW:

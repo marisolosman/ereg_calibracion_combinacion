@@ -18,6 +18,7 @@ mpl.use('agg')
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+from pathlib import Path
 import configuration
 
 cfg = configuration.Config.Instance()
@@ -152,17 +153,18 @@ def main(args):
                             [222., 45., 38.], [165., 15., 21.]]) / 255
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    lsmask = f"{cfg.get('download_folder')}/NMME/hindcast/lsmask.nc".replace("//","/")
+    PATH = cfg.get('folders').get('download_folder')
+    lsmask = Parth(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = f"{cfg.get('gen_data_folder')}/nmme_output/rt_forecast/".replace("//","/")
-    RUTA_IM = f"{cfg.get('gen_data_folder')}/nmme_figuras/rt_forecast/".replace("//","/")
+    RUTA = Parth(PATH, cfg.get('folders').get('data').get('real_time_forecasts'))
+    RUTA_IM = Parth(PATH, cfg.get('folders').get('figures').get('real_time_forecasts'))
     for i in ctech:
         for j in wtech:
-            archivo = Path(RUTA + args.variable[0] + '_mme_' + INIM + str(iniy)\
+            archivo = Path(RUTA, args.variable[0] + '_mme_' + INIM + str(iniy)\
                            + '_' + SSS + '_gp_01_' + j + '_' + i + '.npz')
             data = np.load(archivo)
             lat = data['lat']
@@ -172,8 +174,8 @@ def main(args):
             lonw = np.min(lon)
             lone = np.max(lon)
             [dx, dy] = np.meshgrid(lon, lat)
-            output = RUTA_IM + 'for_' + args.variable[0] + '_' + SSS + '_ic_'\
-                    + INIM + '_' + str(iniy) + '_' + i + '_' + j + '.png'
+            output = Path(RUTA_IM, 'for_' + args.variable[0] + '_' + SSS + '_ic_' +
+                          INIM + '_' + str(iniy) + '_' + i + '_' + j + '.png')
             for_terciles = np.squeeze(data['prob_terc_comb'][:, :, :])
             #agrego el prono de la categoria above normal
             if args.variable[0] == 'prec':
