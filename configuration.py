@@ -50,6 +50,7 @@ class Config():
         self._check_models()
         self._setup_directory_tree()
         self._check_file_group()
+        self._clean_input_files_used()
 
     def get(self, keyname):
         if keyname not in self.config:
@@ -58,16 +59,16 @@ class Config():
         return self.config.get(keyname)
     
     def _load_ereg_config(self, yaml_file):
-        if not os.path.exists(yaml_file):
+        if not os.path.exists(os.path.join(sys.path[0], yaml_file)):
             err_msg = f"Configuration file (i.e. {yaml_file}) not found!"
             raise InvalidConfiguration(err_msg)
-        with open(yaml_file, 'r') as f:
+        with open(os.path.join(sys.path[0], yaml_file), 'r') as f:
             return yaml.safe_load(f)
                                    
     def _load_logging_config(self, yaml_file, default_level=logging.INFO):
         logger, message = None, None
-        if os.path.exists(yaml_file):
-            with open(yaml_file, 'rt') as f:
+        if os.path.exists(os.path.join(sys.path[0], yaml_file)):
+            with open(os.path.join(sys.path[0], yaml_file), 'rt') as f:
                 try:
                     config = yaml.safe_load(f.read())
                     logging.config.dictConfig(config)
@@ -85,8 +86,8 @@ class Config():
     
     def _load_email_config(self, yaml_file):
         email_config = None
-        if os.path.exists(yaml_file):
-            with open(yaml_file, 'rt') as f:
+        if os.path.exists(os.path.join(sys.path[0], yaml_file)):
+            with open(os.path.join(sys.path[0], yaml_file), 'rt') as f:
                 try:
                     email_config = yaml.safe_load(f.read())
                 except Exception as e:
@@ -106,7 +107,7 @@ class Config():
     
     @property
     def _combined_models(self):
-        with open("combined_models", "r") as f:
+        with open(os.path.join(sys.path[0], "combined_models"), "r") as f:
             return f.read().strip().split("\n")
     
     def _delete_combined_forecasts(self):
@@ -119,17 +120,17 @@ class Config():
         fecha = datetime.datetime.now().strftime('%d/%m/%Y')
         deleted_models = set(self._combined_models).difference(self._models_in_config)
         if deleted_models:
-            with open("updates", "a") as f:
+            with open(os.path.join(sys.path[0], "updates"), "a") as f:
                 for model in deleted_models:
                     f.write(f"{fecha}: Model {model} discarded" + "\n")
         added_models = set(self._models_in_config).difference(self._combined_models)
         if added_models:
-            with open("updates", "a") as f:
+            with open(os.path.join(sys.path[0], "updates"), "a") as f:
                 for model in added_models:
                     f.write(f"{fecha}: Model {model} added" + "\n")
     
     def _update_combined_models_file(self):
-        with open("combined_models", "w") as f:
+        with open(os.path.join(sys.path[0], "combined_models"), "w") as f:
             for model in self._models_in_config:
                 f.write(model + "\n")
     
@@ -203,7 +204,12 @@ class Config():
         
         file_group = self.get('group_for_files')
         
-        if sys.platform != "win32" and file_group:
+        
+        if sys.platform != "win32" and os.geteuid() != 0:
+            warn_msg = f"To be able to change the file group you must be root or have sudo access"
+            self.logger.warning(warn_msg)
+        
+        if sys.platform != "win32" and os.geteuid() == 0 and file_group:
             try:
                 grp.getgrnam(file_group)
             except Exeption as e:
@@ -211,15 +217,30 @@ class Config():
                           "applied to created or downloaded files don't exist"
                 raise InvalidConfiguration(err_msg)
    
-    def set_correct_group_to_file(self, file_name):
+    def set_correct_group_to_file(self, file_abs_path):
         """Set the group specified in the configuration file, to the file received as parameter"""
         
         file_group = self.get('group_for_files')
         
-        if sys.platform != "win32" and file_group and pathlib.Path(file_name).group() != file_group:
-                try:
-                    shutil.chown(file_name, group=file_group)
-                except Exception as e:
-                    warn_msg = f"Failed to set file group of file {file_name} (you'll "\
-                               f"have to do it manually later). Failure Reason: {e}. "
-                    self.logger.warning(warn_msg)
+        if sys.platform != "win32" and os.geteuid() == 0 and file_group:
+            try:
+                if pathlib.Path(file_abs_path).group() != file_group:
+                    shutil.chown(file_abs_path, group=file_group)
+            except Exception as e:
+                warn_msg = f"Failed to set file group of file {file_abs_path} (you'll "\
+                           f"have to do it manually later). Failure Reason: {e}. "
+                self.logger.warning(warn_msg)
+    
+    def _clean_input_files_used(self):
+        """Create an empty file in which to save the input files used"""
+        open(os.path.join(sys.path[0], "input_files_used"), 'w').close()
+
+    def report_input_file_used(self, file_abs_path):
+        """Report input files used by the last run"""
+        
+        if file_abs_path.endswith('\n'):
+            file_abs_path = file_abs_path.replace('\n', '')
+        
+        if len(file_abs_path) > 0:
+            with open(os.path.join(sys.path[0], "input_files_used"), "a") as f:
+                f.write(f"file: {file_abs_path}\n")

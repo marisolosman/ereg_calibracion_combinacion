@@ -24,6 +24,9 @@ cfg = configuration.Config.Instance()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
+    #reportar lectura de un archivo descargado
+    cfg.report_input_file_used(archivo)
+    #continuar ejecución
     dataset = xr.open_dataset(archivo, decode_times=False)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
     lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})

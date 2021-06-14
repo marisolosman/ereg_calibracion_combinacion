@@ -24,6 +24,8 @@ hind_length = 28
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
                  last_month, year_init):
+    #reportar lectura de un archivo descargado
+    cfg.report_input_file_used(archivo)
     #hay problemas para decodificar las fechas, genero un xarray con mis fechas decodificadas
     dataset = xr.open_dataset(archivo, decode_times=False)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name:

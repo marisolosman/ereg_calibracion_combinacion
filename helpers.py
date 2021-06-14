@@ -38,7 +38,7 @@ def send_email(from_addr, password, to_addrs: list, subject, body):
     message = MIMEMultipart()
     message['Subject'] = subject
     message['From'] = from_addr
-    message['To'] = ','.join(to_addrs)
+    message['To'] = ', '.join(to_addrs)
 
     body_content = body
     message.attach(MIMEText(body_content, "html"))
@@ -46,6 +46,6 @@ def send_email(from_addr, password, to_addrs: list, subject, body):
 
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
-    server.login(message['From'], password)
-    server.sendmail(message['From'], message['To'], msg_body)
+    server.login(from_addr, password)
+    server.sendmail(from_addr, to_addrs, msg_body)
     server.quit()
