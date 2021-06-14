@@ -172,6 +172,9 @@ class Config():
         """Create directories to storage data (if needed)"""
 
         download_folder = self.get('download_folder')
+        if not download_folder.endswith('/'):
+            err_msg = f"The download_folder defined at config.yaml, must end with a slash"
+            raise InvalidConfiguration(err_msg)
         if not os.access(pathlib.Path(download_folder).parent, os.W_OK):
             err_msg = f"{pathlib.Path(download_folder).parent} is not writable"
             raise InvalidConfiguration(err_msg)
@@ -183,6 +186,9 @@ class Config():
           .mkdir(parents=True, exist_ok=True)
 
         gen_data_folder = self.get('gen_data_folder')
+        if not gen_data_folder.endswith('/'):
+            err_msg = f"The gen_data_folder defined at config.yaml, must end with a slash"
+            raise InvalidConfiguration(err_msg)
         if not os.access(pathlib.Path(gen_data_folder).parent, os.W_OK):
             err_msg = f"{pathlib.Path(gen_data_folder).parent} is not writable"
             raise InvalidConfiguration(err_msg)

@@ -27,7 +27,7 @@ def main(args):
         df_modelos = df_modelos.query(f"model in {args.models}")
         
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
-            'fechai', 'fechaf','ext', 'rt_miembros']
+            'fechai', 'fechaf', 'ext', 'rt_miembros']
     df_modelos.columns = keys
     
     modelos = df_modelos.to_dict('records')
