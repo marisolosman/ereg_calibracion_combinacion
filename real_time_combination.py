@@ -79,7 +79,8 @@ def main():
         weight = np.array([]).reshape(nyears, ny, nx, 0)
     elif args.wtech[0] == 'mean_cor':
         rmean = np.array([]).reshape(ny, nx, 0)
-    nmembers = np.empty([nmodels], dtype=int)
+    nmembers = []
+    nmembersf = np.empty([nmodels], dtype=int)
     #defino ref dataset y target season
     seas = range(inim + args.leadtime[0], inim + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
@@ -92,8 +93,6 @@ def main():
                    str(year_verif) + '_' + SSS + '_parameters.npz')
     data = np.load(archivo)
     terciles = data['terciles']
-    if args.ctech == 'wsereg':
-        obs_dt = data['obs_dt']
     j = 0
     for it in modelos:
         modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
@@ -106,56 +105,61 @@ def main():
                                                              coords['lat_n'],
                                                              coords['lon_w'],
                                                              coords['lon_e'])
-        print(it['nombre'], np.sum(np.isnan(pronos)))
         """
         #aca deberia meter codigo que: -marque los pronosticos que son nan. cuente cuantos son nan
         #saque el modelo si todos los pronos son nan y pase al siguiente modelo. Reduzca el tamaño
         de los modelos
         """
-        #abro archivo modelo
-        archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
-                       args.variable[0] + '_' + it['nombre'] + '_' +\
-                       calendar.month_abbr[inim] + '_' + SSS +\
-                       '_gp_01_hind_parameters.npz')
-        data = np.load(archivo)
-        a1 = data['a1']
-        b1 = data['b1']
-        #remove trend
-        T = iniy - 1982
-        f_dt = pronos - (b1 + T * a1)
-        if args.ctech == 'wpdf':
-            a2 = data['a2']
-            b2 = data['b2']
-            K = data['K'][0, :, :, :]
-            eps = data['eps']
-            f_dt = f_dt * K + (1 - K) * np.mean(f_dt, axis = 0)
-            for_cr = b2 + f_dt * a2
-            prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
-            prob_terc = np.nanmean(prob_terc, axis=1)
-            #junto todos pronos calibrados
-            prob_terciles = np.concatenate((prob_terciles,
-                                            prob_terc[:, :, :, np.newaxis]),
-                                           axis=3)
-        elif args.ctech == 'wsereg':
-            #junto pronos actual
-            prono_actual_dt = np.concatenate((prono_actual_dt,
-                                              np.rollaxis(f_dt, 0, 3)), axis=2)
-            f_dt = []
-            #junto pronos hindcast
-            f_dt = data['pronos_dt']
-            nmembers[j] = np.shape(f_dt)[1]
-            for_dt = np.concatenate((for_dt, np.rollaxis(f_dt, 1, 4)), axis=3)
-        #extraigo info del peso segun la opcion por la que elijo pesar
-        if args.wtech[0] == 'pdf_int':
-            peso = data['peso']
-            weight = np.concatenate((weight, peso[:, :, :][:, :, :,
-                                                              np.newaxis]),
-                                    axis=3)
-            peso = []
-        elif args.wtech[0] == 'mean_cor':
-            Rm = data['Rm']
-            rmean = np.concatenate((rmean, Rm[:, :, np.newaxis]), axis=2)
-            Rm = []
+        empty_forecast = np.sum(np.sum(np.isnan(pronos), axis=2), axis=1) == (nx * ny) # modificado
+        print(empty_forecast)
+        vacio = np.sum(empty_forecast) == pronos.shape[0]
+        if not(vacio):
+            #abro archivo modelo
+            archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
+                           args.variable[0] + '_' + it['nombre'] + '_' +\
+                           calendar.month_abbr[inim] + '_' + SSS +\
+                           '_gp_01_hind_parameters.npz')
+            data = np.load(archivo)
+            a1 = data['a1']
+            b1 = data['b1']
+            #remove trend
+            T = iniy - 1982
+            f_dt = pronos - (b1 + T * a1)
+            f_dt[empty_forecast, :, :] = np.nan # modificado
+            if args.ctech == 'wpdf':
+                a2 = data['a2']
+                b2 = data['b2']
+                K = data['K'][0, :, :, :]
+                eps = data['eps']
+                f_dt = f_dt * K + (1 - K) * np.nanmean(f_dt, axis = 0)
+                f_dt[empty_forecast, :, :] = np.nan # modificado
+                for_cr = b2 + f_dt * a2
+                prob_terc = modelo.probabilidad_terciles(for_cr, eps, terciles)
+                prob_terc [:, empty_forecast, :, :] = np.nan
+                prob_terc = np.nanmean(prob_terc, axis=1)
+                #junto todos pronos calibrados
+                prob_terciles = np.concatenate((prob_terciles,
+                                                prob_terc[:, :, :, np.newaxis]),
+                                               axis=3)
+            elif args.ctech == 'wsereg':
+                #junto pronos actual
+                prono_actual_dt = np.concatenate((prono_actual_dt,
+                                                  np.rollaxis(f_dt, 0, 3)), axis=2)
+                nmembersf[j] = np.shape(f_dt)[0]
+                nmembers.append(np.shape(f_dt)[0] - np.sum(empty_forecast)) # modificado
+            #extraigo info del peso segun la opcion por la que elijo pesar
+            if args.wtech[0] == 'pdf_int':
+                peso = data['peso']
+                weight = np.concatenate((weight, peso[:, :, :][:, :, :,
+                                                               np.newaxis]),
+                                        axis=3)
+                peso = []
+            elif args.wtech[0] == 'mean_cor':
+                Rm = data['Rm']
+                rmean = np.concatenate((rmean, Rm[:, :, np.newaxis]), axis=2)
+                Rm = []
+        else:
+            nmodels -= 1
         j = j + 1
 
     lat = lats
@@ -188,38 +192,31 @@ def main():
     if args.ctech == 'wpdf':
         prob_terc_comb = np.nansum(weight * prob_terciles, axis=3)
     elif args.ctech == 'wsereg':
-        ntimes = np.shape(for_dt)[0]
-        weight = np.tile(weight[0, :, :, :], (ntimes, 1, 1, 1)) / nmembers
+        weight = weight[0, :, :, :] / nmembers
         archivo = Path(PATH + 'DATA/combined_forecasts/' +\
                        args.variable[0]+'_mme_' + calendar.month_abbr[inim] +\
                        '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech +\
                        '_hind_parameters.npz')
-        if archivo.is_file():
-            data = np.load(archivo)
-            a_mme = data['a_mme']
-            b_mme = data['b_mme']
-            eps_mme = data['eps_mme']
-            K_mme = data['K_mme']
-        else:
-            #ereg con el smme pesado
-            for_dt = np.rollaxis(for_dt * np.repeat(weight, nmembers, axis=3), 3, 1)
-            [a_mme, b_mme, R_mme, Rb_mme, eps_mme, Kmax_mme,
-             K_mme] = ereg.ensemble_regression(for_dt, obs_dt, False)
-            np.savez(archivo, a_mme=a_mme, b_mme=b_mme, R_mme=R_mme,
-                     Rb_mme=Rb_mme, eps_mme=eps_mme, Kmax_mme=Kmax_mme,
-                     K_mme=K_mme)
+        data = np.load(archivo)
+        a_mme = data['a_mme']
+        b_mme = data['b_mme']
+        eps_mme = data['eps_mme']
+        K_mme = data['K_mme']
         #peso prono actual
-        prono_actual_dt = np.rollaxis(prono_actual_dt * np.repeat(weight[0, :, :, :],
-                                                                  nmembers,
-                                                                  axis=2),
+        # check nans
+        empty_forecast = np.sum(np.sum(np.isnan(prono_actual_dt), axis=1), axis=0) == (nx * ny) # modificado
+        prono_actual_dt = np.rollaxis(prono_actual_dt * np.repeat(weight, nmembersf, axis=2),
                                       2, 0)
         K_mme = K_mme[0, :, :, :]
+        prono_actual_dt[empty_forecast, :, :] = np.nan
         prono_actual_dt = prono_actual_dt * K_mme + (1 - K_mme) *\
                 np.nanmean(prono_actual_dt, axis = 0)
         #corrijo prono
         prono_cr = b_mme + a_mme * prono_actual_dt
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(prono_cr, eps_mme, terciles)
+        prob_terc[:, empty_forecast, :, :] = np.nan
+        #empty forecast to nana
         prob_terc_comb = np.nanmean(prob_terc, axis=1)
 
     #guardo los pronos
