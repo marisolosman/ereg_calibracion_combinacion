@@ -18,7 +18,6 @@ mpl.use('agg')
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
-from pathlib import Path
 import configuration
 
 cfg = configuration.Config.Instance()
@@ -160,8 +159,8 @@ def main(args):
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    RUTA = Parth(PATH, cfg.get('folders').get('data').get('real_time_forecasts'))
-    RUTA_IM = Parth(PATH, cfg.get('folders').get('figures').get('real_time_forecasts'))
+    RUTA = Path(PATH, cfg.get('folders').get('data').get('real_time_forecasts'))
+    RUTA_IM = Path(PATH, cfg.get('folders').get('figures').get('real_time_forecasts'))
     for i in ctech:
         for j in wtech:
             archivo = Path(RUTA, args.variable[0] + '_mme_' + INIM + str(iniy)\
