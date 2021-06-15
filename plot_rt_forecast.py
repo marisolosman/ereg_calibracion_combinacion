@@ -153,7 +153,7 @@ def main(args):
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     PATH = cfg.get('folders').get('download_folder')
-    lsmask = Parth(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
+    lsmask = Path(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
     coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
