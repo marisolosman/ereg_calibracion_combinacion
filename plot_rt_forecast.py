@@ -63,7 +63,7 @@ def asignar_categoria(for_terciles):
             mascara = for_cat < 1
             for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
-def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
+def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin, vmax,
                      titulo, salida):
     """Plot probabilistic forecast"""
     limits = [lonw, lone, lats, latn]
@@ -73,8 +73,9 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
     ax.set_extent(limits, crs=ccrs.PlateCarree())
     ax.coastlines(alpha=0.5, resolution='50m')
     ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
-    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=0.5, vmax=12.5, 
+    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=vmin, vmax=vmax,
                    transform=ccrs.PlateCarree())
+    #ax.pcolor(dx, dy, pronos, cmap='coral', vmin=90, vmax=90, transform=ccrs.PlateCarree())
     #genero colorbar para pronos
     plt.title(titulo)
     ax1 = fig.add_axes([0.2, 0.05, 0.2, 0.03])
@@ -140,7 +141,9 @@ def main():
                             [204., 204., 204.], [150., 150., 150.],
                             [82., 82., 82.], [186., 228., 179.],
                             [116., 196., 118.], [49., 163., 84.],
-                            [0., 109., 44.]]) / 255
+                            [0., 109., 44.], [241., 233., 218.]]) / 255
+        vmin = 0.5
+        vmax = 13.5
     else:
         colores = np.array([[8., 81., 156.], [49., 130., 189.],
                             [107., 174., 214.], [189., 215., 231.],
@@ -148,6 +151,9 @@ def main():
                             [150., 150., 150.], [82., 82., 82.],
                             [252., 174., 145.], [251., 106., 74.],
                             [222., 45., 38.], [165., 15., 21.]]) / 255
+        vmin = 0.5
+        vmax = 12.5
+
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     file1 = open("configuracion", 'r')
@@ -164,6 +170,10 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
+    drymask = PATH + 'DATA/dry_mask.nc'
+    dms = xr.open_dataset(drymask)
+    #selecciono mascara del mes
+    dms = dms.sel(month=sss[1])
     RUTA = PATH + 'DATA/real_time_forecasts/'
     RUTA_IM = PATH + 'FIGURES/'
     for i in ctech:
@@ -202,10 +212,11 @@ def main():
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
             for_mask = asignar_categoria(for_terciles)
+            for_mask[dms.prec.values] = 13
             for_mask = np.ma.masked_array(for_mask,
                                           np.logical_not(land.astype(bool)))
             plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
-                             cmap, colores, SSS + ' ' + args.variable[0] +\
+                             cmap, colores, vmin, vmax, SSS + ' ' + args.variable[0] +\
                              ' Forecast IC ' + INIM + ' ' + str(iniy) +\
                              ' - ' + i + '-' + j, output)
 

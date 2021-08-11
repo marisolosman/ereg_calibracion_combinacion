@@ -23,23 +23,25 @@ lonw = float(domain[3])
 lone = float(domain[4])
 variable = 'prec'
 #hay problemas para decodificar las fechas, genero un xarray con mis fechas decodificadas
-dataset = xr.open_dataset(archivo, decode_times=False)
-var_out = dataset[variable].sel(**{'Y': slice(lats, latn), 'X': slice(lonw, lone)})
-lon = dataset['X'].sel(**{'X': slice(lonw, lone)})
-lat = dataset['Y'].sel(**{'Y': slice(lats, latn)})
-numero = [int(s) for s in dataset.T.units.split() if s.isdigit()]
+dataset = xr.open_dataset(archivo)
 
-pivot = datetime.datetime(1960, 1, 1) #dificilmente pueda obtener este atributo del nc sin
+dataset = dataset.sel(**{'Y': slice(lats, latn), 'X': slice(lonw, lone)})
+dataset['T'] = dataset['T'].astype('datetime64[ns]')
+
+
+#numero = [int(s) for s in dataset.T.units.split() if s.isdigit()]
+
+#pivot = datetime.datetime(1960, 1, 1) #dificilmente pueda obtener este atributo del nc sin
 #poder decodificarlo con xarray
-time = [pivot + DateOffset(months=int(x), days=15) for x in dataset['T']]
+#time = [pivot + DateOffset(months=int(x), days=15) for x in dataset['T']]
 #genero xarray con estos datos para obtener media estacional
-ds = xr.Dataset({variable: (('time', 'Y', 'X'), var_out)},
-                coords={'time': time, 'Y': lat, 'X': lon})
+#ds = xr.Dataset({variable: (('time', 'Y', 'X'), var_out)},
+#                coords={'time': time, 'Y': lat, 'X': lon})
 #compute 3-month running mean
-ds3m = ds.rolling(time=3, center=True).mean(dim='time')
+ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 #compute climatological mean
-ds3m = ds3m.groupby('time.month').mean(skipna=True)
+ds3m = ds3m.groupby('T.month').mean(skipna=True)
 #create dry mask: seasonal precipitation less than 30mm/month
-ds3m[variable] = ds['prec'] <=30
-
+ds3m[variable] = ds3m[variable] <90
+print(ds3m)
 ds3m.to_netcdf(PATH + 'DATA/dry_mask.nc')
