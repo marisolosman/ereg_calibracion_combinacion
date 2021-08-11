@@ -144,6 +144,11 @@ def main():
                             [0., 109., 44.], [241., 233., 218.]]) / 255
         vmin = 0.5
         vmax = 13.5
+        drymask = PATH + 'DATA/dry_mask.nc'
+        dms = xr.open_dataset(drymask)
+        #selecciono mascara del mes
+        dms = dms.sel(month=sss[1])
+
     else:
         colores = np.array([[8., 81., 156.], [49., 130., 189.],
                             [107., 174., 214.], [189., 215., 231.],
@@ -170,10 +175,6 @@ def main():
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
     land = np.flipud(land)
-    drymask = PATH + 'DATA/dry_mask.nc'
-    dms = xr.open_dataset(drymask)
-    #selecciono mascara del mes
-    dms = dms.sel(month=sss[1])
     RUTA = PATH + 'DATA/real_time_forecasts/'
     RUTA_IM = PATH + 'FIGURES/'
     for i in ctech:
@@ -212,7 +213,9 @@ def main():
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
             for_mask = asignar_categoria(for_terciles)
-            for_mask[dms.prec.values] = 13
+            if args.variable[0] =='prec':
+                for_mask[dms.prec.values] = 13
+
             for_mask = np.ma.masked_array(for_mask,
                                           np.logical_not(land.astype(bool)))
             plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
