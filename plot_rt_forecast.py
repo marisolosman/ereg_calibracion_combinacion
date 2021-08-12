@@ -145,6 +145,7 @@ def main(args):
                             [0., 109., 44.], [241., 233., 218.]]) / 255
         vmin = 0.5
         vmax = 13.5
+        PATH = cfg.get('download_folder')
         drymask = PATH + 'DATA/dry_mask.nc'
         dms = xr.open_dataset(drymask)
         #selecciono mascara del mes
