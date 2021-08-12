@@ -1,5 +1,5 @@
-#grafico pronostico
-import argparse #para hacer el llamado desde consola
+# grafico pronostico
+import argparse  # para hacer el llamado desde consola
 import time
 import calendar
 import numpy as np
@@ -8,35 +8,27 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+import configuration
+
+cfg = configuration.Config.Instance()
 
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
+    #reportar lectura de un archivo descargado
+    cfg.report_input_file_used(archivo)
+    #continuar ejecución
     dataset = xr.open_dataset(archivo, decode_times=False)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
     lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
     lat = dataset[lat_name].sel(**{lat_name: slice(lats, latn)})
     return var_out, lat, lon
 
-def main():
+def main(args):
     """Plot observed category"""
-    # Define parser data
-    parser = argparse.ArgumentParser(description='Plot observed category')
-    parser.add_argument('variable',type=str, nargs=1,\
-            help='Variable to verify (prec or temp)')
-    parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
-    args=parser.parse_args()
 
-    file1 = open("configuracion", 'r')
-    PATH = file1.readline().rstrip('\n')
-    file1.close()
+    PATH = cfg.get('download_folder')
     lsmask = PATH + "NMME/lsmask.nc"
-    coordenadas = 'coords'
-    domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
-    coords = {'lat_s': float(domain[1]),
-              'lat_n': float(domain[2]),
-              'lon_w': float(domain[3]),
-              'lon_e': float(domain[4])}
+    coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
@@ -99,8 +91,35 @@ def main():
         cb.ax.tick_params(labelsize=7)
         plt.savefig(output, dpi=600, bbox_inches='tight', papertype='A4')
         plt.close()
-#==========================================================================
-start = time.time()
-main()
-end = time.time()
-print(end - start)
+        cfg.set_correct_group_to_file(output)  # Change group of file
+
+
+# ==================================================================================================
+if __name__ == "__main__":
+  
+    # Define parser data
+    parser = argparse.ArgumentParser(description='Plot observed category')
+    parser.add_argument('variable',type=str, nargs=1,\
+            help='Variable to verify (prec or tref)')
+    parser.add_argument('IC', type=int, nargs=1,\
+            help='Month of beginning of season (from 1 for Jan to 12 for Dec)')
+    
+    # Extract data from args
+    args = parser.parse_args()
+  
+    # Run plotting
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"plot_observed_category.py\". Error: {e}.")
+        raise
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"plot_observed_category.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+

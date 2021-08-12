@@ -1,0 +1,13 @@
+
+__pycache__/
+
+*.pyc
+*.out
+
+*.log*
+
+email.yaml
+
+# To edit files with RStudio
+*.R*
+.Rproj.user

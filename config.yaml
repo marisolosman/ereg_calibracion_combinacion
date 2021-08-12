@@ -1,0 +1,72 @@
+
+use_logger: !!bool "true"
+
+# group to be set to created or downloaded files (only used when 
+# running in linux, on windows this param will be ignored)
+group_for_files: ereg
+
+# folders in which the data will be saved
+download_folder: /data/ereg/descargas/
+# Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal, 
+# una solución pude ser bajar los miembros problemáticos pero del early monthly samples. 
+# En esos casos, hay que: 
+# 1- Cambiar los urls del CFSv2: cambiar ".PENTAD_SAMPLES" por ".EARLY_MONTH_SAMPLES". 
+# 2- Cambiar la carpeta de descarga: cambiar "download_folder: /data/ereg/descargas/" por "download_folder: /data/ereg/descargas_cfs_early_month_samples/"
+# Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg/descargas/). 
+# Carpeta de descarga alternativa para miembros problemáticos:
+#download_folder: /data/ereg/descargas_cfs_early_month_samples/
+gen_data_folder: /data/ereg/generados/
+
+# domain coordinates: lat south, lat north, lon west, lon east
+coords:
+  lat_s: -60
+  lat_n: 15
+  lon_w: 275
+  lon_e: 330
+  
+# models glossary:
+# model              -> Model name (and ID)
+# institution        -> Institution name
+# latitude           -> Latitude name
+# longitude          -> Longitude name
+# members            -> Number of members in hindcast mode
+# leadtimes          -> Number of leadtimes
+# hindcast_begin     -> Year begining hindcast period
+# hindcast_end       -> Year end hindcast period
+# file_end           -> End of forecast file (nc or nc4)
+# rt_members         -> Number of members in hindcast mode
+models:
+  - [    model, institution, latitude, logitude, members, leadtimes, hindcast_begin, hindcast_end, file_end, rt_members ] 
+  - [  CanCM4i,         CMC,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
+  - [ GEM-NEMO,         CMC,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
+  # [CanSIPSv2,         CMC,        Y,        X,      20,        12,           1982,         2010,       nc,         20 ] 
+  - [    CCSM4,        COLA,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
+  - [    CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
+  # [    CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ]  
+  # [ FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
+  # [ FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
+  - [    GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2010,       nc,          4 ] 
+
+
+# URL where to download the models files from
+iri_url: http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/
+
+# models_url glossary:
+# model              -> Model name (and ID)
+# url_model_part     -> Any model in http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/
+# url_hindcast_part  -> URL to access model HINDCAST
+# url_forecast_part  -> URL to access model FORECAST
+models_url:
+  - [    model,       url_model_part,                  url_hindcast_part,                  url_forecast_part ] 
+  - [  CanCM4i,             .CanCM4i,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  - [ GEM-NEMO,            .GEM-NEMO,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  # [CanSIPSv2,           .CanSIPSv2,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  - [    CCSM4,    .COLA-RSMAS-CCSM4,                           .MONTHLY,                           .MONTHLY ]
+  - [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.PENTAD_SAMPLES/.MONTHLY, .FORECAST/.PENTAD_SAMPLES/.MONTHLY ] 
+  # [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.EARLY_MONTH_SAMPLES/.MONTHLY, .FORECAST/.EARLY_MONTH_SAMPLES/.MONTHLY ]
+  # [    CM2p1,    .GFDL-CM2p1-aer04,                           .MONTHLY,                           .MONTHLY ]  
+  # [ FLOR-A06, .GFDL-CM2p5-FLOR-A06,                           .MONTHLY,                           .MONTHLY ]  
+  # [ FLOR-B01, .GFDL-CM2p5-FLOR-B01,                           .MONTHLY,                           .MONTHLY ]  
+  - [    GEOS5,        .NASA-GEOSS2S,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  
+

@@ -1,6 +1,6 @@
 """smoth calibrated probabilities using a gaussian filter and plot forecast"""
-import argparse #parse command line options
-import time #test time consummed
+import argparse  # parse command line options
+import time  # test time consummed
 import calendar
 import datetime
 from pathlib import Path
@@ -12,12 +12,21 @@ from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel
 from astropy.convolution import convolve
 import matplotlib as mpl
+### Modificado M
 mpl.use('agg')
+###
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+import configuration
+
+cfg = configuration.Config.Instance()
+
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
+    #reportar lectura de un archivo descargado
+    cfg.report_input_file_used(archivo)
+    #continuar ejecución
     dataset = xr.open_dataset(archivo, decode_times=False)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
     lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
@@ -110,19 +119,11 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin
     cb3.set_label('Upper')
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
+    cfg.set_correct_group_to_file(salida)  # Change group of file
     return
-def main():
-    # Define parser data
-    parser = argparse.ArgumentParser(description='Verify combined forecast')
-    parser.add_argument('variable',type=str, nargs= 1,\
-            help='Variable to verify (prec or temp)')
-    parser.add_argument('--IC', type=str, nargs=1,\
-            help='Date of initial conditions (in "YYYY-MM-DD")')
-    parser.add_argument('--leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
 
-    args=parser.parse_args()
-    #defino ref dataset y target season
+def main(args):
+    # Defino ref dataset y target season
     initialDate = datetime.datetime.strptime(args.IC[0], '%Y-%m-%d')
     iniy = initialDate.year
     inim = initialDate.month
@@ -161,16 +162,9 @@ def main():
 
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    file1 = open("configuracion", 'r')
-    PATH = file1.readline().rstrip('\n')
-    file1.close()
+    PATH = cfg.get('download_folder')
     lsmask = PATH + "NMME/lsmask.nc"
-    coordenadas = 'coords'
-    domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
-    coords = {'lat_s': float(domain[1]),
-              'lat_n': float(domain[2]),
-              'lon_w': float(domain[3]),
-              'lon_e': float(domain[4])}
+    coords = cfg.get('coords')
     [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                 coords['lat_s'], coords['lon_w'],
                                 coords['lon_e'])
@@ -212,6 +206,10 @@ def main():
             for_terciles = np.concatenate([below[:, :, np.newaxis],
                                            near[:, :, np.newaxis],
                                            above[:, :, np.newaxis]], axis=2)
+            ### Modificado M
+            message = f"max: {np.nanmax(for_terciles)}, min: {np.nanmin(for_terciles)}"
+            print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+            ###
             for_mask = asignar_categoria(for_terciles)
             if args.variable[0] =='prec':
                 for_mask[dms.prec.values] = 13
@@ -223,10 +221,36 @@ def main():
                              ' Forecast IC ' + INIM + ' ' + str(iniy) +\
                              ' - ' + i + '-' + j, output)
 
-#===================================================================================================
-start = time.time()
-main()
-end = time.time()
-print(end - start)
+
+# ==================================================================================================
+if __name__ == "__main__":
+  
+    # Define parser data
+    parser = argparse.ArgumentParser(description='Verify combined forecast')
+    parser.add_argument('variable',type=str, nargs= 1,\
+            help='Variable to verify (prec or tref)')
+    parser.add_argument('--IC', type=str, nargs=1,\
+            help='Date of initial conditions (in "YYYY-MM-DD")')
+    parser.add_argument('--leadtime', type=int, nargs=1,\
+            help='Forecast leatime (in months, from 1 to 7)')
+
+    # Extract data from args
+    args = parser.parse_args()
+  
+    # Run plotting
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"plot_rt_forecast.py\". Error: {e}.")
+        raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"plot_rt_forecast.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
 

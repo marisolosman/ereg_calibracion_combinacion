@@ -14,16 +14,22 @@ import xarray as xr
 import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
+import configuration
+
+cfg = configuration.Config.Instance()
+
 CORES = mp.cpu_count()
-file1 = open('configuracion', 'r')
-PATH = file1.readline().rstrip('\n')
-file1.close()
+PATH = cfg.get("download_folder")
 ruta = PATH + 'NMME/'
 hind_length = 28
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
                  last_month, year_init):
+    #reportar lectura de un archivo descargado
+    cfg.report_input_file_used(archivo)
     #hay problemas para decodificar las fechas, genero un xarray con mis fechas decodificadas
     dataset = xr.open_dataset(archivo, decode_times=False)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name:
@@ -34,6 +40,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     #poder decodificarlo con xarray
     time = [pivot + DateOffset(months=int(x), days=15) for x in dataset['T']]
     #genero xarray con estos datos para obtener media estacional
+
     ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro
@@ -59,7 +66,8 @@ class Observ(object):
 #methods
     def select_months(self, last_month, year_init, lats, latn, lonw, lone):
         """computes seasonal mean"""
-        print("seasonal mean")
+        message = "seasonal mean"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         file = ruta + self.var_name + '_monthly_nmme_' + self.institution +'.nc'
         [variable, latitudes, longitudes] = manipular_nc(file, self.var_name,
                                                          self.lat_name,
@@ -75,7 +83,8 @@ class Observ(object):
 
     def remove_trend(self, observation, CV_opt):
         """removes trend"""
-        print("Removing trend")
+        message = "Removing trend"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nlats, nlons] = observation.shape
         anios = np.arange(ntimes) #en anios es un quilombo y para el caso es lo mismo
         i = np.repeat(np.arange(ntimes, dtype=int), nlats * nlons)
@@ -84,7 +93,8 @@ class Observ(object):
         p = Pool(CORES)
         p.clear()
         if CV_opt: #validacion cruzada ventana 1 anio
-            print("Cross-validation")
+            message = "Cross-validation"
+            print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
             CV_matrix = np.logical_not(np.identity(ntimes))
             def filtro_tendencia(i, j, k, anios=anios, CV_m=CV_matrix,
                                  obs=observation):
@@ -136,7 +146,8 @@ class Observ(object):
 
     def computo_terciles(self, observation, CV_opt):
         """obtains terciles limits"""
-        print("observed terciles limits")
+        message = "observed terciles limits"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         ntimes = observation.shape[0]
         if CV_opt: #validacion cruzada ventana 1 anio
             i = np.arange(ntimes)
@@ -181,7 +192,8 @@ class Observ(object):
 
     def computo_categoria(self, observation, tercil):
         """assings observed category: Below, normal, Above"""
-        print("Observed Category")
+        message = "Observed Category"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [ntimes, nlats, nlons] = np.shape(observation)
         #calculo el tercil observado cada anio
         obs_terciles = np.empty([3, ntimes, nlats, nlons])

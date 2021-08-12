@@ -3,61 +3,39 @@ combines forecast to obtain probabilistic forecast for terciles combining
 forecasts using wpdf and wsereg techniques to calibrated models
 """
 #!/usr/bin/env python
-import argparse #parse command line options
-import time #test time consummed
+import argparse  # parse command line options
+import time  # test time consummed
 import warnings
 import glob
 from pathlib import Path
 import calendar
 import numpy as np
-import ereg #apply ensemble regression to multi-model ensemble
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-def main():
-    """Defines parser data"""
-    parser = argparse.ArgumentParser(description='Combining models')
-    parser.add_argument('variable', type=str, nargs=1,\
-            help='Variable to calibrate (prec or temp)')
-    parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
-    subparsers = parser.add_subparsers(help="Combination technique")
-    wpdf_parser = subparsers.add_parser('wpdf', help='weighted sum of calibrated PDFs')
-    wsereg_parser = subparsers.add_parser('wsereg', help='Ereg with the weighted superensemble')
-    count_parser = subparsers.add_parser('count', help='Count members in each bin')
-    count_parser.set_defaults(ctech='count', wtech=['same'])
-    count_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-           'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-            help='Models to be discarded')
-    wpdf_parser.set_defaults(ctech='wpdf')
-    wpdf_parser.add_argument("--weight_tech", required=True, nargs=1,\
-            choices=['pdf_int', 'mean_cor', 'same'], dest='wtech')
-    wpdf_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-           'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-            help='Models to be discarded')
-    wsereg_parser.set_defaults(ctech='wsereg')
-    wsereg_parser.add_argument("--weight_tech", required=True, nargs=1,\
-            choices=['pdf_int', 'mean_cor', 'same'], dest='wtech',
-                               help='Relative weight between models')
-#    wsereg_parser.add_argument('--no-model', nargs='+', choices=['CFSv2','CanCM3','CanCM4',\
-#            'CM2p1', 'FLOR-A06', 'FLOR-B01', 'GEOS5', 'CCSM3', 'CCSM4'], dest='no_model',\
-#            help='Models to be discarded')
+import ereg  # apply ensemble regression to multi-model ensemble
+import configuration
+import pandas as pd
 
-    # Extract dates from args
-    args = parser.parse_args()
-    file1 = open('configuracion', 'r')
-    PATH = file1.readline().rstrip('\n')
-    file1.close()
-    lista = glob.glob(PATH + "modelos/*")
+cfg = configuration.Config.Instance()
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+def main(args):
+    
+    coords = cfg.get('coords')
+    conf_modelos = cfg.get('models')
+    
+    df_modelos = pd.DataFrame(conf_modelos[1:], columns=conf_modelos[0])
+    
+    if args.no_models:  # si hay que descartar algunos modelos
+        df_modelos = df_modelos.query(f"model not in {args.no_models}")
+
     keys = ['nombre', 'instit', 'latn', 'lonn', 'miembros', 'plazos',\
-            'fechai', 'fechaf','ext']
-    modelos = []
-    for i in lista:
-        lines = [line.rstrip('\n') for line in open(i)]
-        modelos.append(dict(zip(keys, [lines[0], lines[1], lines[2], lines[3],
-                                       int(lines[4]), int(lines[5]),
-                                       int(lines[6]), int(lines[7]),
-                                       lines[8]])))
+            'fechai', 'fechaf', 'ext', 'rt_miembros']
+    df_modelos.columns = keys
+    
+    modelos = df_modelos.to_dict('records')
+
+    PATH = cfg.get("gen_data_folder")
+    
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
     nx = int(np.abs (coords['lon_e'] - coords['lon_w']) + 1) #does for domains beyond greenwich
@@ -80,8 +58,10 @@ def main():
     sss = [i - 12 if i > 12 else i for i in seas]
     year_verif = 1982 if seas[-1] <= 12 else 1983
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
-    print("Combining forecasts: ", SSS, args.variable[0], "Initialized in ",
-          calendar.month_abbr[args.IC[0]], " using ", args.ctech, args.wtech[0])
+    message = "Combining forecasts: " + SSS + " " + args.variable[0] + " Initialized in " +\
+               calendar.month_abbr[args.IC[0]] + " using " + args.ctech + " " + args.wtech[0]
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+    
     i = 0
 
     for it in modelos:
@@ -90,6 +70,8 @@ def main():
                        args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind.npz')
+        message = f"Se va a intentar abrir el archivo: {archivo}. Además archivo.is_file() = {archivo.is_file()}." 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         if archivo.is_file():
             data = np.load(archivo)
             """
@@ -204,18 +186,60 @@ def main():
                 '_hind.npz'
 
     np.savez(route+archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
-#==================================================================================================
-start = time.time()
-#abro archivo donde guardo coordenadas
-coordenadas = 'coords'
-domain = [line.rstrip('\n') for line in open(coordenadas)]
-coords = {'lat_s' : float(domain[1]),
-        'lat_n' : float(domain[2]),
-        'lon_w' : float(domain[3]),
-        'lon_e' : float(domain[4])}
+    cfg.set_correct_group_to_file(route+archivo)  # Change group of file
+    
 
-main()
-end = time.time()
-print(end - start)
-# =================================================================================
+
+# ==================================================================================================
+if __name__ == "__main__":
+    
+    # Defines parser data
+    parser = argparse.ArgumentParser(description='Combining models')
+    parser.add_argument('variable', type=str, nargs=1, 
+        help='Variable to calibrate (prec or tref)')
+    parser.add_argument('IC', type=int, nargs=1, 
+        help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+    parser.add_argument('leadtime', type=int, nargs=1, 
+        help='Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('--no-models', nargs='+', dest='no_models', default=[],
+        choices=[item[0] for item in cfg.get('models')[1:]], 
+        help='Models to be discarded')
+        
+    subparsers = parser.add_subparsers(help="Combination technique")
+    
+    wpdf_parser = subparsers.add_parser('wpdf', help='weighted sum of calibrated PDFs')
+    wsereg_parser = subparsers.add_parser('wsereg', help='Ereg with the weighted superensemble')
+    count_parser = subparsers.add_parser('count', help='Count members in each bin')
+    
+    wpdf_parser.set_defaults(ctech='wpdf')
+    wpdf_parser.add_argument("--weight_tech", required=True, nargs=1, 
+        choices=['pdf_int', 'mean_cor', 'same'], dest='wtech',
+        help='')
+    wsereg_parser.set_defaults(ctech='wsereg')
+    wsereg_parser.add_argument("--weight_tech", required=True, nargs=1, dest='wtech', 
+        choices=['pdf_int', 'mean_cor', 'same'], 
+        help='Relative weight between models')
+    count_parser.set_defaults(ctech='count')
+    count_parser.add_argument("--weight_tech", required=False, nargs=1, dest='wtech', 
+        choices=['same'], default=['same'],
+        help='Relative weight between models')
+    
+    # Extract data from args
+    args = parser.parse_args()
+  
+    # Run combination
+    start = time.time()
+    try:
+        main(args)
+    except Exception as e:
+        error_detected = True
+        cfg.logger.error(f"Failed to run \"combination.py\". Error: {e}.")
+        raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
+    else:
+        error_detected = False
+    finally:
+        end = time.time()
+        err_pfx = "with" if error_detected else "without"
+        message = f"Total time to run \"combination.py\" ({err_pfx} errors): {end - start}" 
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 

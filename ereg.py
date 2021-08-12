@@ -1,15 +1,19 @@
 """functions to combine ensemble forecast using ereg"""
 import warnings
 import numpy as np
-from scipy.stats import norm
 import multiprocessing as mp
+import configuration
+
+from scipy.stats import norm
 from pathos.multiprocessing import ProcessingPool as Pool
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 CORES = mp.cpu_count()
+cfg = configuration.Config.Instance()
 
 def ensemble_regression(forecast, observation, CV_opt):
     """Calibrates forecast using ensemble regression"""
-    print("Applying Ensemble Regression")
+    message = "Applying Ensemble Regression"
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     [ntimes, nmembers, nlats, nlons] = forecast.shape
     p = Pool(CORES)
     p.clear()
@@ -74,7 +78,8 @@ def ensemble_regression(forecast, observation, CV_opt):
     p.clear()
 
     if CV_opt: #validacion cruzada ventana 1 anio
-        print("Getting cross-validated forecasts")
+        message = "Getting cross-validated forecasts"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)
         l = np.tile(np.repeat(np.arange(nmembers, dtype=int), nlats* nlons), ntimes)
         j = np.tile(np.repeat(np.arange(nlats, dtype=int), nlons), ntimes * nmembers)
@@ -100,7 +105,8 @@ def ensemble_regression(forecast, observation, CV_opt):
         p.close()
         return forecast_cr, Rm, Rbest, epsbn, kmax, K
     else:
-        print("Getting hindcast parameters")
+        message = "Getting hindcast parameters"
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         j = np.repeat(np.arange(nlats, dtype=int), nlons)
         k = np.tile(np.arange(nlons, dtype=int), nlats)
         def ens_reg(j, k, obs=observation, forec=forecast_inf): #forecast 4D
@@ -124,7 +130,8 @@ def ensemble_regression(forecast, observation, CV_opt):
 
 def probabilidad_terciles(forecast, epsilon, tercil):
     """computes cpdf until tercile limits"""
-    print("Computing cpdf for tercile limits")
+    message = "Computing cpdf for tercile limits"
+    print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     if np.ndim(forecast) == 4:
         [ntimes, nmembers, nlats, nlons] = forecast.shape
         i = np.repeat(np.arange(ntimes, dtype=int), nmembers * nlats * nlons)

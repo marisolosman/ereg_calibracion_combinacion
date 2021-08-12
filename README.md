@@ -33,17 +33,16 @@ Ensemble regression is a technique used to calibrate climate models. Developed b
 	_computes calibrated real time forecast based on calibrated hindcast parameters_
 * plot_rt_forecast.py
 	_plots real time precipitation and temperature forecast_
-* run_operational_forecast.sh
+* run_operational_forecast.py
 	_calls calibration real_time_combination.py plot_rt_forecast.py_
-* run_hindcast_forecast.sh
+* run_hindcast_forecast.py
 	_call calibration in cross-validated mode calibrates and combines hindcast forecast_
 
 ## Requirements ##
-there is a ereg.yml file that can be used to generate the environment to implement ereg
+There is a ereg.yml file that can be used to generate the environment to implement ereg, and also a bash script (create_conda_env.sh) that create the conda environment and install all requiered python packages
 ## Usage ##
-* Determine root directory and gerenerate directory tree
+* Edit the file config.yaml
 * Download hindcast and real time forecasts (see examples)
-* Add models using add_model.py
 ### Hindcast ###
 * run calibration with CV mode activated
 * run combination with the 6 different approaches
@@ -55,8 +54,7 @@ there is a ereg.yml file that can be used to generate the environment to impleme
 * run plot_rt_forecast
 
 ### NEW MODEL ###
-* run add model
-* run remove model (in case new model replaces old obe)
+* add model to config.yaml file
 * repeat steps for operational forecast
 
 If hindcast forecast are needed you need to remove previous calibrated hindcast forecast and follow the steps for Hincast forecast again
