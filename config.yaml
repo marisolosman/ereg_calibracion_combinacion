@@ -6,7 +6,7 @@ use_logger: !!bool "true"
 group_for_files: ereg
 
 # folders in which the data will be saved
-download_folder: /data/ereg/descargas/
+download_folder: /datos/osman/nmme_smn/
 # Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal, 
 # una solución pude ser bajar los miembros problemáticos pero del early monthly samples. 
 # En esos casos, hay que: 
@@ -15,7 +15,7 @@ download_folder: /data/ereg/descargas/
 # Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg/descargas/). 
 # Carpeta de descarga alternativa para miembros problemáticos:
 #download_folder: /data/ereg/descargas_cfs_early_month_samples/
-gen_data_folder: /data/ereg/generados/
+gen_data_folder: /datos/osman/nmme_smn/
 
 # domain coordinates: lat south, lat north, lon west, lon east
 coords:
