@@ -34,7 +34,7 @@ def main(args):
     
     modelos = df_modelos.to_dict('records')
 
-    PATH = cfg.get("gen_data_folder")
+    PATH = cfg.get("folders").get("gen_data_folder")
     
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
@@ -66,7 +66,7 @@ def main(args):
 
     for it in modelos:
         #abro archivo modelo
-        archivo = Path(PATH + 'DATA/calibrated_forecasts/'+ \
+        archivo = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'),
                        args.variable[0] + '_' + it['nombre'] + '_' +\
                        calendar.month_abbr[args.IC[0]] + '_' + SSS +\
                        '_gp_01_hind.npz')
@@ -118,8 +118,8 @@ def main(args):
     lat = data['lats']
     lon = data['lons']
     #obtengo datos observados
-    archivo = Path(PATH + 'DATA/Observations/obs_'+args.variable[0]+'_'+\
-                   str(year_verif) + '_' + SSS + '.npz')
+    archivo = Path(PATH, cfg.get('folders').get('data').get('observations'),
+                   'obs_'+args.variable[0] + '_' + str(year_verif) + '_' + SSS + '.npz')
     data = np.load(archivo)
     obs_terciles = data['cat_obs']
     if args.ctech == 'wsereg':
@@ -175,7 +175,7 @@ def main(args):
         prob_terc_comb = np.cumsum(for_category, axis=0)[0:2, :, :, :]
 
     #guardo los pronos
-    route = PATH + 'DATA/combined_forecasts/'
+    route = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
     if args.ctech == 'wsereg':
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
                 + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech + \
@@ -185,8 +185,8 @@ def main(args):
                 + '_' + SSS + '_gp_01_' + args.wtech[0] + '_'+ args.ctech + \
                 '_hind.npz'
 
-    np.savez(route+archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
-    cfg.set_correct_group_to_file(route+archivo)  # Change group of file
+    np.savez(Path(route, archivo), prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
+    cfg.set_correct_group_to_file(Path(route, archivo))  # Change group of file
     
 
 

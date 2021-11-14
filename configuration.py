@@ -97,8 +97,9 @@ class Config():
     
     @property
     def _is_there_comb_forecasts(self):
-        gen_data_folder = self.config.get('gen_data_folder')
-        PATH = f"{gen_data_folder}/nmme_output/comb_forecast/*".replace("//","/")
+        gen_data_folder = self.config.get('folders').get('gen_data_folder')
+        comb_forecasts = self.config.get('folders').get('data').get('combined_forecasts')
+        PATH = f"{gen_data_folder}/{comb_forecasts}/*".replace("//","/")
         return any(glob.glob(PATH))
     
     @property
@@ -111,8 +112,9 @@ class Config():
             return f.read().strip().split("\n")
     
     def _delete_combined_forecasts(self):
-        gen_data_folder = self.config.get('gen_data_folder')
-        PATH = f"{gen_data_folder}/nmme_output/comb_forecast/*".replace("//","/")
+        gen_data_folder = self.config.get('folders').get('gen_data_folder')
+        comb_forecasts = self.config.get('folders').get('data').get('combined_forecasts')
+        PATH = f"{gen_data_folder}/{comb_forecasts}/*".replace("//","/")
         for filename in glob.glob(PATH):
             os.remove(filename)
     
@@ -171,40 +173,38 @@ class Config():
     def _setup_directory_tree(self):
         """Create directories to storage data (if needed)"""
 
-        download_folder = self.get('download_folder')
-        if not download_folder.endswith('/'):
-            err_msg = f"The download_folder defined at config.yaml, must end with a slash"
-            raise InvalidConfiguration(err_msg)
+        download_folder = self.get('folders').get('download_folder')
         if not os.access(pathlib.Path(download_folder).parent, os.W_OK):
             err_msg = f"{pathlib.Path(download_folder).parent} is not writable"
             raise InvalidConfiguration(err_msg)
         pathlib.Path(download_folder)\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(download_folder, 'NMME', 'hindcast'))\
+        pathlib.Path(os.path.join(download_folder, self.get('folders').get('nmme').get('hindcast')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(download_folder, 'NMME', 'real_time'))\
+        pathlib.Path(os.path.join(download_folder, self.get('folders').get('nmme').get('real_time')))\
           .mkdir(parents=True, exist_ok=True)
 
-        gen_data_folder = self.get('gen_data_folder')
-        if not gen_data_folder.endswith('/'):
-            err_msg = f"The gen_data_folder defined at config.yaml, must end with a slash"
-            raise InvalidConfiguration(err_msg)
+        gen_data_folder = self.get('folders').get('gen_data_folder')
         if not os.access(pathlib.Path(gen_data_folder).parent, os.W_OK):
             err_msg = f"{pathlib.Path(gen_data_folder).parent} is not writable"
             raise InvalidConfiguration(err_msg)
         pathlib.Path(gen_data_folder)\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'Observations'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('observations')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'calibrated_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('calibrated_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'combined_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('combined_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'real_time_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('real_time_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'DATA', 'hindcast_forecasts'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('data').get('hindcast_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
-        pathlib.Path(os.path.join(gen_data_folder, 'FIGURES'))\
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('figures').get('observations')))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('figures').get('combined_forecasts')))\
+          .mkdir(parents=True, exist_ok=True)
+        pathlib.Path(os.path.join(gen_data_folder, self.get('folders').get('figures').get('real_time_forecasts')))\
           .mkdir(parents=True, exist_ok=True)
     
     def _check_file_group(self):
@@ -245,6 +245,9 @@ class Config():
 
     def report_input_file_used(self, file_abs_path):
         """Report input files used by the last run"""
+        
+        if type(file_abs_path) != str:
+            file_abs_path = str(file_abs_path)
         
         if file_abs_path.endswith('\n'):
             file_abs_path = file_abs_path.replace('\n', '')

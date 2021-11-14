@@ -7,18 +7,19 @@ import xarray as xr
 import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pandas.tseries.offsets import *
+from pathlib import Path
 import configuration
 
 cfg = configuration.Config.Instance()
 
 CORES = mp.cpu_count()
-PATH = cfg.get("download_folder")
-ruta = PATH + 'NMME/'
+PATH = cfg.get('folders').get('download_folder')
+ruta = Path(PATH, cfg.get('folders').get('nmme').get('root'))
 hind_length = 28
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-archivo = ruta + 'prec_monthly_nmme_cpc.nc'
+archivo = Path(ruta, 'prec_monthly_nmme_cpc.nc')
 coords = cfg.get('coords')
 lats = float(coords['lat_s'])
 latn = float(coords['lat_n'])
@@ -35,4 +36,6 @@ ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 ds3m = ds3m.groupby('T.month').mean(skipna=True)
 #create dry mask: seasonal precipitation less than 30mm/month
 ds3m[variable] = ds3m[variable] <90
-ds3m.to_netcdf(PATH + 'DATA/dry_mask.nc')
+PATH = cfg.get('folders').get('gen_data_folder')
+ds3m.to_netcdf(Path(PATH, cfg.get('folders').get('data').get('root'), 'dry_mask.nc'))
+

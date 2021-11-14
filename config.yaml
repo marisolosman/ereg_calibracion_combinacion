@@ -6,17 +6,37 @@ use_logger: !!bool "true"
 group_for_files: ereg
 
 # folders in which the data will be saved
-download_folder: /datos/osman/nmme_smn/
-# Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal, 
-# una solución pude ser bajar los miembros problemáticos pero del early monthly samples. 
-# En esos casos, hay que: 
-# 1- Cambiar los urls del CFSv2: cambiar ".PENTAD_SAMPLES" por ".EARLY_MONTH_SAMPLES". 
-# 2- Cambiar la carpeta de descarga: cambiar "download_folder: /data/ereg/descargas/" por "download_folder: /data/ereg/descargas_cfs_early_month_samples/"
-# Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg/descargas/). 
-# Carpeta de descarga alternativa para miembros problemáticos:
-#download_folder: /data/ereg/descargas_cfs_early_month_samples/
-gen_data_folder: /datos/osman/nmme_smn/
-
+folders:
+  # TREE (ereg root folders)
+  download_folder: /data/ereg/descargas/
+  # Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal,  una solución pude ser bajar los
+  # miembros problemáticos pero del early monthly samples. En esos casos, hay que:
+  # 1- Cambiar los urls del CFSv2: cambiar ".PENTAD_SAMPLES" por ".EARLY_MONTH_SAMPLES".
+  # 2- Cambiar la carpeta de descarga: cambiar "download_folder: /data/ereg/descargas/" por
+  # "download_folder: /data/ereg/descargas_cfs_early_month_samples/"
+  # 3- Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg/descargas/).
+  # Carpeta de descarga alternativa para miembros problemáticos:
+  # download_folder: /data/ereg/descargas_cfs_early_month_samples/
+  gen_data_folder: /data/ereg/generados/
+  # NMME (contains downloaded data):
+  nmme:
+    root: NMME
+    hindcast: NMME/hindcast
+    real_time: NMME/real_time
+  # DATA (contains generated data):
+  data:
+    root: nmme_output
+    observations: nmme_output
+    calibrated_forecasts: nmme_output/cal_forecasts
+    combined_forecasts: nmme_output/comb_forecasts
+    real_time_forecasts: nmme_output/rt_forecasts
+    hindcast_forecasts: nmme_output/hindcast_forecasts
+  # FIGURES (contains generated data):
+  figures:
+    root: nmme_figuras
+    observations: nmme_figuras/observations
+    combined_forecasts: nmme_figuras/forecast
+    real_time_forecasts: nmme_figuras/rt_forecast
 # domain coordinates: lat south, lat north, lon west, lon east
 coords:
   lat_s: -60
