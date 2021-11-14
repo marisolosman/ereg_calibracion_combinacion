@@ -63,6 +63,7 @@ def main(args):
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     
     i = 0
+
     for it in modelos:
         #abro archivo modelo
         archivo = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'),

@@ -6,7 +6,7 @@ import configuration
 
 from scipy.stats import norm
 from pathos.multiprocessing import ProcessingPool as Pool
-
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 CORES = mp.cpu_count()
 cfg = configuration.Config.Instance()
 
@@ -73,7 +73,6 @@ def ensemble_regression(forecast, observation, CV_opt):
     Rbest = Rm * np.sqrt(1 + (nmembers / (nmembers - 1) * noise) / signal)
     #epsbest = n/(n-1) * Varobs * (1-Rmean**2)
     epsbn = (ntimes / (ntimes - 1)) *  obs_var * (1 - np.power(Rbest, 2))
-
     #ahora calculo la regresion
     p = Pool(CORES)
     p.clear()

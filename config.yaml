@@ -37,7 +37,6 @@ folders:
     observations: nmme_figuras/observations
     combined_forecasts: nmme_figuras/forecast
     real_time_forecasts: nmme_figuras/rt_forecast
-
 # domain coordinates: lat south, lat north, lon west, lon east
 coords:
   lat_s: -60

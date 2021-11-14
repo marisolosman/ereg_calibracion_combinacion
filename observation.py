@@ -23,6 +23,9 @@ CORES = mp.cpu_count()
 PATH = cfg.get("folders").get("download_folder")
 ruta = Path(PATH, cfg.get("folders").get("nmme").get("root"))
 hind_length = 28
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 

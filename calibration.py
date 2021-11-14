@@ -33,7 +33,6 @@ def main(args):
     modelos = df_modelos.to_dict('records')
 
     PATH = cfg.get("folders").get("gen_data_folder")
-
     """ref dataset: depende de CI del prono y plazo.
     Ej: si IC prono es Jan y plazo 1 entonces FMA en primer tiempo 1982. Si IC
     prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983."""
@@ -108,11 +107,12 @@ def main(args):
 
     message = "Processing Models"
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+
     RUTA = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'))
     for it in modelos:
         output = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
-                      calendar.month_abbr[args.IC[0]] + '_' + SSS + \
-                      '_gp_01_hind.npz')
+                          calendar.month_abbr[args.IC[0]] + '_' + SSS + \
+                          '_gp_01_hind.npz')
         if args.CV:
             if output.is_file():
                 pass
@@ -220,4 +220,5 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"calibration.py\" ({err_pfx} errors): {end - start}" 
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+
 
