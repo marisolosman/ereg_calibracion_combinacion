@@ -134,6 +134,9 @@ def main():
     wtech = ['pdf_int', 'mean_cor', 'same']
     ctech = ['wpdf', 'wsereg']
     #custom colorbar
+    file1 = open("configuracion", 'r')
+    PATH = file1.readline().rstrip('\n')
+    file1.close()
     if args.variable[0] == 'prec':
         colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141.,
                                                                 60.],
@@ -161,9 +164,6 @@ def main():
 
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
-    file1 = open("configuracion", 'r')
-    PATH = file1.readline().rstrip('\n')
-    file1.close()
     lsmask = PATH + "NMME/lsmask.nc"
     coordenadas = 'coords'
     domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
