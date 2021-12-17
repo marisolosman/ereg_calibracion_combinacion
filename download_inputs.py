@@ -76,7 +76,10 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
         for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
           for month in range(1, 12+1, 1):
             FOLDER = f"{cfg.get('download_folder')}/NMME/hindcast/".replace("//","/")
-            DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
+            if model_data.model == "GEM5-NEMO":
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
+            else:
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
             yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
@@ -91,7 +94,13 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
       for member in range(1, model_data.members+1, 1): 
         for month in range(1, now.month+1 if year == now.year else 12+1, 1):
           FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
-          DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
+          if model_data.model == "GEM5-NEMO":
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
+                                                     "operational")
+          else:
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
+                                                     "operational")
+
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
           yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
@@ -104,7 +113,13 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
     for variable in ["tref", "prec"]:
       for member in range(1, model_data.members+1, 1): 
         FOLDER = f"{cfg.get('download_folder')}/NMME/real_time/".replace("//","/")
-        DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
+        if model_data.model == "GEM5-NEMO":
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
+                                                     "real_time")
+            else:
+                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
+                                                     "real_time")
+
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(FOLDER+FILENAME, variable, recheck) if not redownload else False
         yield {'FILENAME': FOLDER+FILENAME, 'DOWNLOAD_URL': DOWNLOAD_URL, 
