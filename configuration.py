@@ -53,7 +53,7 @@ class Config():
         self._clean_input_files_used()
 
     def get(self, keyname):
-        if keyname not in self.config:
+        if keyname not in self.config and keyname != 'group_for_files':
             err_msg = f"Yaml file \"{self.file}\" don't contain this entry: {keyname}"
             raise InvalidConfiguration(err_msg)
         return self.config.get(keyname)
@@ -138,9 +138,14 @@ class Config():
     
     def _update_models(self):
         if set(self._combined_models).symmetric_difference(self._models_in_config):
-            r = input("Model/s was added or deleted. Do you want to drop current "+
-                      "combined forecasts and update combined_models file? (y/n): ")
-            if r == 'y' or r == 'Y':
+            try:
+                r = input("Model/s was added or deleted. Do you want to drop current "+
+                          "combined forecasts and update combined_models file? (y/n): ")
+            except EOFError:
+                print('\r', end='')
+                # When running in a container, input doesn't work and raise a EOFError
+                r = os.getenv('DROP_COMBINED_FORECASTS', default='n')
+            if r.upper() in ['Y', 'YES', 'S', 'SI', 'T', 'TRUE']:
                 self._delete_combined_forecasts()
                 self._update_updates_file()
                 self._update_combined_models_file()
@@ -212,8 +217,7 @@ class Config():
         
         file_group = self.get('group_for_files')
         
-        
-        if sys.platform != "win32" and os.geteuid() != 0:
+        if sys.platform != "win32" and os.geteuid() != 0 and file_group:
             warn_msg = f"To be able to change the file group you must be root or have sudo access"
             self.logger.warning(warn_msg)
         
