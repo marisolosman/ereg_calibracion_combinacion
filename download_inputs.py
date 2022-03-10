@@ -77,10 +77,12 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
           for month in range(1, 12+1, 1):
             FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                   cfg.get('folders').get('nmme').get('hindcast'))
+
             if model_data.model == "GEM5-NEMO":
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
+              DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "hindcast")
             else:
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
+              DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "hindcast")
+
             FILENAME = generate_filename(variable, year, month, member, model_data, "hindcast")
             DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
             yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
@@ -98,11 +100,9 @@ def links_to_download_operational(df_modelos, year, recheck, redownload):
                                 cfg.get('folders').get('nmme').get('real_time'))
 
           if model_data.model == "GEM5-NEMO":
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
-                                                     "operational")
+            DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "operational")
           else:
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
-                                                     "operational")
+            DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "operational")
 
           FILENAME = generate_filename(variable, year, month, member, model_data, "operational")
           DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -119,11 +119,9 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
                               cfg.get('folders').get('nmme').get('real_time'))
 
         if model_data.model == "GEM5-NEMO":
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
-                                                     "real_time")
-            else:
-                DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
-                                                     "real_time")
+          DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data, "real_time")
+        else:
+          DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data, "real_time")
 
         FILENAME = generate_filename(variable, year, month, member, model_data, "real_time")
         DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), variable, recheck) if not redownload else False
@@ -251,25 +249,25 @@ if __name__ == "__main__":
   if any(item in ['hindcast', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_hindcast(df_modelos, args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}hindcast links: {round(end - start, 2)}')
   if any(item in ['operational', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_operational(df_modelos, args.year, args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> anho: {args.year}')
   if any(item in ['real_time', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_real_time(df_modelos, args.year, args.month, args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}real_time links: {round(end - start, 2)} -> anho: {args.year}, mes: {args.month}')
   if any(item in ['observation', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_observation(args.recheck, args.redownload)
-    df_links = df_links.append(pd.DataFrame.from_dict(links), ignore_index=True)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}observation links: {round(end - start, 2)}')
   
