@@ -39,8 +39,10 @@ RUN python3 -m pip install --upgrade pip && \
         cdo \
         nco \
         python-crontab \
-        PyYAML \
-        Cartopy==0.19.0.post1
+        PyYAML
+# Shapely y cartopy deben instalarse sin binarios (ver: https://github.com/SciTools/cartopy/issues/837)
+RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels \
+        --no-binary :all: shapely Cartopy==0.19.0.post1
 
 
 

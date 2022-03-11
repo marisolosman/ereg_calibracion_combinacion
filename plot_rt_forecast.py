@@ -19,6 +19,7 @@ from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
 import configuration
+import os
 
 cfg = configuration.Config.Instance()
 
@@ -75,6 +76,8 @@ def asignar_categoria(for_terciles):
 def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin, vmax,
                      titulo, salida):
     """Plot probabilistic forecast"""
+    init_message = f"Generating figure: {os.path.basename(salida)}"
+    print(init_message) if not cfg.get('use_logger') else cfg.logger.info(init_message)
     limits = [lonw, lone, lats, latn]
     fig = plt.figure()
     mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) / 2)
@@ -120,6 +123,8 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
     cfg.set_correct_group_to_file(salida)  # Change group of file
+    saved_message = f"Saved figure: {os.path.basename(salida)}"
+    print(saved_message) if not cfg.get('use_logger') else cfg.logger.info(saved_message)
     return
 
 def main(args):
