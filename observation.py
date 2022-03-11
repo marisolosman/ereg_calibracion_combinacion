@@ -44,7 +44,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     time = [pivot + DateOffset(months=int(x), days=15) for x in dataset['T']]
     #genero xarray con estos datos para obtener media estacional
 
-    ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out)},
+    ds = xr.Dataset({variable: (('time', lat_name, lon_name), var_out.data)},
                     coords={'time': time, lat_name: lat, lon_name: lon})
     #como el resampling trimestral toma el ultimo mes como parametro
     var_out = ds[variable].resample(time='Q-' + last_month).mean(dim='time')
