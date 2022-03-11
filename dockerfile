@@ -134,7 +134,7 @@ RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /opt/ereg
 RUN sed -i "s/^group_for_files/# group_for_files/g" /opt/ereg/config.yaml
 
 # Setup cron for run twice a month -- Download files from IRIDL
-RUN (echo "* * 15,16 * * cd /opt/ereg && python download_inputs.py --download operational >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
+RUN (echo "* * 15,16 * * cd /opt/ereg && python download_inputs.py --download operational --re-check >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 # Setup cron for run once a month -- Run operational forecast
 RUN (crontab -u $NON_ROOT_USR -l; echo "* * 17 * * cd /opt/ereg && python run_operational_forecast.py >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 
