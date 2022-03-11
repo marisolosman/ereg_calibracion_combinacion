@@ -41,7 +41,8 @@ def main(args):
         for v in args.variables:  # loop sobre las variables a calibrar
             for m in range(1, 12+1):  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
                 for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
-                    plot_forecast(argparse.Namespace(variable=[v], IC=[m], leadtime=[l]))
+                    plot_forecast(argparse.Namespace(variable=[v], IC=[m], leadtime=[l],
+                                                     weighting=args.weighting, combination=args.combination))
                 plot_observed_category(argparse.Namespace(variable=[v], IC=[m]))
                 
 

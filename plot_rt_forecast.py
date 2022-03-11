@@ -137,8 +137,8 @@ def main(args):
     sss = [i - 12 if i > 12 else i for i in seas]
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
 
-    wtech = ['pdf_int', 'mean_cor', 'same']
-    ctech = ['wpdf', 'wsereg']
+    wtech = args.weighting  # ['pdf_int', 'mean_cor', 'same']
+    ctech = args.combination  # ['wpdf', 'wsereg']
     #custom colorbar
     if args.variable[0] == 'prec':
         colores = np.array([[166., 54., 3.], [230., 85., 13.], [253., 141.,
@@ -240,6 +240,12 @@ if __name__ == "__main__":
             help='Date of initial conditions (in "YYYY-MM-DD")')
     parser.add_argument('--leadtime', type=int, nargs=1,\
             help='Forecast leatime (in months, from 1 to 7)')
+    parser.add_argument('--weighting', nargs='+',
+            default=["same", "pdf_int", "mean_cor"], choices=["same", "pdf_int", "mean_cor"],
+            help='Weighting methods to be plotted.')
+    parser.add_argument('--combination', nargs='+',
+            default=["wpdf", "wsereg"], choices=["wpdf", "wsereg"],
+            help='Combination methods to be plotted.')
 
     # Extract data from args
     args = parser.parse_args()

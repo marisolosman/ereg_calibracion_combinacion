@@ -47,7 +47,8 @@ def main(args):
         cfg.logger.info("Starting plotting")
         for v in args.variables:  # loop sobre las variables a calibrar
             for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
-                plot_rt_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l]))
+                plot_rt_forecast(argparse.Namespace(variable=[v], IC=[f"{args.year}-{args.month}-01"], leadtime=[l],
+                                                    weighting=args.weighting, combination=args.combination))
                 
 
 # ==================================================================================================
