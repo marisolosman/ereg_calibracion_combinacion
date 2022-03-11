@@ -72,7 +72,9 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
   # 
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
-      for member in range(1, model_data.members+1, 1): 
+      for member in range(1, model_data.members+1, 1):
+        if recheck:
+          cfg.logger.info(f'Checking files: for: model={model_data.model}, variable={variable}, member={member}')
         for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
           for month in range(1, 12+1, 1):
             FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
