@@ -162,13 +162,22 @@ USER $NON_ROOT_USR
 #        -t ereg .
 
 # CORRER OPERACIONALMENTE CON CRON
-# docker run --name ereg --rm \
+# docker run --name ereg \
 #        --volume /data:/data \
 #        --env DROP_COMBINED_FORECASTS='YES' \
 #        --detach ereg:latest
 
-# CORRER MANUALMENTE
+# CORRER MANUALMENTE EN PRIMER PLANO Y BORRANDO EL CONTENEDOR AL FINALIZAR
 # docker run --name ereg --rm \
 #        --volume /data:/data \
 #        --env DROP_COMBINED_FORECASTS='YES' \
-#        ereg:latest python /opt/ereg/download_inputs.py --download operational
+#        --memory="4g" \
+#        ereg:latest python /opt/ereg/<script> <args>
+
+# CORRER MANUALMENTE EN SEGUNDO PLANO Y SIN BORRAR EL CONTENEDOR AL FINALIZAR
+# NO BORRAR EL CONTENEDOR AL FINALIZAR PERMITE VER LOS ERRORES (EN CASO QUE HAYA ALGUNO)
+# docker run --name ereg --detach \
+#        --volume /data:/data \
+#        --env DROP_COMBINED_FORECASTS='YES' \
+#        --memory="4g" \
+#        ereg:latest python /opt/ereg/<script> <args>
