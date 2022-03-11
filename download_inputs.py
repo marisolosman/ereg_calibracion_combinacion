@@ -62,7 +62,7 @@ def check_file(filename, variable, recheck=False):
       else:
         # Check if file contains valid values
         v = d.get(variable)
-        if v is None or np.isnan(float(v.max())):
+        if v is None or np.isnan(float(v.max(skipna=True))):
           return False
         d.close()
   return True
@@ -187,13 +187,15 @@ def download_file(download_url, filename, variable):
   # Change group of file
   cfg.set_correct_group_to_file(filename)
   # Check file size
-  assert os.stat(filename).st_size != 0
+  assert os.stat(filename).st_size != 0, \
+    f'Size equal 0 for file {filename}'
   # Modify files when needed
   modify_downloaded_file_if_needed(filename)
   # Check if file can be opened and contains valid values
   if str(filename).endswith('.nc'):
     d = xr.open_dataset(filename, decode_times=False)
-    assert not np.isnan(float(d.get(variable).max()))
+    assert not np.isnan(float(d.get(variable).max(skipna=True))), \
+      f'All NaN values for {variable} in file {filename}'
     d.close()
 
 
@@ -257,13 +259,13 @@ if __name__ == "__main__":
     links = links_to_download_operational(df_modelos, args.year, args.recheck, args.redownload)
     df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
-    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> anho: {args.year}')
+    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> year: {args.year}')
   if any(item in ['real_time', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_real_time(df_modelos, args.year, args.month, args.recheck, args.redownload)
     df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
-    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}real_time links: {round(end - start, 2)} -> anho: {args.year}, mes: {args.month}')
+    cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}real_time links: {round(end - start, 2)} -> year: {args.year}, month: {args.month}')
   if any(item in ['observation', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_observation(args.recheck, args.redownload)
