@@ -62,7 +62,7 @@ def check_file(filename, variable, recheck=False):
       else:
         # Check if file contains valid values
         v = d.get(variable)
-        if not v or np.isnan(float(v.max())):
+        if v is None or np.isnan(float(v.max())):
           return False
         d.close()
   return True
@@ -249,25 +249,25 @@ if __name__ == "__main__":
   if any(item in ['hindcast', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_hindcast(df_modelos, args.recheck, args.redownload)
-    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}hindcast links: {round(end - start, 2)}')
   if any(item in ['operational', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_operational(df_modelos, args.year, args.recheck, args.redownload)
-    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> anho: {args.year}')
   if any(item in ['real_time', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_real_time(df_modelos, args.year, args.month, args.recheck, args.redownload)
-    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}real_time links: {round(end - start, 2)} -> anho: {args.year}, mes: {args.month}')
   if any(item in ['observation', 'all'] for item in args.download):
     start = time.time()
     links = links_to_download_observation(args.recheck, args.redownload)
-    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)])
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}observation links: {round(end - start, 2)}')
   
