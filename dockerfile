@@ -181,3 +181,23 @@ USER $NON_ROOT_USR
 #        --env DROP_COMBINED_FORECASTS='YES' \
 #        --memory="4g" \
 #        ereg:latest python /opt/ereg/<script> <args>
+
+# VER RAM USADA POR LOS CONTENEDORES CORRIENDO
+# docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" --no-stream
+
+# VER LOGS (CON COLORES) DE CONTENEDOR CORRIENDO EN SEGUNDO PLANO
+# docker logs --follow ereg 2>&1 | ccze -m ansi
+
+#
+# README
+#
+# El parámetro " --env DROP_COMBINED_FORECASTS='YES' " crea una variable de entorno en el OS del contenedor
+# que establece la respuesta a la siguiente pregunta lanzada por EREG cuando es corrido fuera de un contenedor:
+# --> Model/s was added or deleted. Do you want to drop current combined forecasts and update combined_models file?
+# Esta pregunta es lanzada solo cuando se detecta que han sido modificados los modelos a ser combinados. Responder
+# a esta pregunta con un NO implica que no se actualizarán los modelos utilizados para la calibración, es decir, que
+# EREG se seguirá ejecutando utilizando los archivos de calibración producidos antes del cambio detectado en los
+# modelos a ser combiandos. Es importante tener en cuenta que el comportamiento por defecto ante esta situación es no
+# borrar los archivos de calibración!! Esto para evitar el borrado accidental de los mismos, puesto que producirlos es
+# lleva bastante tiempo, principalmente para el periodo retrospectivo o hindcast.
+#
