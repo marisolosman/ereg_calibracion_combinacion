@@ -8,6 +8,10 @@ __pycache__/
 
 email.yaml
 
+# Hashed files
+input_files_used
+input_files_used_with_hashes
+
 # To edit files with RStudio
 *.R*
 .Rproj.user
