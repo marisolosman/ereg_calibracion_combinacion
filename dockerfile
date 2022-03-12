@@ -183,7 +183,7 @@ USER $NON_ROOT_USR
 #        ereg:latest python /opt/ereg/<script> <args>
 
 # VER RAM USADA POR LOS CONTENEDORES CORRIENDO
-# docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" --no-stream
+# docker stats --format "table {{.ID}}\t{{.Name}}\t{{.CPUPerc}}\t{{.PIDs}}\t{{.MemUsage}}" --no-stream
 
 # VER LOGS (CON COLORES) DE CONTENEDOR CORRIENDO EN SEGUNDO PLANO
 # docker logs --follow ereg 2>&1 | ccze -m ansi
