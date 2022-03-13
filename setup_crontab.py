@@ -35,7 +35,7 @@ with CronTab(user=user_name) as cron:
     cron.env['SHELL'] = '/bin/bash'
     cron.env['BASH_ENV'] = f'{user_home}/.bashrc_conda'
     
-    py_command = f'cd {file_path} && python download_inputs.py --download operational'
+    py_command = f'cd {file_path} && python download_inputs.py --download operational --re-check'
     if not list(cron.find_command(py_command)):
         download_job = cron.new(command=f'conda activate {conda_env} && {py_command} && conda deactivate',
                                 comment='Download files from IRIDL')
