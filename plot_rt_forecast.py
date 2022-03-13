@@ -3,7 +3,6 @@ import argparse  # parse command line options
 import time  # test time consummed
 import calendar
 import datetime
-from pathlib import Path
 import numpy as np
 import xarray as xr
 import scipy.ndimage as ndimage
@@ -12,12 +11,11 @@ from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel
 from astropy.convolution import convolve
 import matplotlib as mpl
-### Modificado M
 mpl.use('agg')
-###
 from matplotlib import pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature
+from pathlib import Path
 import configuration
 import os
 
@@ -73,6 +71,7 @@ def asignar_categoria(for_terciles):
             mascara = for_cat < 1
             for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
+    
 def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin, vmax,
                      titulo, salida):
     """Plot probabilistic forecast"""
@@ -86,8 +85,7 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin
     ax.coastlines(alpha=0.5, resolution='50m')
     ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
     CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=vmin, vmax=vmax,
-                   transform=ccrs.PlateCarree())
-    #ax.pcolor(dx, dy, pronos, cmap='coral', vmin=90, vmax=90, transform=ccrs.PlateCarree())
+                    transform=ccrs.PlateCarree())
     #genero colorbar para pronos
     plt.title(titulo)
     ax1 = fig.add_axes([0.2, 0.05, 0.2, 0.03])
@@ -265,5 +263,3 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"plot_rt_forecast.py\" ({err_pfx} errors): {end - start}" 
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
-
-

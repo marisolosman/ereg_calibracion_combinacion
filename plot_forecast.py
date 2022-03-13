@@ -16,6 +16,7 @@ import cartopy.crs as ccrs
 import cartopy.feature
 from pathlib import Path
 import configuration
+import os
 
 cfg = configuration.Config.Instance()
 
@@ -70,9 +71,11 @@ def asignar_categoria(for_terciles):
             for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
     
-def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
+def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin, vmax,
                      titulo, salida):
     """Plot probabilistic forecast"""
+    init_message = f"Generating figure: {os.path.basename(salida)}"
+    print(init_message) if not cfg.get('use_logger') else cfg.logger.info(init_message)
     limits = [lonw, lone, lats, latn]
     fig = plt.figure()
     mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) / 2)
@@ -80,7 +83,7 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
     ax.set_extent(limits, crs=ccrs.PlateCarree())
     ax.coastlines(alpha=0.5, resolution='50m')
     ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
-    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=0.5, vmax=12.5,
+    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, vmin=vmin, vmax=vmax,
                     transform=ccrs.PlateCarree())
     #genero colorbar para pronos
     plt.title(titulo)
@@ -117,6 +120,8 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
     plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
     plt.close()
     cfg.set_correct_group_to_file(salida)  # Change group of file
+    saved_message = f"Saved figure: {os.path.basename(salida)}"
+    print(saved_message) if not cfg.get('use_logger') else cfg.logger.info(saved_message)
     return
 
 def main(args):
@@ -137,6 +142,8 @@ def main(args):
                                                                   179.],
                             [116., 196., 118.], [49., 163., 84.], [0., 109.,
                                                                    44.]]) / 255
+        vmin = 0.5
+        vmax = 13.5
     else:
         colores = np.array([[8., 81., 156.], [49., 130., 189.],
                             [107., 174., 214.], [189., 215., 231.],
@@ -144,6 +151,9 @@ def main(args):
                             [150., 150., 150.], [82., 82., 82.],
                             [252., 174., 145.], [251., 106., 74.],
                             [222., 45., 38.], [165., 15., 21.]]) / 255
+        vmin = 0.5
+        vmax = 12.5
+
     cmap = mpl.colors.ListedColormap(colores)
     #open and handle land-sea mask
     PATH = cfg.get('folders').get('download_folder')
@@ -200,7 +210,7 @@ def main(args):
                 for_mask = np.ma.masked_array(for_mask,
                                               np.logical_not(land.astype(bool)))
                 plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
-                                 cmap, colores, SSS + ' Forecast IC ' +\
+                                 cmap, colores, vmin, vmax, SSS + ' Forecast IC ' +\
                                  month + '-' + str(k) + ' - ' + i + '-' + j, output)
 
     archivo = args.variable[0] + '_mme_' + month + '_' + SSS + '_gp_01_same_count_hind.npz'
@@ -227,14 +237,14 @@ def main(args):
         for_mask = np.ma.masked_array(for_mask,
                                       np.logical_not(land.astype(bool)))
         plot_pronosticos(for_mask, dx, dy, lats, latn, lonw, lone,
-                                 cmap, colores, SSS + ' Forecast IC ' +\
+                         cmap, colores, vmin, vmax, SSS + ' Forecast IC ' +\
                          month + '-' + str(k) +\
                          ' - Uncalibrated', output)
 
 
 # ==================================================================================================
 if __name__ == "__main__":
-    
+  
     # Define parser data
     parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
@@ -249,7 +259,7 @@ if __name__ == "__main__":
     parser.add_argument('--combination', nargs='+',
             default=["wpdf", "wsereg"], choices=["wpdf", "wsereg"],
             help='Combination methods to be plotted.')
-    
+
     # Extract data from args
     args = parser.parse_args()
   
@@ -268,4 +278,3 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"plot_forecast.py\" ({err_pfx} errors): {end - start}" 
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
-
