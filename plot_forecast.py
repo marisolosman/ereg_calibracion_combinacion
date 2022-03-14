@@ -139,9 +139,9 @@ if __name__ == "__main__":
     parser.add_argument('variable',type=str, nargs= 1,\
             help='Variable to verify (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1,\
-            help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+            help='Month of initial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
+            help='Forecast leadtime (in months, from 1 to 7)')
     parser.add_argument('--weighting', nargs='+',
             default=["same", "pdf_int", "mean_cor"], choices=["same", "pdf_int", "mean_cor"],
             help='Weighting methods to be plotted.')

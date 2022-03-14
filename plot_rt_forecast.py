@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser.add_argument('--IC', type=str, nargs=1,\
             help='Date of initial conditions (in "YYYY-MM-DD")')
     parser.add_argument('--leadtime', type=int, nargs=1,\
-            help='Forecast leatime (in months, from 1 to 7)')
+            help='Forecast leadtime (in months, from 1 to 7)')
     parser.add_argument('--weighting', nargs='+',
             default=["same", "pdf_int", "mean_cor"], choices=["same", "pdf_int", "mean_cor"],
             help='Weighting methods to be plotted.')

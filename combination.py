@@ -178,16 +178,15 @@ def main(args):
     route = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'))
     if args.ctech == 'wsereg':
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
-                + '_' + SSS + '_gp_01_' + args.wtech[0]+'_' + args.ctech + \
+                + '_' + SSS + '_gp_01_' + args.wtech[0] + '_' + args.ctech + \
                 '_hind.npz'
     else:
         archivo = args.variable[0] + '_mme_' + calendar.month_abbr[args.IC[0]]\
-                + '_' + SSS + '_gp_01_' + args.wtech[0] + '_'+ args.ctech + \
+                + '_' + SSS + '_gp_01_' + args.wtech[0] + '_' + args.ctech + \
                 '_hind.npz'
 
     np.savez(Path(route, archivo), prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
     cfg.set_correct_group_to_file(Path(route, archivo))  # Change group of file
-    
 
 
 # ==================================================================================================
@@ -198,9 +197,9 @@ if __name__ == "__main__":
     parser.add_argument('variable', type=str, nargs=1, 
         help='Variable to calibrate (prec or tref)')
     parser.add_argument('IC', type=int, nargs=1, 
-        help='Month of intial conditions (from 1 for Jan to 12 for Dec)')
+        help='Month of initial conditions (from 1 for Jan to 12 for Dec)')
     parser.add_argument('leadtime', type=int, nargs=1, 
-        help='Forecast leatime (in months, from 1 to 7)')
+        help='Forecast leadtime (in months, from 1 to 7)')
     parser.add_argument('--no-models', nargs='+', dest='no_models', default=[],
         choices=[item[0] for item in cfg.get('models')[1:]], 
         help='Models to be discarded')
