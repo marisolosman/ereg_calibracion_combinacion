@@ -57,9 +57,9 @@ def main(args):
     RUTA_IM = Path(PATH, cfg.get('folders').get('figures').get('combined_forecasts'))
     for i in ctech:
         for j in wtech:
-            archivo = args.variable[0] + '_mme_' + month +'_' + \
+            archivo = args.variable[0] + '_mme_' + month + '_' + \
                     SSS + '_gp_01_' + j + '_' + i + '_hind.npz'
-            data = np.load(RUTA + archivo)
+            data = np.load(Path(RUTA, archivo))
             lat = data['lat']
             lon = data['lon']
             lats = np.min(lat)
