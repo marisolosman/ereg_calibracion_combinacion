@@ -54,8 +54,8 @@ def main(args):
     if cfg.get('gen_descriptor', False):
         cfg.logger.info("Starting output files descriptor creation")
         create_descriptors(
-            argparse.Namespace(file_type='realtime_forecasts',
-                               variables=args.variables, ic_dates=[f"{args.year}-{args.month}-01"],
+            argparse.Namespace(file_type='realtime_forecasts', variables=args.variables,
+                               ic_dates=[f"{args.year}-{args.month}-01"], leadtimes=range(1, 7+1),
                                weighting=args.weighting, combination=args.combination))
                 
 

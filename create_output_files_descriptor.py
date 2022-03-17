@@ -90,7 +90,7 @@ if __name__ == "__main__":
                         help='Variables that was considered in the forecast generation process.')
     subparsers = parser.add_subparsers(dest='file_type')
     subparsers.required = True
-    parser_real_time = subparsers.add_parser('realtime_forecasts', help='realtime forecasts help')
+    parser_real_time = subparsers.add_parser('realtime_forecasts', help='realtime/operational forecasts help')
     parser_real_time.add_argument('--ic-dates', type=str, nargs='+', dest='ic_dates',
                                   help='Dates of initial conditions (in "YYYY-MM-DD")',
                                   required=True)
