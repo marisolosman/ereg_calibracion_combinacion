@@ -14,6 +14,7 @@ import model
 import ereg  # apply ensemble regression to multi-model ensemble
 import configuration
 import pandas as pd
+import os
 
 cfg = configuration.Config.Instance()
 
@@ -190,6 +191,8 @@ def main(args):
                 np.nanmean(prono_actual_dt, axis = 0)
         #corrijo prono
         prono_cr = b_mme + a_mme * prono_actual_dt
+        #se calcula la media del ensamble (estas van a ser las predicciones determinísticas)
+        ensemble_mean = np.nanmean(prono_cr, axis=0)
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(prono_cr, eps_mme, terciles)
         prob_terc[:, empty_forecast, :, :] = np.nan
@@ -203,6 +206,13 @@ def main(args):
                    args.ctech + '.npz')
     np.savez(archivo, prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
     cfg.set_correct_group_to_file(archivo)  # Change group of file
+
+    #guardo las predicciones determinísticas
+    if args.ctech == 'wsereg' and cfg.get('gen_det_data', False):
+        archivo_det = Path(PATH, cfg.get('folders').get('data').get('real_time_forecasts'),
+                           'determin_' + os.path.basename(archivo))
+        np.savez(archivo_det, ensemble_mean=ensemble_mean, lat=lat, lon=lon)
+        cfg.set_correct_group_to_file(archivo_det)  # Change group of file
 
 
 # ==================================================================================================

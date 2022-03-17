@@ -13,6 +13,7 @@ import numpy as np
 import ereg  # apply ensemble regression to multi-model ensemble
 import configuration
 import pandas as pd
+import os
 
 cfg = configuration.Config.Instance()
 
@@ -162,6 +163,8 @@ def main(args):
         [forecast_cr, Rmedio, Rmej, epsb, Kmax, K] = ereg.ensemble_regression(pronos_dt,
                                                                               obs_dt,
                                                                               True)
+        #se calcula la media del ensamble (estas van a ser las predicciones determinísticas)
+        ensemble_mean = np.nanmean(forecast_cr, axis=1)
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(forecast_cr, epsb, terciles)
         #obtengo la combinacion a partir de la suma pesada
@@ -187,6 +190,13 @@ def main(args):
 
     np.savez(Path(route, archivo), prob_terc_comb=prob_terc_comb, lat=lat, lon=lon)
     cfg.set_correct_group_to_file(Path(route, archivo))  # Change group of file
+
+    #guardo las predicciones determinísticas
+    if args.ctech == 'wsereg' and cfg.get('gen_det_data', False):
+        archivo_det = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'),
+                           'determin_' + os.path.basename(archivo))
+        np.savez(archivo_det, ensemble_mean=ensemble_mean, lat=lat, lon=lon)
+        cfg.set_correct_group_to_file(archivo_det)  # Change group of file
 
 
 # ==================================================================================================

@@ -13,6 +13,7 @@ from calibration import main as calibration
 from combination import main as combination
 from plot_forecast import main as plot_forecast
 from plot_observed_category import main as plot_observed_category
+from create_output_files_descriptor import main as create_descriptors
 
 cfg = configuration.Config.Instance()
 
@@ -44,6 +45,12 @@ def main(args):
                     plot_forecast(argparse.Namespace(variable=[v], IC=[m], leadtime=[l],
                                                      weighting=args.weighting, combination=args.combination))
                 plot_observed_category(argparse.Namespace(variable=[v], IC=[m]))
+
+    if cfg.get('gen_descriptor', False):
+        cfg.logger.info("Starting output files descriptor creation")
+        create_descriptors(
+            argparse.Namespace(file_type='hindcast_forecasts',
+                               variables=args.variables, weighting=args.weighting, combination=args.combination))
                 
 
 # ==================================================================================================

@@ -155,6 +155,24 @@ def links_to_download_observation(recheck, redownload):
          'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'land'}
 
 
+def links_to_download_observation_for_verification(recheck, redownload):
+  #
+  FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
+                        cfg.get('folders').get('nmme').get('root'))
+  #
+  FILENAME = "precip.mon.mean.nc"
+  DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
+  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'prec', recheck) if not redownload else False
+  yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec'}
+  #
+  FILENAME = "air.mon.mean.nc"
+  DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/ghcncams/air.mon.mean.nc"
+  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'tref', recheck) if not redownload else False
+  yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref'}
+
+
 def modify_downloaded_file_if_needed(downloaded_file):
   #
   tempfile = str(downloaded_file).replace('.nc', '_TMP.nc')
@@ -260,6 +278,8 @@ if __name__ == "__main__":
     start = time.time()
     links = links_to_download_operational(df_modelos, args.year, args.recheck, args.redownload)
     df_links = pd.concat([df_links, pd.DataFrame.from_dict(links)], ignore_index=True)
+    obs_links = links_to_download_observation_for_verification(args.recheck, args.redownload)
+    df_links = pd.concat([df_links, pd.DataFrame.from_dict(obs_links)], ignore_index=True)
     end = time.time()
     cfg.logger.info(f'Time to gen{" and recheck " if args.recheck else " "}operational links: {round(end - start, 2)} -> year: {args.year}')
   if any(item in ['real_time', 'all'] for item in args.download):
