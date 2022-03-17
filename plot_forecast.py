@@ -103,6 +103,10 @@ def main(args):
                                  month + '-' + str(k) + ' - ' + i + '-' + j, output)
 
     archivo = args.variable[0] + '_mme_' + month + '_' + SSS + '_gp_01_same_count_hind.npz'
+    if not Path(RUTA, archivo).is_file():
+        warn_message = f'No such file: "{archivo}". It will not be possible to build the uncalibrated forecast plot.'
+        print(warn_message) if not cfg.get('use_logger') else cfg.logger.warning(warn_message)
+        return
     data = np.load(Path(RUTA, archivo))
     lat = data['lat']
     lon = data['lon']
