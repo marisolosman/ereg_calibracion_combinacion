@@ -114,7 +114,7 @@ def main(args):
                           calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                           '_gp_01_hind.npz')
         if args.CV:
-            if output.is_file():
+            if output.is_file() and not args.OW:
                 pass
             else:
                 modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
@@ -147,7 +147,7 @@ def main(args):
             if output2.is_file() and not args.OW:
                 pass
             else:
-                if output.is_file():
+                if output.is_file() and not args.OW:
                     data = np.load(output)
                     pdf_intensity = data['peso']
                     data.close()
