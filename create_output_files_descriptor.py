@@ -13,12 +13,12 @@ from typing import TextIO
 cfg = configuration.Config.Instance()
 
 
-def write_file_desc(fp_file: TextIO, fcst_file_type: str, fcst_file_path: Path):
+def write_file_desc(fp_file: TextIO, fcst_file_type: str, fcst_file_path: Path, desc_file_type: str):
     fp_file.write('  - {\n')
     fp_file.write(f'    type: "{fcst_file_type}",\n')
     fp_file.write(f'    path: ".",\n')
     fp_file.write(f'    name: "{fcst_file_path.name}",\n')
-    if "_hind.npz" in fcst_file_path.name:
+    if desc_file_type == 'hindcast_forecasts':
         fp_file.write(f'    first_year_in_file: 1982,\n')
     fp_file.write('  }\n')
 
@@ -46,23 +46,23 @@ def hindcast_output_filename_first_section(v, ic, lt):
 
 def main(main_args: argparse.Namespace):
 
-    if main_args.file_type == 'realtime_forecasts':
-        desc_file_mame = 'realtime_forecasts_descriptors.yaml'
+    if main_args.desc_file_type == 'realtime_forecasts':
+        desc_file_name = 'realtime_forecasts_descriptors.yaml'
         forecasts_folder = Path(cfg.get('folders').get('gen_data_folder'),
                                 cfg.get('folders').get('data').get('real_time_forecasts'))
     else:
-        desc_file_mame = 'combined_forecasts_descriptors.yaml'
+        desc_file_name = 'combined_forecasts_descriptors.yaml'
         forecasts_folder = Path(cfg.get('folders').get('gen_data_folder'),
                                 cfg.get('folders').get('data').get('combined_forecasts'))
 
-    with open(Path(forecasts_folder, desc_file_mame), 'w') as fp_desc:
+    with open(Path(forecasts_folder, desc_file_name), 'w') as fp_desc:
         fp_desc.write('files:\n')
 
         for v in main_args.variables:
-            for ic in main_args.ic_dates if main_args.file_type == 'realtime_forecasts' else main_args.ic_months:
+            for ic in main_args.ic_dates if main_args.desc_file_type == 'realtime_forecasts' else main_args.ic_months:
                 for lt in main_args.leadtimes:
 
-                    if main_args.file_type == 'realtime_forecasts':
+                    if main_args.desc_file_type == 'realtime_forecasts':
                         first_part, last_part = realtime_output_filename_first_section(v, ic, lt), ".npz"
                     else:
                         first_part, last_part = hindcast_output_filename_first_section(v, ic, lt), "_hind.npz"
@@ -70,14 +70,14 @@ def main(main_args: argparse.Namespace):
                     for i in main_args.combination:
                         for j in main_args.weighting:
                             archivo = Path(forecasts_folder, f'{first_part}_gp_01_{j}_{i}{last_part}')
-                            write_file_desc(fp_desc, 'ereg_prob_output', archivo)
+                            write_file_desc(fp_desc, 'ereg_prob_output', archivo, main_args.desc_file_type)
                             if i == 'wsereg' and cfg.get('gen_det_data', False):
                                 archivo_det = Path(forecasts_folder, 'determin_' + os.path.basename(archivo))
-                                write_file_desc(fp_desc, 'ereg_det_output', archivo_det)
+                                write_file_desc(fp_desc, 'ereg_det_output', archivo_det, main_args.desc_file_type)
 
-                    if main_args.file_type == 'realtime_forecasts':
+                    if main_args.desc_file_type == 'realtime_forecasts':
                         archivo = Path(forecasts_folder, f'{first_part}_gp_01_same_count_hind.npz')
-                        write_file_desc(fp_desc, 'ereg_prob_output', archivo)
+                        write_file_desc(fp_desc, 'ereg_prob_output', archivo, main_args.desc_file_type)
 
 
 # ==================================================================================================
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--variables', nargs='+',
                         default=["tref", "prec"], choices=["tref", "prefc"],
                         help='Variables that was considered in the forecast generation process.')
-    subparsers = parser.add_subparsers(dest='file_type')
+    subparsers = parser.add_subparsers(dest='desc_file_type')
     subparsers.required = True
     parser_real_time = subparsers.add_parser('realtime_forecasts', help='realtime/operational forecasts help')
     parser_real_time.add_argument('--ic-dates', type=str, nargs='+', dest='ic_dates',
