@@ -75,7 +75,7 @@ def main(main_args: argparse.Namespace):
                                 archivo_det = Path(forecasts_folder, 'determin_' + os.path.basename(archivo))
                                 write_file_desc(fp_desc, 'ereg_det_output', archivo_det, main_args.desc_file_type)
 
-                    if main_args.desc_file_type == 'realtime_forecasts':
+                    if main_args.desc_file_type == 'hindcast_forecasts':
                         archivo = Path(forecasts_folder, f'{first_part}_gp_01_same_count_hind.npz')
                         write_file_desc(fp_desc, 'ereg_prob_output', archivo, main_args.desc_file_type)
 
