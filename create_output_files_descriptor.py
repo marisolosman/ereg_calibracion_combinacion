@@ -23,6 +23,14 @@ def write_file_desc(fp_file: TextIO, fcst_file_type: str, fcst_file_path: Path, 
     fp_file.write('  }\n')
 
 
+def realtime_desc_file_month_and_year(ic):
+    init_date = datetime.datetime.strptime(ic, '%Y-%m-%d')
+    init_year = init_date.year
+    init_month = init_date.month
+    init_month_abbr = calendar.month_abbr[init_month]
+    return f'{init_month_abbr}{str(init_year)}'
+
+
 def realtime_output_filename_first_section(v, ic, lt):
     # Defino ref dataset y target season
     init_date = datetime.datetime.strptime(ic, '%Y-%m-%d')
@@ -47,7 +55,8 @@ def hindcast_output_filename_first_section(v, ic, lt):
 def main(main_args: argparse.Namespace):
 
     if main_args.desc_file_type == 'realtime_forecasts':
-        desc_file_name = 'realtime_forecasts_descriptors.yaml'
+        rt_fcst_id = '_'.join([realtime_desc_file_month_and_year(ic) for ic in main_args.ic_dates])
+        desc_file_name = f'realtime_forecasts_descriptors_{rt_fcst_id}.yaml'
         forecasts_folder = Path(cfg.get('folders').get('gen_data_folder'),
                                 cfg.get('folders').get('data').get('real_time_forecasts'))
     else:
