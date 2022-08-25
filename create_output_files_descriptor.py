@@ -86,7 +86,7 @@ if __name__ == "__main__":
     # Define parser data
     parser = argparse.ArgumentParser(description='Create descriptors for forecasts')
     parser.add_argument('--variables', nargs='+',
-                        default=["tref", "prec"], choices=["tref", "prefc"],
+                        default=["tref", "prec"], choices=["tref", "prec"],
                         help='Variables that was considered in the forecast generation process.')
     subparsers = parser.add_subparsers(dest='desc_file_type')
     subparsers.required = True
