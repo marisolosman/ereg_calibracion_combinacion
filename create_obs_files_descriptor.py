@@ -19,9 +19,9 @@ def write_file_desc(fp_file: TextIO, fcst_file_type: str, fcst_file_path: Path):
     fp_file.write('  }\n')
 
 
-def def_new_file_name(variable, ic_month, leadtime, year):
+def def_new_file_name(variable, ic_month, year):
     # Defino ref dataset y target season
-    seas = range(ic_month + leadtime, ic_month + leadtime + 3)
+    seas = range(ic_month, ic_month + 3)
     season = "".join(calendar.month_abbr[i][0] for i in [i - 12 if i > 12 else i for i in seas])
     # Definir y retornar la primera parte del nombre del archivo
     return f'obs_{variable}_{year}_{season}.npz'
@@ -37,10 +37,9 @@ def main(main_args: argparse.Namespace):
 
         for v in main_args.variables:
             for ic in main_args.ic_months:
-                for lt in main_args.leadtimes:
-                    for y in main_args.first_years:
-                        archivo = Path(forecasts_folder, def_new_file_name(v, ic, lt, y))
-                        write_file_desc(fp_desc, 'ereg_obs_data', archivo)
+                for y in main_args.first_years:
+                    archivo = Path(forecasts_folder, def_new_file_name(v, ic, y))
+                    write_file_desc(fp_desc, 'ereg_obs_data', archivo)
 
 
 # ==================================================================================================
@@ -54,12 +53,9 @@ if __name__ == "__main__":
     parser.add_argument('--ic-months', type=int, nargs='+', dest='ic_months',
                         default=range(1, 12+1), choices=range(1, 12+1),
                         help='Months of initial conditions (from 1 for Jan to 12 for Dec)')
-    parser.add_argument('--leadtimes', type=int, nargs='+',
-                        default=range(1, 7+1), choices=range(1, 7+1),
-                        help='Forecast leadtimes (in months, from 1 to 7)')
     parser.add_argument('--first_years', type=int, nargs='+',
                         default=range(1982, 1983+1), choices=range(1982, 1983+1),
-                        help='Forecast leadtimes (in months, from 1 to 7)')
+                        help='First years of observed data (ej: 1982, 1983)')
 
     # Extract data from args
     args = parser.parse_args()
