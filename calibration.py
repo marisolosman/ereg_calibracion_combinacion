@@ -74,8 +74,8 @@ def main(args):
             obs_dt = obs.remove_trend(obs_3m, args.CV) #Standardize and detrend observation
             terciles = obs.computo_terciles(obs_dt, args.CV) # Obtain tercile limits
             categoria_obs = obs.computo_categoria(obs_dt, terciles)  #Define observed category
-            np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,\
-                     terciles=terciles, cat_obs=categoria_obs)
+            np.savez(archivo, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
+                     terciles=terciles, cat_obs=categoria_obs, obs_3m=obs_3m)
             cfg.set_correct_group_to_file(archivo)  # Change group of file
     if np.logical_not(args.CV):
         archivo2 = Path(PATH, cfg.get('folders').get('data').get('observations'),
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument('leadtime', type=int, nargs=1, 
         help='Forecast leadtime (in months, from 1 to 7)')
     parser.add_argument('--CV', action='store_true', 
-        help='Croos-validated mode')
+        help='Cross-validated mode')
     parser.add_argument('--OW', action='store_true', 
         help='Overwrite previous calibrations')
     group = parser.add_mutually_exclusive_group()
