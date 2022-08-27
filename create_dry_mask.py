@@ -1,12 +1,8 @@
 """
 Create dry mask where mean seasonal precipitation is less than 1mm/day"""
-import datetime
 import warnings
-import numpy as np
 import xarray as xr
 import multiprocessing as mp
-from pathos.multiprocessing import ProcessingPool as Pool
-from pandas.tseries.offsets import *
 from pathlib import Path
 import configuration
 
@@ -36,5 +32,5 @@ ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 ds3m = ds3m.groupby('T.month').mean(skipna=True)
 #create dry mask: seasonal precipitation less than 30mm/month
 ds3m[variable] = ds3m[variable] <90
-ds3m.to_netcdf(ruta, 'dry_mask.nc'))
+ds3m.to_netcdf(ruta, 'dry_mask.nc')
 
