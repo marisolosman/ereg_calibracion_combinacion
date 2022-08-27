@@ -164,7 +164,11 @@ def main(args):
                                                                               obs_dt,
                                                                               True)
         #se calcula la media del ensamble (estas van a ser las predicciones determinísticas)
+        message = f"Se van a calcular los datos determinísticos para datos en el archivo: {archivo}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         ensemble_mean = np.nanmean(forecast_cr, axis=1)
+        message = f"Se calcularon los datos determinísticos para datos en el archivo: {archivo}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         #obtains prob for each terciles,year and member
         prob_terc = ereg.probabilidad_terciles(forecast_cr, epsb, terciles)
         #obtengo la combinacion a partir de la suma pesada
@@ -195,8 +199,12 @@ def main(args):
     if args.ctech == 'wsereg' and cfg.get('gen_det_data', False):
         archivo_det = Path(PATH, cfg.get('folders').get('data').get('combined_forecasts'),
                            'determin_' + os.path.basename(archivo))
+        message = f"Se van a guardar los datos determinísticos en el archivo: {archivo_det}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         np.savez(archivo_det, ensemble_mean=ensemble_mean, lat=lat, lon=lon)
         cfg.set_correct_group_to_file(archivo_det)  # Change group of file
+        message = f"Se guardaron los datos determinísticos en el archivo: {archivo_det}."
+        print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
 
 
 # ==================================================================================================
