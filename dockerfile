@@ -154,22 +154,23 @@ WORKDIR /home/$NON_ROOT_USR
 USER $NON_ROOT_USR
 
 # CONSTRUIR CONTENEDOR
-# docker build -f dockerfile \
+# export DOCKER_BUILDKIT=1
+# docker build --file dockerfile \
 #        --build-arg ROOT_PWD=nonroot \
 #        --build-arg NON_ROOT_PWD=nonroot \
 #        --build-arg NON_ROOT_UID=$(stat -c "%u" .) \  # ideally, the user id must be the uid of files in /data
 #        --build-arg NON_ROOT_GID=$(stat -c "%g" .) \  # ideally, the group id must be the gid of files in /data
-#        -t ereg .
+#        --tag ereg:latest .
 
 # CORRER OPERACIONALMENTE CON CRON
 # docker run --name ereg \
-#        --volume /data:/data \
+#        --volume /data/ereg:/data/ereg \
 #        --env DROP_COMBINED_FORECASTS='YES' \
 #        --detach ereg:latest
 
 # CORRER MANUALMENTE EN PRIMER PLANO Y BORRANDO EL CONTENEDOR AL FINALIZAR
 # docker run --name ereg --rm \
-#        --volume /data:/data \
+#        --volume /data/ereg:/data/ereg \
 #        --env DROP_COMBINED_FORECASTS='YES' \
 #        --memory="4g" \
 #        ereg:latest python /opt/ereg/<script> <args>
@@ -177,7 +178,7 @@ USER $NON_ROOT_USR
 # CORRER MANUALMENTE EN SEGUNDO PLANO Y SIN BORRAR EL CONTENEDOR AL FINALIZAR
 # NO BORRAR EL CONTENEDOR AL FINALIZAR PERMITE VER LOS ERRORES (EN CASO QUE HAYA ALGUNO)
 # docker run --name ereg --detach \
-#        --volume /data:/data \
+#        --volume /data/ereg:/data/ereg \
 #        --env DROP_COMBINED_FORECASTS='YES' \
 #        --memory="4g" \
 #        ereg:latest python /opt/ereg/<script> <args>
