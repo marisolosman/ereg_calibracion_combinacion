@@ -92,7 +92,8 @@ WORKDIR /opt/ereg
 COPY . .
 
 # Create input and output folders (these folders are too big so they must be used them as volumes)
-RUN mkdir -p /data
+RUN mkdir -p /data/ereg/descargas
+RUN mkdir -p /data/ereg/generados
 
 
 
@@ -129,7 +130,7 @@ RUN echo "$NON_ROOT_USR:$NON_ROOT_PWD" | chpasswd
 RUN adduser $NON_ROOT_USR sudo
 
 # Setup ereg
-RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /data
+RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /data/ereg
 RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /opt/ereg
 
 #
@@ -158,30 +159,31 @@ USER $NON_ROOT_USR
 # docker build --file dockerfile \
 #        --build-arg ROOT_PWD=nonroot \
 #        --build-arg NON_ROOT_PWD=nonroot \
-#        --build-arg NON_ROOT_UID=$(stat -c "%u" .) \  # ideally, the user id must be the uid of files in /data
-#        --build-arg NON_ROOT_GID=$(stat -c "%g" .) \  # ideally, the group id must be the gid of files in /data
+#        --build-arg NON_ROOT_UID=$(stat -c "%u" .) \  # ideally, the user id must be the uid of files in /data/ereg
+#        --build-arg NON_ROOT_GID=$(stat -c "%g" .) \  # ideally, the group id must be the gid of files in /data/ereg
 #        --tag ereg:latest .
 
 # CORRER OPERACIONALMENTE CON CRON
 # docker run --name ereg \
-#        --volume /data/ereg:/data/ereg \
-#        --env DROP_COMBINED_FORECASTS='YES' \
+#        --volume /data/ereg/descargas:/data/ereg/descargas \
+#        --volume /data/ereg/generados:/data/ereg/generados \
+#        --env DROP_COMBINED_FORECASTS='YES' --memory="4g" \
 #        --detach ereg:latest
 
 # CORRER MANUALMENTE EN PRIMER PLANO Y BORRANDO EL CONTENEDOR AL FINALIZAR
-# docker run --name ereg --rm \
-#        --volume /data/ereg:/data/ereg \
-#        --env DROP_COMBINED_FORECASTS='YES' \
-#        --memory="4g" \
-#        ereg:latest python /opt/ereg/<script> <args>
+# docker run --name ereg \
+#        --volume /data/ereg/descargas:/data/ereg/descargas \
+#        --volume /data/ereg/generados:/data/ereg/generados \
+#        --env DROP_COMBINED_FORECASTS='YES' --memory="4g" \
+#        --rm ereg:latest python /opt/ereg/<script> <args>
 
 # CORRER MANUALMENTE EN SEGUNDO PLANO Y SIN BORRAR EL CONTENEDOR AL FINALIZAR
 # NO BORRAR EL CONTENEDOR AL FINALIZAR PERMITE VER LOS ERRORES (EN CASO QUE HAYA ALGUNO)
-# docker run --name ereg --detach \
-#        --volume /data/ereg:/data/ereg \
-#        --env DROP_COMBINED_FORECASTS='YES' \
-#        --memory="4g" \
-#        ereg:latest python /opt/ereg/<script> <args>
+# docker run --name ereg \
+#        --volume /data/ereg/descargas:/data/ereg/descargas \
+#        --volume /data/ereg/generados:/data/ereg/generados \
+#        --env DROP_COMBINED_FORECASTS='YES' --memory="4g" \
+#        --detach ereg:latest python /opt/ereg/<script> <args>
 
 # VER RAM USADA POR LOS CONTENEDORES CORRIENDO
 # docker stats --format "table {{.ID}}\t{{.Name}}\t{{.CPUPerc}}\t{{.PIDs}}\t{{.MemUsage}}" --no-stream
