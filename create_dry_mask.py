@@ -32,5 +32,5 @@ ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 ds3m = ds3m.groupby('T.month').mean(skipna=True)
 # create dry mask: seasonal precipitation less than 15mm/month
 ds3m[variable] = ds3m[variable] < 45
-ds3m.to_netcdf(ruta, 'dry_mask.nc')
+ds3m.to_netcdf(Path(ruta, 'dry_mask.nc'))
 
