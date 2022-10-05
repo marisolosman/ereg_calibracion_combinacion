@@ -49,7 +49,7 @@ def main(args):
     if cfg.get('gen_descriptor', False):
         cfg.logger.info("Starting output files descriptor creation")
         create_descriptors(
-            argparse.Namespace(file_type='hindcast_forecasts', variables=args.variables,
+            argparse.Namespace(desc_file_type='hindcast_forecasts', variables=args.variables,
                                ic_months=range(1, 12+1), leadtimes=range(1, 7+1),
                                weighting=args.weighting, combination=args.combination))
                 
