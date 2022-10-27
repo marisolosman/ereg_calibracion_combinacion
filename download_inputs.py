@@ -62,7 +62,9 @@ def check_file(filename, variable, recheck=False):
       else:
         # Check if file contains valid values
         v = d.get(variable)
-        if v is None or np.isnan(float(v.max(skipna=True))):
+        if v is None:
+          return False
+        elif np.isnan(float(v.max(skipna=True))):
           return False
         d.close()
   return True
@@ -162,15 +164,15 @@ def links_to_download_observation_for_verification(recheck, redownload):
   #
   FILENAME = "precip.mon.mean.nc"
   DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
-  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'prec', recheck) if not redownload else False
+  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'precip', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'prec'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'precip'}
   #
   FILENAME = "air.mon.mean.nc"
   DOWNLOAD_URL = "https://downloads.psl.noaa.gov/Datasets/ghcncams/air.mon.mean.nc"
-  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'tref', recheck) if not redownload else False
+  DOWNLOAD_STATUS = check_file(os.path.join(FOLDER, FILENAME), 'air', recheck) if not redownload else False
   yield {'FILENAME': os.path.join(FOLDER, FILENAME), 'DOWNLOAD_URL': DOWNLOAD_URL,
-         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'tref'}
+         'DOWNLOADED': DOWNLOAD_STATUS, 'TYPE': 'observation', 'VARIABLE': 'air'}
 
 
 def modify_downloaded_file_if_needed(downloaded_file):
