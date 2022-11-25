@@ -4,7 +4,7 @@
 #############################
 
 # Create image
-FROM python:3.10-slim-bullseye AS py_builder
+FROM python:slim AS py_builder
 
 # set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
@@ -42,7 +42,7 @@ RUN python3 -m pip install --upgrade pip && \
         PyYAML
 # Shapely y cartopy deben instalarse sin binarios (ver: https://github.com/SciTools/cartopy/issues/837)
 RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels \
-        --no-binary :all: shapely Cartopy==0.19.0.post1
+        --no-binary :all: shapely Cartopy
 
 
 
@@ -51,14 +51,16 @@ RUN python3 -m pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheel
 ########################
 
 # Create image
-FROM python:3.10-slim-bullseye AS final_image
+FROM python:slim AS final_image
 
 # set environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Install OS packages
-RUN apt-get -y -qq update &&\
+RUN apt-get -y -qq update && \
     apt-get -y -qq --no-install-recommends install \
+        # to run wheels installation
+        gcc \
         # to be able to use cartopy (Python)
         proj-bin libproj-dev libgeos-dev \
         # install Tini (https://github.com/krallin/tini#using-tini)
@@ -133,13 +135,17 @@ RUN adduser $NON_ROOT_USR sudo
 RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /data/ereg
 RUN chown -R $NON_ROOT_UID:$NON_ROOT_GID /opt/ereg
 
-#
+# Disable group switching
 RUN sed -i "s/^group_for_files/# group_for_files/g" /opt/ereg/config.yaml
 
 # Setup cron for run twice a month -- Download files from IRIDL
-RUN (echo "* * 15,16 * * cd /opt/ereg && python download_inputs.py --download operational --re-check >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
+ARG D_CRON_TIME_STR="0 0 15,16 * *"
+ARG D_PYTHON_CMD="cd /opt/ereg && python download_inputs.py --download operational --re-check"
+RUN (echo "${D_CRON_TIME_STR} ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 # Setup cron for run once a month -- Run operational forecast
-RUN (crontab -u $NON_ROOT_USR -l; echo "* * 17 * * cd /opt/ereg && python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
+ARG R_CRON_TIME_STR="0 0 17 * *"
+ARG R_PYTHON_CMD="cd /opt/ereg && python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
+RUN (crontab -u $NON_ROOT_USR -l; echo "${R_CRON_TIME_STR} ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
