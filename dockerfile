@@ -140,11 +140,11 @@ RUN sed -i "s/^group_for_files/# group_for_files/g" /opt/ereg/config.yaml
 
 # Setup cron for run twice a month -- Download files from IRIDL
 ARG D_CRON_TIME_STR="0 0 15,16 * *"
-ARG D_PYTHON_CMD="cd /opt/ereg && python download_inputs.py --download operational --re-check"
+ARG D_PYTHON_CMD="cd /opt/ereg && /usr/local/bin/python download_inputs.py --download operational --re-check"
 RUN (echo "${D_CRON_TIME_STR} ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 # Setup cron for run once a month -- Run operational forecast
 ARG R_CRON_TIME_STR="0 0 17 * *"
-ARG R_PYTHON_CMD="cd /opt/ereg && python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
+ARG R_PYTHON_CMD="cd /opt/ereg && /usr/local/bin/python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
 RUN (crontab -u $NON_ROOT_USR -l; echo "${R_CRON_TIME_STR} ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1") | crontab -u $NON_ROOT_USR -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
