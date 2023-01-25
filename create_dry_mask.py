@@ -41,7 +41,7 @@ dataset['T'] = dataset['T'].astype('datetime64[ns]')
 ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 #compute climatological mean
 ds3m = ds3m.groupby('T.month').mean(skipna=True)
-#create dry mask: seasonal precipitation less than 30mm/month
-ds3m[variable] = ds3m[variable] <90
+#create dry mask: seasonal precipitation less than 15mm/month
+ds3m[variable] = ds3m[variable] <15
 print(ds3m)
 ds3m.to_netcdf(PATH + 'DATA/dry_mask.nc')
