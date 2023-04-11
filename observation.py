@@ -193,6 +193,52 @@ class Observ(object):
             terciles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
         return terciles
 
+    def computo_quintiles(self, observation, CV_opt):
+        """obtains quintiles limits"""
+        print("observed quintiles limits")
+        ntimes = observation.shape[0]
+        if CV_opt: #validacion cruzada ventana 1 anio
+            i = np.arange(ntimes)
+            p = Pool(CORES)
+            p.clear()
+            CV_matrix = np.logical_not(np.identity(ntimes))
+            def cal_quintiles(i, CV_m=CV_matrix, obs=observation):
+                aux = np.rollaxis(obs[CV_m[:, i], :, :], 0, 3)
+                mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux), axis=2),
+                                                         np.sum(np.isnan(aux), axis=2)
+                                                         / (ntimes-1) > 0.15),
+                                           (ntimes-1, 1, 1)), 0, 3)
+                aux = np.ma.array(aux, mask=mask)
+                A = np.ma.sort(aux, axis=-1)
+                lower = A[:, :, np.int(np.round((ntimes - 1) / 5) - 1)]
+                upper = A[:, :, np.int(np.round((ntimes - 1) / 5 * 4) - 1)]
+                lower = lower.filled(np.nan)
+                upper = upper.filled(np.nan)
+                return lower, upper
+
+            res = p.map(cal_terciles, i.tolist())
+            quintiles = np.stack(res, axis=1)
+            del(cal_terciles, res)
+            p.close()
+
+        else:
+            aux = np.rollaxis(observation, 0, 3)
+            mask = np.rollaxis(np.tile(np.logical_or(np.all(np.isnan(aux),
+                                                            axis=2),
+                                                     np.sum(np.isnan(aux),
+                                                            axis=2)
+                                                     / (ntimes-1) > 0.15),
+                                       (ntimes, 1, 1)), 0, 3)
+            aux = np.ma.array(aux, mask=mask)
+            A = np.ma.sort(aux, axis=-1)
+            lower = A[:, :, np.int(np.round(ntimes / 5) - 1)]
+            lower = lower.filled(np.nan)
+            upper = A[:, :, np.int(np.round(ntimes / 5 * 4) - 1)]
+            upper = upper.filled(np.nan)
+            quintiles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
+        return quintiles
+
+
     def computo_categoria(self, observation, tercil):
         """assings observed category: Below, normal, Above"""
         message = "Observed Category"

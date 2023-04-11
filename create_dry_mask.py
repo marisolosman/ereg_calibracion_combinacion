@@ -15,13 +15,15 @@ hind_length = 28
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-archivo = Path(ruta, 'prec_monthly_nmme_cpc.nc')
 coords = cfg.get('coords')
 lats = float(coords['lat_s'])
 latn = float(coords['lat_n'])
 lonw = float(coords['lon_w'])
 lone = float(coords['lon_e'])
+
 variable = 'prec'
+
+archivo = Path(ruta, 'prec_monthly_nmme_cpc.nc')
 dataset = xr.open_dataset(archivo)
 
 dataset = dataset.sel(**{'Y': slice(lats, latn), 'X': slice(lonw, lone)})

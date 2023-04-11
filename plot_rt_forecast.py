@@ -153,3 +153,4 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"plot_rt_forecast.py\" ({err_pfx} errors): {end - start}" 
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+
