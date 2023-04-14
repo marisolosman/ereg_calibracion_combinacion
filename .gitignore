@@ -15,3 +15,6 @@ input_files_used_with_hashes
 # To edit files with RStudio
 *.R*
 .Rproj.user
+
+# To edit files with PyCharm
+.idea/

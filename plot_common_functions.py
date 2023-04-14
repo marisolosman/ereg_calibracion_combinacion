@@ -60,9 +60,16 @@ def asignar_categoria(for_terciles):
                     for_cat[ii, jj] = 6
                 elif for_terciles[ii, jj, 1] >= 0.4:
                     for_cat[ii, jj] = 5
+    mascara = for_cat < 1
+    for_mask = np.ma.masked_array(for_cat, mascara)
+    return for_mask
 
-            mascara = for_cat < 1
-            for_mask = np.ma.masked_array(for_cat, mascara)
+
+def asignar_categoria_sissa(for_terciles):
+    """determines most likely category"""
+    for_cat = for_terciles * 100
+    mascara = for_cat < 10
+    for_mask = np.ma.masked_array(for_cat, mascara)
     return for_mask
 
 
@@ -117,4 +124,24 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin
     cfg.set_correct_group_to_file(salida)  # Change group of file
     saved_message = f"Saved figure: {os.path.basename(salida)}"
     print(saved_message) if not cfg.get('use_logger') else cfg.logger.info(saved_message)
+    return
+
+
+def plot_pronosticos_sissa(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores,
+                     titulo, salida):
+    """Plot probabilistic forecast"""
+    limits = [lonw, lone, lats, -10]
+    fig = plt.figure()
+    mapproj = ccrs.PlateCarree(central_longitude=(lonw + lone) / 2)
+    ax = plt.axes(projection=mapproj)
+    ax.set_extent(limits, crs=ccrs.PlateCarree())
+    ax.coastlines(alpha=0.5, resolution='50m')
+    ax.add_feature(cartopy.feature.BORDERS, linestyle='-', alpha=0.5)
+    CS1 = ax.pcolor(dx, dy, pronos, cmap=cmap, transform=ccrs.PlateCarree())
+    # genero colorbar para pronos
+    plt.title(titulo)
+    ax1 = fig.add_axes([0.35, 0.05, 0.3, 0.03])
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=colores, orientation='horizontal')
+    plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
+    plt.close()
     return

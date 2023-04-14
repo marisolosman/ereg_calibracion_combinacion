@@ -83,6 +83,9 @@ def main(main_args: argparse.Namespace):
                             if i == 'wsereg' and cfg.get('gen_det_data', False):
                                 archivo_det = Path(forecasts_folder, 'determin_' + os.path.basename(archivo))
                                 write_file_desc(fp_desc, 'ereg_det_output', archivo_det, main_args.desc_file_type)
+                            sissa_first_part = first_part.replace('_mme_', '_extremes_mme_')
+                            archivo = Path(forecasts_folder, f'{sissa_first_part}_gp_01_{j}_{i}{last_part}')
+                            write_file_desc(fp_desc, 'ereg_sissa_output', archivo, main_args.desc_file_type)
 
                     if main_args.desc_file_type == 'hindcast_forecasts':
                         archivo = Path(forecasts_folder, f'{first_part}_gp_01_same_count_hind.npz')
@@ -119,6 +122,9 @@ if __name__ == "__main__":
 
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
 
     # Run plotting
     start = time.time()

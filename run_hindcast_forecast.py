@@ -4,6 +4,7 @@
 # El resultado de la calibración sin cross-validation se usa para la combinación en tiempo real "real_time_combination.py"
 # El resultado de la calibración con cross-validation se usa para la combinación general "combination.py"
 
+import os
 import argparse  # parse command line options
 import time  # test time consummed
 import configuration
@@ -56,6 +57,13 @@ def main(args):
 
 # ==================================================================================================
 if __name__ == "__main__":
+
+    # Set pid file
+    pid_file = '/tmp/ereg-run-hindcast-fcst.pid'
+
+    # Get PID and save it to a file
+    with open(pid_file, 'w') as f:
+        f.write(f'{os.getpid()}')
   
     # Defines parser data
     parser = argparse.ArgumentParser(description='Run hindcast forecast')
@@ -88,6 +96,9 @@ if __name__ == "__main__":
 
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
     
     # Run hindcast forecast
     start = time.time()
@@ -99,6 +110,7 @@ if __name__ == "__main__":
         raise  # see: http://www.markbetz.net/2014/04/30/re-raising-exceptions-in-python/
     else:
         error_detected = False
+        os.remove(pid_file)  # Remove pid file only if there were no errors
     finally:
         end = time.time()
         err_pfx = "with" if error_detected else "without"

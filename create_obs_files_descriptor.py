@@ -45,6 +45,7 @@ def main(main_args: argparse.Namespace):
                     if y == main_args.first_hindcast_year+1 and 6 < ic < 10:
                         continue
                     # Agregar archivo al descriptor, cuando corresponda
+                    # OBS: solo se describe el archivo con la variable obs_3m
                     archivo = Path(forecasts_folder, def_new_file_name(v, ic, y))
                     write_file_desc(fp_desc, 'ereg_obs_data', archivo)
 
@@ -65,6 +66,9 @@ if __name__ == "__main__":
 
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
 
     # Run plotting
     start = time.time()

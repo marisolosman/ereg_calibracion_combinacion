@@ -239,7 +239,7 @@ if __name__ == "__main__":
     wpdf_parser.set_defaults(ctech='wpdf')
     wpdf_parser.add_argument("--weight_tech", required=True, nargs=1,
         choices=['pdf_int', 'mean_cor', 'same'], dest='wtech', 
-        help = '')
+        help='Relative weight between models')
     wsereg_parser.set_defaults(ctech='wsereg')
     wsereg_parser.add_argument("--weight_tech", required=True, nargs=1, 
         choices=['pdf_int', 'mean_cor', 'same'], dest='wtech', 
@@ -251,6 +251,9 @@ if __name__ == "__main__":
     
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
   
     # Run real time combination
     start = time.time()

@@ -24,7 +24,7 @@ def main(args):
     mensaje = "Processing " + args.variable[0] + " observations for " + sss_str + " initialized in " + str(args.IC[0])
     print(mensaje) if not cfg.get('use_logger') else cfg.logger.info(mensaje)
 
-    # Creando archivo 1
+    # Creando archivo 1 -- calibration.py
     if args.CV:
         archivo1 = Path(base_path, cfg.get('folders').get('data').get('observations'),
                         'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + sss_str + '.npz')
@@ -47,7 +47,7 @@ def main(args):
                      terciles=terciles, cat_obs=categoria_obs, obs_3m=obs_3m)
             cfg.set_correct_group_to_file(archivo1)  # Change group of file
 
-    # Creando archivo 2 (se utiliza solo con la validación cruzada (cross-validation)
+    # Creando archivo 2 (se utiliza solo con la validación cruzada (cross-validation) -- calibration.py
     if np.logical_not(args.CV):
         archivo2 = Path(base_path, cfg.get('folders').get('data').get('observations'),
                         'obs_' + args.variable[0] + '_' + str(year_verif) + '_' + sss_str + '_parameters.npz')
@@ -68,6 +68,27 @@ def main(args):
             np.savez(archivo2, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
                      terciles=terciles)  # Save observed variables
             cfg.set_correct_group_to_file(archivo2)  # Change group of file
+
+    # Creando archivo con quintiles (archivo con extremos para gráficos SISSA) -- calibration_sissa.py
+    archivo3 = Path(base_path, cfg.get('folders').get('data').get('observations'),
+                    'obs_extremes_' + args.variable[0] + '_' + str(year_verif) +
+                    '_' + sss_str + '_parameters.npz')
+    if not archivo3.is_file() or args.OW:
+        if args.variable[0] == 'prec':
+            obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982, 2011)
+        else:
+            obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982, 2011)
+        [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[sss[-1]],
+                                                         year_verif,
+                                                         coords['lat_s'],
+                                                         coords['lat_n'],
+                                                         coords['lon_w'],
+                                                         coords['lon_e'])
+        obs_dt = obs.remove_trend(obs_3m, args.CV)  # Standardize and detrend observation
+        quintiles = obs.computo_quintiles(obs_dt, args.CV)  # Obtain tercile limits
+        np.savez(archivo3, obs_dt=obs_dt, lats_obs=lats_obs, lons_obs=lons_obs,
+                 quintiles=quintiles)  # Save observed variables
+        cfg.set_correct_group_to_file(archivo3)  # Change group of file
 
 
 # ==================================================================================================

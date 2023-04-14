@@ -223,6 +223,15 @@ def download_file(download_url, filename, variable):
 
 # ==================================================================================================
 if __name__ == "__main__":
+
+  # Set pid file
+  pid_file = '/tmp/ereg-download.pid'
+
+  # Get PID and save it to a file
+  with open(pid_file, 'w') as f:
+    f.write(f'{os.getpid()}')
+
+  # Get start time
   now = datetime.datetime.now()
   
   # PROCESAR ARGUMENTOS
@@ -337,3 +346,6 @@ if __name__ == "__main__":
       subject = 'Archivos no descargados - EREG SMN', 
       body = df_links.query('DOWNLOADED == False').to_html()             
     )
+
+  # Finally, remove pid file
+  os.remove(pid_file)

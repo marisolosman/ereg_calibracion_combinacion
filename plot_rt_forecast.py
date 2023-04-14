@@ -137,6 +137,9 @@ if __name__ == "__main__":
 
     # Extract data from args
     args = parser.parse_args()
+
+    # Set error as not detected
+    error_detected = False
   
     # Run plotting
     start = time.time()
