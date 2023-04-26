@@ -216,9 +216,9 @@ class Observ(object):
                 upper = upper.filled(np.nan)
                 return lower, upper
 
-            res = p.map(cal_terciles, i.tolist())
+            res = p.map(cal_quintiles, i.tolist())
             quintiles = np.stack(res, axis=1)
-            del(cal_terciles, res)
+            del(cal_quintiles, res)
             p.close()
 
         else:
