@@ -103,9 +103,9 @@ RUN apt-get -y -qq update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies from py_builder
-RUN python3 -m pip install --upgrade pip
 COPY --from=py_builder /usr/src/app/wheels /wheels
-RUN python3 -m pip install --no-cache /wheels/* && \
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install --no-cache /wheels/* && \
     rm -rf /wheels
 
 
@@ -271,6 +271,7 @@ crontab -l | sed \"/run_operational_forecast.py/ s|^\S* \S* \S* \S* \S*|\$R_CRON
 cron -fL 15 \n\
 \n" > /startup.sh
 RUN chmod a+x /startup.sh
+
 
 
 ############################################
