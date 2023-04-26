@@ -199,8 +199,8 @@ class Model(object):
                 A = np.sort(np.rollaxis(np.reshape(forecast[CV_m[:, i], :, :, :],
                                                    [(ntimes - 1) * nmembers, nlats, nlons]),\
                                         0, 3), axis=-1, kind='quicksort')
-                lower = A[:, :, np.int(np.round((ntimes - 1) * nmembers / 3) - 1)]
-                upper = A[:, :, np.int(np.round((ntimes - 1) * nmembers / 3 * 2) - 1)]
+                lower = A[:, :, np.int32(np.round((ntimes - 1) * nmembers / 3) - 1)]
+                upper = A[:, :, np.int32(np.round((ntimes - 1) * nmembers / 3 * 2) - 1)]
                 return lower, upper
 
             res = p.map(cal_terciles, i.tolist())
@@ -212,8 +212,8 @@ class Model(object):
             A = np.sort(np.rollaxis(np.reshape(forecast, [ntimes * nmembers,
                                                           nlats, nlons]), 0, 3),
                         axis=-1, kind='quicksort')
-            upper = A[:, :, np.int(np.round(ntimes * nmembers / 3) - 1)]
-            lower = A[:, :, np.int(np.round(ntimes * nmembers /3 * 2) - 1)]
+            upper = A[:, :, np.int32(np.round(ntimes * nmembers / 3) - 1)]
+            lower = A[:, :, np.int32(np.round(ntimes * nmembers /3 * 2) - 1)]
             terciles = np.rollaxis(np.stack([upper, lower], axis=2), 2, 0)
         return terciles
 

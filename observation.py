@@ -165,8 +165,8 @@ class Observ(object):
                                            (ntimes-1, 1, 1)), 0, 3)
                 aux = np.ma.array(aux, mask=mask)
                 A = np.ma.sort(aux, axis=-1)
-                lower = A[:, :, np.int(np.round((ntimes - 1) / 3) - 1)]
-                upper = A[:, :, np.int(np.round((ntimes - 1) / 3 * 2) - 1)]
+                lower = A[:, :, np.int32(np.round((ntimes - 1) / 3) - 1)]
+                upper = A[:, :, np.int32(np.round((ntimes - 1) / 3 * 2) - 1)]
                 lower = lower.filled(np.nan)
                 upper = upper.filled(np.nan)
                 return lower, upper
@@ -186,9 +186,9 @@ class Observ(object):
                                        (ntimes, 1, 1)), 0, 3)
             aux = np.ma.array(aux, mask=mask)
             A = np.ma.sort(aux, axis=-1)
-            lower = A[:, :, np.int(np.round(ntimes / 3) - 1)]
+            lower = A[:, :, np.int32(np.round(ntimes / 3) - 1)]
             lower = lower.filled(np.nan)
-            upper = A[:, :, np.int(np.round(ntimes / 3 * 2) - 1)]
+            upper = A[:, :, np.int32(np.round(ntimes / 3 * 2) - 1)]
             upper = upper.filled(np.nan)
             terciles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
         return terciles
@@ -210,8 +210,8 @@ class Observ(object):
                                            (ntimes-1, 1, 1)), 0, 3)
                 aux = np.ma.array(aux, mask=mask)
                 A = np.ma.sort(aux, axis=-1)
-                lower = A[:, :, np.int(np.round((ntimes - 1) / 5) - 1)]
-                upper = A[:, :, np.int(np.round((ntimes - 1) / 5 * 4) - 1)]
+                lower = A[:, :, np.int32(np.round((ntimes - 1) / 5) - 1)]
+                upper = A[:, :, np.int32(np.round((ntimes - 1) / 5 * 4) - 1)]
                 lower = lower.filled(np.nan)
                 upper = upper.filled(np.nan)
                 return lower, upper
@@ -231,9 +231,9 @@ class Observ(object):
                                        (ntimes, 1, 1)), 0, 3)
             aux = np.ma.array(aux, mask=mask)
             A = np.ma.sort(aux, axis=-1)
-            lower = A[:, :, np.int(np.round(ntimes / 5) - 1)]
+            lower = A[:, :, np.int32(np.round(ntimes / 5) - 1)]
             lower = lower.filled(np.nan)
-            upper = A[:, :, np.int(np.round(ntimes / 5 * 4) - 1)]
+            upper = A[:, :, np.int32(np.round(ntimes / 5 * 4) - 1)]
             upper = upper.filled(np.nan)
             quintiles = np.rollaxis(np.stack([lower, upper], axis=2), 2, 0)
         return quintiles
