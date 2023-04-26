@@ -204,8 +204,14 @@ def modify_downloaded_file_if_needed(downloaded_file):
 def download_file(download_url, filename, variable):
   #
   download_url = urllib.parse.quote(download_url, safe=':/')
+  # Create progress bar to track downloading
+  pb = helpers.DownloadProgressBar(os.path.basename(filename))
+  # Add headers to request
+  opener = urllib.request.build_opener()
+  opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+  urllib.request.install_opener(opener)
   # Download file
-  f, h = urllib.request.urlretrieve(download_url, filename)
+  f, h = urllib.request.urlretrieve(download_url, filename, pb)
   # Change group of file
   cfg.set_correct_group_to_file(filename)
   # Check file size
@@ -318,20 +324,21 @@ if __name__ == "__main__":
   count_downloaded_files, count_failed_downloads = 0, 0
   if n_files_to_download:
     run_status = f'Downloading ereg input files (PID: {os.getpid()})'
-    helpers.progress_bar(count_downloaded_files, n_files_to_download, status=run_status)
+    progress_bar = helpers.ProgressBar(n_files_to_download, run_status)
     for row in df_links.query('DOWNLOADED == False').itertuples():
+      progress_bar.report_advance(0)
       try:
         download_file(row.DOWNLOAD_URL, row.FILENAME, row.VARIABLE)
       except Exception as e:
-        helpers.progress_bar_clear_line()
+        progress_bar.clear_line()
         cfg.logger.error(e)
         cfg.logger.warning(f'Failed to download file "{row.FILENAME}" from url "{row.DOWNLOAD_URL}"')
         count_failed_downloads += 1
       else:
         df_links.at[row.Index, 'DOWNLOADED'] = True
         count_downloaded_files += 1
-      helpers.progress_bar(count_downloaded_files+count_failed_downloads, n_files_to_download, status=run_status)
-    helpers.progress_bar_close()
+      progress_bar.report_advance(1)
+    progress_bar.close()
     cfg.logger.info(f"{count_downloaded_files} files were downloaded successfully and "+
                     f"{count_failed_downloads} downloads failed!")
   else:
