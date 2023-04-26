@@ -156,8 +156,8 @@ RUN usermod -aG sudo $USR_NAME && \
     usermod -aG adm $USR_NAME
 
 # To allow sudo without password
-RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USR_NAME && \
-    chmod 0440 /etc/sudoers.d/$USR_NAME
+# RUN echo "$USR_NAME ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/$USR_NAME && \
+#     chmod 0440 /etc/sudoers.d/$USR_NAME
 
 
 
