@@ -56,7 +56,7 @@ RUN apt-get -y -qq update && \
         # some project dependencies \
         cdo nco \
         # to install cartopy
-        proj-bin libproj-dev libgeos-dev  && \
+        proj-bin libproj-dev libgeos-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Set work directory
@@ -96,6 +96,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y -qq update && \
     apt-get -y -qq upgrade && \
     apt-get -y -qq --no-install-recommends install \
+        # some project dependencies \
+        cdo nco \
         # to be able to use cartopy (Python)
         proj-bin libproj-dev libgeos-dev && \
     rm -rf /var/lib/apt/lists/*
@@ -359,8 +361,8 @@ CMD ["sh", "/opt/pycharm/bin/pycharm.sh", "-Dide.browser.jcef.enabled=false"]
 #      --env DISPLAY=$DISPLAY \
 #      --volume /tmp/.X11-unix:/tmp/.X11-unix \
 #      --volume $(pwd):/opt/ereg/ \
+#      --volume /data/ereg:/data/ereg \
 #      --volume ereg-home:/home/nonroot \
-#      --link graficos-smn-database \
 #      --detach ereg:pycharm
 
 
