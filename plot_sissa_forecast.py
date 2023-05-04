@@ -71,12 +71,7 @@ def main(args):
         #open and handle land-sea mask
         PATH = cfg.get('folders').get('download_folder')
         lsmask = Path(PATH, cfg.get('folders').get('nmme').get('root'), 'lsmask.nc')
-        coordenadas = 'coords'
-        domain = [line.rstrip('\n') for line in open(coordenadas)]  #Get domain limits
-        coords = {'lat_s': float(domain[1]),
-                  'lat_n': float(domain[2]),
-                  'lon_w': float(domain[3]),
-                  'lon_e': float(domain[4])}
+        coords = cfg.get('coords')
         [land, Y, X] = manipular_nc(lsmask, "land", "Y", "X", coords['lat_n'],
                                     coords['lat_s'], coords['lon_w'],
                                     coords['lon_e'])
@@ -90,7 +85,7 @@ def main(args):
             for j in wtech:
                 if j != 'mean_cor':
                     continue
-                archivo = Path(RUTA + args.variable[0] + nombres + INIM + str(iniy)\
+                archivo = Path(RUTA, args.variable[0] + nombres + INIM + str(iniy)\
                                + '_' + SSS + '_gp_01_' + j + '_' + i + '.npz')
                 data = np.load(archivo)
                 lat = data['lat']
@@ -104,14 +99,12 @@ def main(args):
                 for_terciles = np.squeeze(data[sub_var][:, :, :])
                 #agrego el prono de la categoria above normal
                 if args.variable[0] == 'prec':
-                    below = ndimage.filters.gaussian_filter(for_terciles[0, :,
-                                                                         :], 1,
-                                                            order=0, output=None,
-                                                            mode='constant')
-                    near = ndimage.filters.gaussian_filter(for_terciles[1, :,
-                                                                             :], 1,
-                                                            order=0, output=None,
-                                                            mode='constant')
+                    below = ndimage.gaussian_filter(for_terciles[0, :, :], 1,
+                                                    order=0, output=None,
+                                                    mode='constant')
+                    near = ndimage.gaussian_filter(for_terciles[1, :, :], 1,
+                                                   order=0, output=None,
+                                                   mode='constant')
                 else:
                     for_terciles[:, for_terciles[1, :, :] == 0] = np.nan
                     kernel = Gaussian2DKernel(x_stddev=1)
@@ -131,8 +124,8 @@ def main(args):
                 if args.variable[0] =='prec':
                     for_mask[dms.prec.values, :] = 0
                     # plot below
-                    output = RUTA_IM + 'for_' + args.variable[0] + '_low' + prob_low + '_' + SSS + '_ic_'\
-                            + INIM + '_' + str(iniy) + '.png'
+                    output = Path(RUTA_IM, 'for_' + args.variable[0] + '_low' + prob_low + '_' + SSS + '_ic_' +
+                                  INIM + '_' + str(iniy) + '.png')
 
                     plot_pronosticos(np.ma.masked_array(for_mask[:, :, 0],
                                                         np.logical_not(land.astype(bool))),
@@ -143,8 +136,8 @@ def main(args):
                                      ' below ' + prob_low + ' hist range -  Forecast IC ' + INIM + ' ' + str(iniy),
                                      output)
 
-                    output = RUTA_IM + 'for_' + args.variable[0] + '_high' + prob_high + '_' + SSS + '_ic_'\
-                            + INIM + '_' + str(iniy) + '.png'
+                    output = Path(RUTA_IM, 'for_' + args.variable[0] + '_high' + prob_high + '_' + SSS + '_ic_' +
+                                  INIM + '_' + str(iniy) + '.png')
 
                     plot_pronosticos(np.ma.masked_array(for_mask[:, :, 2],
                                                         np.logical_not(land.astype(bool))),
@@ -156,8 +149,8 @@ def main(args):
                                      output)
 
                 else:
-                    output = RUTA_IM + 'for_' + args.variable[0] + '_high' + prob_high + '_' + SSS + '_ic_'\
-                            + INIM + '_' + str(iniy) + '.png'
+                    output = Path(RUTA_IM, 'for_' + args.variable[0] + '_high' + prob_high + '_' + SSS + '_ic_' +
+                                  INIM + '_' + str(iniy) + '.png')
 
                     plot_pronosticos(np.ma.masked_array(for_mask[:, :, 2],
                                                         np.logical_not(land.astype(bool))),
@@ -168,8 +161,8 @@ def main(args):
                                      ' above ' + prob_high + ' hist range -  Forecast IC ' + INIM + ' ' + str(iniy),
                                      output)
 
-                    output = RUTA_IM + 'for_' + args.variable[0] + '_low' + prob_low + '_' + SSS + '_ic_'\
-                            + INIM + '_' + str(iniy) + '.png'
+                    output = Path(RUTA_IM, 'for_' + args.variable[0] + '_low' + prob_low + '_' + SSS + '_ic_' +
+                                  INIM + '_' + str(iniy) + '.png')
 
                     plot_pronosticos(np.ma.masked_array(for_mask[:, :, 0],
                                                         np.logical_not(land.astype(bool))),

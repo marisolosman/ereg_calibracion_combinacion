@@ -119,7 +119,7 @@ def plot_pronosticos(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores, vmin
     cb3.set_ticklabels(['45%', '55%', '65%', '+70%'])
     cb3.ax.tick_params(labelsize=7)
     cb3.set_label('Upper')
-    plt.savefig(salida, dpi=600, bbox_inches='tight')  #, papertype='A4')  # papertype ya no es un param válido
+    plt.savefig(salida, dpi=600, bbox_inches='tight')  # , papertype='A4')  # papertype ya no es un param válido
     plt.close()
     cfg.set_correct_group_to_file(salida)  # Change group of file
     saved_message = f"Saved figure: {os.path.basename(salida)}"
@@ -142,6 +142,6 @@ def plot_pronosticos_sissa(pronos, dx, dy, lats, latn, lonw, lone, cmap, colores
     plt.title(titulo)
     ax1 = fig.add_axes([0.35, 0.05, 0.3, 0.03])
     cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=colores, orientation='horizontal')
-    plt.savefig(salida, dpi=600, bbox_inches='tight', papertype='A4')
+    plt.savefig(salida, dpi=600, bbox_inches='tight')  # , papertype='A4')  # papertype ya no es un param válido
     plt.close()
     return
