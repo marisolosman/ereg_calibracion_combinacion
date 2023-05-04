@@ -253,7 +253,8 @@ then \n\
 else \n\
   exit 0 \n\
 fi \n\
-\n" > /opt/check-healthy.sh
+\n" > /check-healthy.sh
+RUN chmod a+x /check-healthy.sh
 
 # Definir variables de entorno para el contendor final
 ENV D_CRON_TIME_STR=${D_CRON_TIME_STR}
