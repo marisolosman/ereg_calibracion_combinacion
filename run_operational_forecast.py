@@ -35,7 +35,8 @@ def main(args):
         for v in args.variables:  # loop sobre las variables a calibrar
             for m in range(1, 12+1) if not args.month else [args.month]:  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)
                 for l in range(1, 7+1):  # loop over leadtime --> Forecast leadtime (in months, from 1 to 7)
-                    calibration_sissa(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], CV=args.cross_validate))
+                    calibration_sissa(argparse.Namespace(variable=[v], IC=[m], leadtime=[l], CV=args.cross_validate,
+                                                         OW=args.overwrite))
 
     if args.mme_param_gen:
         cfg.logger.info("Starting mme parameters generation")
