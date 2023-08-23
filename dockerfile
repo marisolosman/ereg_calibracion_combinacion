@@ -178,7 +178,7 @@ RUN apt-get -y -qq update && \
         # install Tini (https://github.com/krallin/tini#using-tini)
         tini \
         # to see process with pid 1
-        htop \
+        htop procps \
         # to allow edit files
         vim \
         # to run process with cron
@@ -245,9 +245,9 @@ ${R_CRON_TIME_STR}  cd ${APP_HOME} && ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/
 # Crear script para verificar salud del contendor
 RUN printf "#!/bin/bash\n\
 if [ \$(ls /tmp/ereg-download.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps | grep download_inputs.py | wc -l) == 0 ] || \n\
+   [ \$(ps -ef | grep download_inputs.py | wc -l) == 0 ] || \n\
    [ \$(ls /tmp/ereg-run-operational-fcst.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps | grep run_operational_forecast.py | wc -l) == 0 ] \n\
+   [ \$(ps -ef | grep run_operational_forecast.py | wc -l) == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\
