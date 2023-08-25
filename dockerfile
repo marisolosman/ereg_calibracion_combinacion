@@ -217,6 +217,7 @@ ${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc
 # Run operational forecasts \n\
 ${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
 \n" > ${EREG_HOME}/crontab.txt
+RUN chmod a+rw ${EREG_HOME}/crontab.txt
 
 # Setup CRON for root user
 RUN (cat ${EREG_HOME}/crontab.txt) | crontab -
