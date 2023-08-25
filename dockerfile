@@ -1,17 +1,26 @@
 
+##################################################################
+##                           README                             ##
+##################################################################
+## Este Dockerfile permite crear un contendor con todos los pa- ##
+## quetes y todas las configuraciones necesarias para calibrar  ##
+## pronósticos utilizando Ensemble Regression (EREG).           ##
+##################################################################
+
+
 
 ##########################
 ## Set GLOBAL arguments ##
 ##########################
 
 # Set python version
-ARG PYTHON_VERSION=3.10
+ARG PYTHON_VERSION="3.10"
 
-# Set APP installation folder
-ARG APP_HOME=/opt/ereg
+# Set EREG installation folder
+ARG EREG_HOME="/opt/ereg"
 
-# App data folder
-ARG APP_DATA=/data/ereg
+# Set EREG data folder
+ARG EREG_DATA="/data/ereg"
 
 # Set user name and id
 ARG USR_NAME="nonroot"
@@ -30,7 +39,7 @@ ARG D_CRON_TIME_STR="0 0 15,16 * *"
 ARG R_CRON_TIME_STR="0 0 17 * *"
 
 # Set Pycharm version
-ARG PYCHARM_VERSION=2023.1
+ARG PYCHARM_VERSION="2023.1"
 
 
 
@@ -110,14 +119,155 @@ RUN python3 -m pip install --upgrade pip && \
 
 
 
+################################
+## Stage 3: Create EREG image ##
+################################
+
+# Create EREG image
+FROM py_final AS ereg_builder
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Load EREG ARGs
+ARG EREG_HOME
+ARG EREG_DATA
+
+# Create EREG_HOME folder
+RUN mkdir -p $EREG_HOME
+
+# Copy project
+COPY . $EREG_HOME
+
+# Disable group switching
+RUN sed -i "s/^group_for_files/# group_for_files/g" $EREG_HOME/config.yaml
+
+# Create input and output folders (these folders are too big so they must be used them as volumes)
+RUN mkdir -p $EREG_DATA/descargas
+RUN mkdir -p $EREG_DATA/generados
+
+
+
+###########################################
+## Stage 4: Install management packages  ##
+###########################################
+
+# Create image
+FROM ereg_builder AS ereg_mgmt
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install OS packages
+RUN apt-get -y -qq update && \
+    apt-get -y -qq upgrade && \
+    apt-get -y -qq --no-install-recommends install \
+        # install Tini (https://github.com/krallin/tini#using-tini)
+        tini \
+        # to see process with pid 1
+        htop procps \
+        # to allow edit files
+        vim \
+        # to run process with cron
+        cron && \
+    rm -rf /var/lib/apt/lists/*
+
+# Setup cron to allow it run as a non root user
+RUN chmod u+s $(which cron)
+
+# Add Tini (https://github.com/krallin/tini#using-tini)
+ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
+
+
+
+####################################
+## Stage 5: Setup EREG core image ##
+####################################
+
+# Create image
+FROM ereg_mgmt AS ereg-core
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew EREG ARGs
+ARG EREG_HOME
+ARG EREG_DATA
+
+# Renew USER ARGs
+ARG USR_NAME
+ARG GRP_NAME
+
+# Renew CRON ARGs
+ARG D_CRON_TIME_STR
+ARG R_CRON_TIME_STR
+
+# Set environment variables
+ENV D_CRON_TIME_STR=${D_CRON_TIME_STR}
+ENV R_CRON_TIME_STR=${R_CRON_TIME_STR}
+
+# Definir comandos para descarga y calibración de pronósticos
+ARG D_PYTHON_CMD="/usr/local/bin/python download_inputs.py --download operational --re-check"
+ARG R_PYTHON_CMD="/usr/local/bin/python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
+
+# Crear archivo de configuración de CRON
+RUN printf "\n\
+# Download input data \n\
+${D_CRON_TIME_STR}  cd ${EREG_HOME} && ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+# Run operational forecasts \n\
+${R_CRON_TIME_STR}  cd ${EREG_HOME} && ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
+\n" > ${EREG_HOME}/crontab.txt
+
+# Setup CRON for root user
+RUN (cat ${EREG_HOME}/crontab.txt) | crontab -
+
+# Crear script de inicio.
+RUN printf "#!/bin/bash \n\
+set -e \n\
+\n\
+# Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
+crontab -l | sed \"/download_inputs.py/ s|^\S* \S* \S* \S* \S*|\$D_CRON_TIME_STR|g\" | crontab - \n\
+crontab -l | sed \"/run_operational_forecast.py/ s|^\S* \S* \S* \S* \S*|\$R_CRON_TIME_STR|g\" | crontab - \n\
+\n\
+# Ejecutar cron \n\
+cron -fL 15 \n\
+\n" > /startup.sh
+RUN chmod a+x /startup.sh
+
+# Create script to check container health
+RUN printf "#!/bin/bash\n\
+if [ \$(ls /tmp/ereg-download.pid 2>/dev/null | wc -l) != 0 ] && \n\
+   [ \$(ps -ef | grep download_inputs.py | wc -l) == 0 ] || \n\
+   [ \$(ls /tmp/ereg-run-operational-fcst.pid 2>/dev/null | wc -l) != 0 ] && \n\
+   [ \$(ps -ef | grep run_operational_forecast.py | wc -l) == 0 ] \n\
+then \n\
+  exit 1 \n\
+else \n\
+  exit 0 \n\
+fi \n\
+\n" > /check-healthy.sh
+RUN chmod a+x /check-healthy.sh
+
+# Run your program under Tini (https://github.com/krallin/tini#using-tini)
+CMD [ "bash", "-c", "/startup.sh" ]
+# or docker run your-image /your/program ...
+
+# Verificar si hubo alguna falla en la ejecución del replicador
+HEALTHCHECK --interval=3s --timeout=3s --retries=3 CMD bash /check-healthy.sh
+
+
+
 ###################################
-## Stage 3: Create non-root user ##
+## Stage 6: Create non-root user ##
 ###################################
 
 # Create image
-FROM py_final AS non_root
+FROM ereg-core AS ereg_nonroot_builder
 
-# Renew ARGs
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew USER ARGs
 ARG USR_NAME
 ARG USER_UID
 ARG GRP_NAME
@@ -161,141 +311,31 @@ RUN usermod -aG sudo $USR_NAME && \
 
 
 
-###########################################
-## Stage 4: Install management packages  ##
-###########################################
-
-# Create image
-FROM non_root AS base_builder
-
-# Set environment variables
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Install OS packages
-RUN apt-get -y -qq update && \
-    apt-get -y -qq upgrade && \
-    apt-get -y -qq --no-install-recommends install \
-        # install Tini (https://github.com/krallin/tini#using-tini)
-        tini \
-        # to see process with pid 1
-        htop procps \
-        # to allow edit files
-        vim \
-        # to run process with cron
-        cron && \
-    rm -rf /var/lib/apt/lists/*
-
-# Setup cron to allow it run as a non root user
-RUN chmod u+s $(which cron)
-
-# Add Tini (https://github.com/krallin/tini#using-tini)
-ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
-
-
-
-####################################
-## Stage 5: Install and setup APP ##
-####################################
-
-# Create image
-FROM base_builder AS app_builder
-
-# Set environment variables
-ARG DEBIAN_FRONTEND=noninteractive
-
-# Renew ARGs
-ARG APP_HOME
-ARG APP_DATA
-ARG USR_NAME
-ARG GRP_NAME
-
-# Renew CRON ARGs
-ARG D_CRON_TIME_STR
-ARG R_CRON_TIME_STR
-
-# Create APP_HOME folder and change its owner
-RUN mkdir -p $APP_HOME && chown -R $USR_NAME:$GRP_NAME $APP_HOME
-
-# Copy project
-COPY --chown=$USR_NAME:$GRP_NAME . $APP_HOME
-
-# Disable group switching
-RUN sed -i "s/^group_for_files/# group_for_files/g" $APP_HOME/config.yaml
-
-# Create input and output folders (these folders are too big so they must be used them as volumes)
-RUN mkdir -p $APP_DATA/descargas
-RUN mkdir -p $APP_DATA/generados
-
-# Setup folder's correct owner and group
-RUN chown -R $USR_NAME:$GRP_NAME $APP_HOME
-RUN chown -R $USR_NAME:$GRP_NAME $APP_DATA
-
-# Definir comandos para descarga y calibración de pronósticos
-ARG D_PYTHON_CMD="/usr/local/bin/python download_inputs.py --download operational --re-check"
-ARG R_PYTHON_CMD="/usr/local/bin/python run_operational_forecast.py --overwrite --combination wsereg --weighting mean_cor --ignore-plotting"
-
-# Crear archivo de configuración de CRON
-RUN printf "\n\
-# Download input data \n\
-${D_CRON_TIME_STR}  cd ${APP_HOME} && ${D_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
-# Run operational forecasts \n\
-${R_CRON_TIME_STR}  cd ${APP_HOME} && ${R_PYTHON_CMD} >> /proc/1/fd/1 2>> /proc/1/fd/1 \n\
-\n" > /tmp/crontab.txt
-
-# Crear script para verificar salud del contendor
-RUN printf "#!/bin/bash\n\
-if [ \$(ls /tmp/ereg-download.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep download_inputs.py | wc -l) == 0 ] || \n\
-   [ \$(ls /tmp/ereg-run-operational-fcst.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep run_operational_forecast.py | wc -l) == 0 ] \n\
-then \n\
-  exit 1 \n\
-else \n\
-  exit 0 \n\
-fi \n\
-\n" > /check-healthy.sh
-RUN chmod a+x /check-healthy.sh
-
-# Definir variables de entorno para el contendor final
-ENV D_CRON_TIME_STR=${D_CRON_TIME_STR}
-ENV R_CRON_TIME_STR=${R_CRON_TIME_STR}
-
-# Crear script de inicio.
-RUN printf "#!/bin/bash \n\
-set -e \n\
-\n\
-# Reemplazar tiempo ejecución de la descarga de los datos de entrada \n\
-crontab -l | sed \"/download_inputs.py/ s|^\S* \S* \S* \S* \S*|\$D_CRON_TIME_STR|g\" | crontab - \n\
-crontab -l | sed \"/run_operational_forecast.py/ s|^\S* \S* \S* \S* \S*|\$R_CRON_TIME_STR|g\" | crontab - \n\
-\n\
-# Ejecutar cron \n\
-cron -fL 15 \n\
-\n" > /startup.sh
-RUN chmod a+x /startup.sh
-
-
-
 ############################################
-## Stage 6.1: Install Pycharm (for debug) ##
+## Stage 7.1: Install Pycharm (for debug) ##
 ############################################
 
 # Create image
-FROM app_builder AS pycharm
-
-# Renew ARGs
-ARG APP_HOME
-ARG USR_NAME
-ARG GRP_NAME
+FROM ereg_nonroot_builder AS ereg-pycharm
 
 # Become root
 USER root
+
+# Set environment variables
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Renew EREG_HOME
+ARG EREG_HOME
+
+# Renew USER ARGs
+ARG USR_NAME
+ARG GRP_NAME
 
 # Updata apt cache and install wget
 RUN apt-get -y -qq update && \
     apt-get -y -qq upgrade && \
     apt-get -y -qq --no-install-recommends install \
-        wget  \
-        git
+        curl wget git
 
 # Renew ARGs
 ARG PYCHARM_VERSION
@@ -314,7 +354,7 @@ RUN count=$(ls /tmp/pycharm-*.tar.gz | wc -l) && [ $count = 1 ] \
         libcups2 libatspi2.0-0 libxshmfence1 \
         # Without this packages, PyCharm start, but shows errors when running
         procps libsecret-1-0 gnome-keyring libxss1 libxext6 firefox-esr \
-	#libnss3 libxext-dev libnspr4 \
+        #libnss3 libxext-dev libnspr4 \
     || :  # para entender porque :, ver https://stackoverflow.com/a/49348392/5076110
 
 # Install PyCharm IDE
@@ -338,13 +378,14 @@ RUN mkdir -p /usr/local/lib/python${PYTHON_VERSION}/dist-packages \
 USER $USR_NAME
 
 # Set work directory
-WORKDIR $APP_HOME
+WORKDIR $EREG_HOME
 
 # Run pycharm under Tini (https://github.com/krallin/tini#using-tini)
 CMD ["sh", "/opt/pycharm/bin/pycharm.sh", "-Dide.browser.jcef.enabled=false"]
 # or docker run your-image /your/program ...
 
 
+#
 # Ejecución de pycharm:
 #
 # 1- docker volume create ereg-home
@@ -352,8 +393,8 @@ CMD ["sh", "/opt/pycharm/bin/pycharm.sh", "-Dide.browser.jcef.enabled=false"]
 # 2- export DOCKER_BUILDKIT=1
 #
 # 3- docker build --force-rm \
-#      --target pycharm \
-#      --tag ereg:pycharm \
+#      --target ereg-pycharm \
+#      --tag ereg-pycharm:latest \
 #      --build-arg USER_UID=$(stat -c "%u" .) \
 #      --build-arg USER_GID=$(stat -c "%g" .) \
 #      --file dockerfile .
@@ -362,31 +403,42 @@ CMD ["sh", "/opt/pycharm/bin/pycharm.sh", "-Dide.browser.jcef.enabled=false"]
 #      --name ereg-pycharm \
 #      --env DISPLAY=$DISPLAY \
 #      --volume /tmp/.X11-unix:/tmp/.X11-unix \
+#      --volume ereg-home:/home/nonroot \
 #      --volume $(pwd):/opt/ereg/ \
 #      --volume /data/ereg:/data/ereg \
-#      --volume ereg-home:/home/nonroot \
-#      --detach ereg:pycharm
+#      --detach ereg-pycharm:latest
+#
 
 
 
 ##############################################
-## Stage 6.2: Setup and run final APP image ##
+## Stage 7.2: Setup and run final APP image ##
 ##############################################
 
 # Create image
-FROM app_builder AS final_app_image
+FROM ereg_nonroot_builder AS ereg-nonroot
 
 # Become root
 USER root
 
-# Renew the ARG
+# Renew EREG ARGs
+ARG EREG_HOME
+ARG EREG_DATA
+
+# Renew USER ARGs
 ARG USR_NAME
+ARG USER_UID
+ARG USER_GID
+
+# Change files owner
+RUN chown -R $USER_UID:$USER_GID $EREG_HOME
+RUN chown -R $USER_UID:$USER_GID $EREG_DATA
 
 # Setup cron to allow it run as a non root user
 RUN chmod u+s $(which cron)
 
 # Setup cron
-RUN (cat /tmp/crontab.txt) | crontab -u $USR_NAME -
+RUN (cat $EREG_HOME/crontab.txt) | crontab -u $USR_NAME -
 
 # Add Tini (https://github.com/krallin/tini#using-tini)
 ENTRYPOINT ["/usr/bin/tini", "-g", "--"]
@@ -405,20 +457,23 @@ WORKDIR /home/$USR_NAME
 USER $USR_NAME
 
 
-
-####################################
-## Stage 7: Set the DEFAULT image ##
-####################################
-
-FROM final_app_image
-
-
-
-# CONSTRUIR CONTENEDOR
+# Activar docker build kit
 # export DOCKER_BUILDKIT=1
+
+# CONSTRUIR IMAGEN (CORE)
 # docker build --force-rm \
-#   --target final_app_image \
-#   --tag ereg:latest \
+#   --target ereg-core \
+#   --tag ghcr.io/danielbonhaure/ereg:ereg-core-v1.0 \
+#   --build-arg CRON_TIME_STR="0 0 16 * *" \
+#   --file dockerfile .
+
+# LEVANTAR IMAGEN A GHCR
+# docker push ghcr.io/danielbonhaure/ereg:ereg-core-v1.0
+
+# CONSTRUIR IMAGEN (NON-ROOT)
+# docker build --force-rm \
+#   --target ereg-nonroot \
+#   --tag ereg-nonroot:latest \
 #   --build-arg USER_UID=$(stat -c "%u" .) \  # ideally, the user id must be the uid of files in /data/ereg
 #   --build-arg USER_GID=$(stat -c "%g" .) \  # ideally, the group id must be the gid of files in /data/ereg
 #   --file dockerfile .
@@ -428,14 +483,14 @@ FROM final_app_image
 #   --volume /data/ereg/descargas:/data/ereg/descargas \
 #   --volume /data/ereg/generados:/data/ereg/generados \
 #   --env DROP_COMBINED_FORECASTS='YES' --memory="4g" \
-#   --detach ereg:latest
+#   --detach ereg-nonroot:latest
 
 # CORRER MANUALMENTE EN PRIMER PLANO Y BORRANDO EL CONTENEDOR AL FINALIZAR
 # docker run --name ereg \
 #   --volume /data/ereg/descargas:/data/ereg/descargas \
 #   --volume /data/ereg/generados:/data/ereg/generados \
 #   --env DROP_COMBINED_FORECASTS='YES' --memory="4g" \
-#   --rm ereg:latest python /opt/ereg/<script> <args>
+#   --rm ereg-nonroot:latest python /opt/ereg/<script> <args>
 
 # CORRER MANUALMENTE EN SEGUNDO PLANO Y SIN BORRAR EL CONTENEDOR AL FINALIZAR
 # NO BORRAR EL CONTENEDOR AL FINALIZAR PERMITE VER LOS ERRORES (EN CASO QUE HAYA ALGUNO)
@@ -443,7 +498,7 @@ FROM final_app_image
 #   --volume /data/ereg/descargas:/data/ereg/descargas \
 #   --volume /data/ereg/generados:/data/ereg/generados \
 #   --env DROP_COMBINED_FORECASTS='YES' --memory="4g" \
-#   --detach ereg:latest python /opt/ereg/<script> <args>
+#   --detach ereg-nonroot:latest python /opt/ereg/<script> <args>
 
 # VER RAM USADA POR LOS CONTENEDORES CORRIENDO
 # docker stats --format "table {{.ID}}\t{{.Name}}\t{{.CPUPerc}}\t{{.PIDs}}\t{{.MemUsage}}" --no-stream
