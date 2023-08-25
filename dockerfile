@@ -463,12 +463,13 @@ USER $USR_NAME
 # CONSTRUIR IMAGEN (CORE)
 # docker build --force-rm \
 #   --target ereg-core \
-#   --tag ghcr.io/danielbonhaure/ereg:ereg-core-v1.0 \
-#   --build-arg CRON_TIME_STR="0 0 16 * *" \
+#   --tag ghcr.io/danielbonhaure/ereg_calibracion_combinacion:ereg-core-v1.0 \
+#   --build-arg D_CRON_TIME_STR="0 0 15,16 * *" \
+#   --build-arg R_CRON_TIME_STR="0 0 17 * *" \
 #   --file dockerfile .
 
 # LEVANTAR IMAGEN A GHCR
-# docker push ghcr.io/danielbonhaure/ereg:ereg-core-v1.0
+# docker push ghcr.io/danielbonhaure/ereg_calibracion_combinacion:ereg-core-v1.0
 
 # CONSTRUIR IMAGEN (NON-ROOT)
 # docker build --force-rm \
