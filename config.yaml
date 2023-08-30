@@ -1,7 +1,7 @@
 
 use_logger: !!bool "true"
-gen_det_data: !!bool "false"
-gen_descriptor: !!bool "false"
+gen_det_data: !!bool "true"
+gen_descriptor: !!bool "true"
 
 # group to be set to created or downloaded files (only used when 
 # running in linux, on windows this param will be ignored)
