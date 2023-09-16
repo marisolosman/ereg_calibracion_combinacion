@@ -238,9 +238,9 @@ RUN chmod a+x /startup.sh
 # Create script to check container health
 RUN printf "#!/bin/bash\n\
 if [ \$(ls /tmp/ereg-download.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep download_inputs.py | wc -l) == 0 ] || \n\
+   [ \$(ps -ef | grep 'download_inputs.py' | grep -v 'grep' | wc -l) == 0 ] || \n\
    [ \$(ls /tmp/ereg-run-operational-fcst.pid 2>/dev/null | wc -l) != 0 ] && \n\
-   [ \$(ps -ef | grep run_operational_forecast.py | wc -l) == 0 ] \n\
+   [ \$(ps -ef | grep 'run_operational_forecast.py' | grep -v 'grep' | wc -l) == 0 ] \n\
 then \n\
   exit 1 \n\
 else \n\
