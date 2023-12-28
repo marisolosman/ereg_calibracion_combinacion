@@ -134,17 +134,23 @@ ARG EREG_HOME
 ARG EREG_DATA
 
 # Create EREG_HOME folder
-RUN mkdir -p $EREG_HOME
+RUN mkdir -p ${EREG_HOME}
 
 # Copy project
-COPY . $EREG_HOME
+COPY *.py ${EREG_HOME}
+COPY *.sh ${EREG_HOME}
+COPY *.md ${EREG_HOME}
+COPY *.yaml ${EREG_HOME}
+COPY *.yaml.tmpl ${EREG_HOME}
+COPY combined_models ${EREG_HOME}
+COPY updates ${EREG_HOME}
 
 # Disable group switching
-RUN sed -i "s/^group_for_files/# group_for_files/g" $EREG_HOME/config.yaml
+RUN sed -i "s/^group_for_files/# group_for_files/g" ${EREG_HOME}/config.yaml
 
 # Create input and output folders (these folders are too big so they must be used them as volumes)
-RUN mkdir -p $EREG_DATA/descargas
-RUN mkdir -p $EREG_DATA/generados
+RUN mkdir -p ${EREG_DATA}/descargas
+RUN mkdir -p ${EREG_DATA}/generados
 
 # Save Git commit hash of this build into ${EREG_HOME}/repo_version.
 # https://github.com/docker/hub-feedback/issues/600#issuecomment-475941394
