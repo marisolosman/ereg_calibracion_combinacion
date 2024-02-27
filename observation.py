@@ -22,7 +22,7 @@ cfg = configuration.Config.Instance()
 CORES = mp.cpu_count()
 PATH = cfg.get("folders").get("download_folder")
 ruta = Path(PATH, cfg.get("folders").get("nmme").get("root"))
-hind_length = 28
+hind_length = 30
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -35,6 +35,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     cfg.report_input_file_used(archivo)
     #hay problemas para decodificar las fechas, genero un xarray con mis fechas decodificadas
     dataset = xr.open_dataset(archivo, decode_times=False)
+    print(dataset)
     var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name:
                                        slice(lonw, lone)})
     lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
@@ -52,7 +53,7 @@ def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone,
     mes = datetime.datetime.strptime(last_month, '%b').month
     var_out = var_out.sel(time=np.logical_and(var_out['time.month'] == mes,
         np.logical_and(var_out['time.year'] >= year_init,var_out['time.year']
-                       <= (year_init+hind_length))))
+                       < (year_init+hind_length))))
     return var_out, lat, lon
 
 class Observ(object):

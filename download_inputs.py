@@ -72,9 +72,9 @@ def links_to_download_hindcast(df_modelos, recheck, redownload):
   # 
   for model_data in df_modelos.itertuples():
     for variable in ["tref", "prec"]:
-      for member in range(1, model_data.members+1, 1): 
-        for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
-          for month in range(1, 12+1, 1):
+     for member in range(1, model_data.members+1, 1):
+      for year in range(model_data.hindcast_begin, model_data.hindcast_end+1, 1):
+       for month in range(1, 12 + 1, 1):
             FOLDER = os.path.join(cfg.get('folders').get('download_folder'),
                                   cfg.get('folders').get('nmme').get('hindcast'))
             if model_data.model == "GEM5-NEMO":
@@ -121,7 +121,7 @@ def links_to_download_real_time(df_modelos, year, month, recheck, redownload):
         if model_data.model == "GEM5-NEMO":
                 DOWNLOAD_URL = generate_download_url(variable, year, month, member + 10, model_data,
                                                      "real_time")
-            else:
+        else:
                 DOWNLOAD_URL = generate_download_url(variable, year, month, member, model_data,
                                                      "real_time")
 

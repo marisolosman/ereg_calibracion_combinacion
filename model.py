@@ -6,20 +6,31 @@ from scipy.stats import norm
 import multiprocessing as mp
 from pathos.multiprocessing import ProcessingPool as Pool
 from pathlib import Path
+from pandas.tseries.offsets import *
 import ereg as ensemble_regression
 import configuration
+import datetime
 
 CORES = mp.cpu_count()
 cfg = configuration.Config.Instance()
 PATH = cfg.get("folders").get("download_folder")
 
+
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
     #reportar lectura de un archivo descargado
-    cfg.report_input_file_used(archivo)
+    #cfg.report_input_file_used(archivo)
     #continuar ejecución
-    dataset = xr.open_dataset(archivo, decode_times=False)
-    var_out = dataset[variable].sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
+    dataset = xr.open_mfdataset(str(archivo), engine='scipy', combine='by_coords',
+                                decode_times=False)
+    pivot = datetime.datetime(1960, 1, 1)
+    time_in_months = dataset['S'].values 
+    S = [pivot + DateOffset(months=int(x), days=5) for x in dataset['S']]
+    dataset['S'] = S
+    if 'Z' in list(dataset.variables.keys()):
+        dataset = dataset.isel(Z=0)
+        dataset = dataset.drop_vars('Z')
+    var_out = dataset.sel(**{lat_name: slice(lats, latn), lon_name: slice(lonw, lone)})
     lon = dataset[lon_name].sel(**{lon_name: slice(lonw, lone)})
     lat = dataset[lat_name].sel(**{lat_name: slice(lats, latn)})
     return var_out, lat, lon
@@ -58,31 +69,33 @@ class Model(object):
             flag_end = 0
         ruta = Path(PATH, cfg.get('folders').get('nmme').get('hindcast'))
         #abro un archivo de ejemplo
-        hindcast_length = self.hind_end - self.hind_begin + 1
-        forecast = np.empty([hindcast_length, self.ensembles, int(np.abs(latn - lats)) + 1,
-            int(np.abs(lonw - lone)) + 1])
         #loop sobre los anios del hindcast period
-        for i in np.arange(self.hind_begin, self.hind_end+1):
-            for j in np.arange(1, self.ensembles + 1):
-                file = self.var_name + '_Amon_' + self.institution + '-' +\
-                        self.name + '_' + str(i)\
-                        + '{:02d}'.format(init_cond) + '_r' + str(j) + '_' + str(i) +\
-                        '{:02d}'.format(init_cond) + '-' + str(i + flag_end) + '{:02d}'.format(
+        file = self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_*' +\
+                        '{:02d}'.format(init_cond) + '_r*_*' +\
+                        '{:02d}'.format(init_cond) + '-*' + '{:02d}'.format(
                             final_month) + '.' + self.ext
 
-                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
-                                                                 self.lat_name, self.lon_name,
-                                                                 lats, latn, lonw, lone)
-
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error')
-                    try:
-                        forecast[i - self.hind_begin, j - 1, :, :] = np.nanmean(
-                            np.squeeze(np.array(variable))[target:target + 3, :, :], axis=0)
-                        #como todos tiene en el 0 el prono del propio
-                    except RuntimeWarning:
-                        forecast[i - self.hind_begin, j - 1, :, :] = np.NaN
-                variable = []
+        [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
+                                                         self.lat_name, self.lon_name,
+                                                         lats, latn, lonw, lone)
+        ruta = Path(PATH, cfg.get('folders').get('nmme').get('real_time'))
+        try:
+            [variable2, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
+                                                         self.lat_name, self.lon_name,
+                                                         lats, latn, lonw, lone)
+            ds = xr.concat([variable, variable2], dim='S')
+        except:
+            ds = variable
+        ds = ds.isel(S=ds.S.dt.month == init_cond)
+        ds = ds.sel(S=slice('1991-01-01', '2020-12-31')).isel(L=slice(target,
+                                                                      target + 3),
+                                                             M=slice(0, self.ensembles)).mean('L')
+        print(self.name, ds)
+        ds = ds.transpose('S', 'M', 'Y', 'X').compute()
+        forecast = ds[self.var_name].values
+        variable = []
+        variable2 = []
 	# Return values of interest: latitudes longitudes forecast
         return latitudes, longitudes, forecast
 
@@ -316,24 +329,16 @@ class Model(object):
                                                                         target:target + 3,
                                                                         : , :], axis=0)
         else:
-            for j in np.arange(1, self.ensembles + 1):
-                file = self.var_name + '_Amon_' + self.institution + '-' + self.name + '_'\
-                        + str(init_year) + '{:02d}'.format(init_month) + '_r' +\
-                        str(j) + '_' + str(init_year) +\
-                        '{:02d}'.format(init_month) + '-' + str(init_year +\
-                                                                flag_end) +\
-                        '{:02d}'.format(final_month) + '.' + self.ext
-                [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
-                                                                 self.lat_name, self.lon_name,
-                                                                 lats, latn, lonw, lone)
-                with warnings.catch_warnings():
-                    warnings.filterwarnings('error')
-                    try:
-                        forecast[j - 1, :, :] = np.nanmean(np.squeeze(
-                        np.array(variable))[target:target + 3, :, :], axis=0)
-                        #como todos tiene en el 0 el prono del propio
-                    except RuntimeWarning:
-                        forecast[j - 1, :, :] = np.NaN
-                variable = []
-        return latitudes, longitudes, forecast
+            file = self.var_name + '_Amon_' + self.institution + '-' +\
+                        self.name + '_' + str(init_year) + '{:02d}'.format(init_month) +\
+                    '_r' + '*' + self.ext
+
+            [variable, latitudes, longitudes] = manipular_nc(Path(ruta, file), self.var_name,
+                                                         self.lat_name, self.lon_name,
+                                                         lats, latn, lonw, lone)
+            variable = variable.isel(S=0, L=slice(target,
+                                                  target + 3)).mean('L').transpose('M', 'Y', 'X')
+            variable = variable.drop_vars('S')
+            forecast = variable[self.var_name].values
+            return latitudes, longitudes, forecast
 

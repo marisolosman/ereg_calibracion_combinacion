@@ -21,7 +21,7 @@ import cartopy.feature
 import configuration
 
 cfg = configuration.Config.Instance()
-
+print(dir(cfg.get))
 def manipular_nc(archivo, variable, lat_name, lon_name, lats, latn, lonw, lone):
     """gets netdf variables"""
     #reportar lectura de un archivo descargado
@@ -145,8 +145,13 @@ def main(args):
                             [0., 109., 44.], [241., 233., 218.]]) / 255
         vmin = 0.5
         vmax = 13.5
-        PATH = cfg.get('download_folder')
-        drymask = PATH + 'DATA/dry_mask.nc'
+        PATH = cfg.get('folders').get('gen_data_folder')
+        drymask = Path(PATH, cfg.get('folders').get('data').get('root'), 'dry_mask.nc')
+
+        #PATH = cfg.get('folders').get('data').get('root')
+        #drymask = Path(PATH, 'dry_mask.nc')
+        print(drymask)
+
         dms = xr.open_dataset(drymask)
         #selecciono mascara del mes
         dms = dms.sel(month=sss[1])

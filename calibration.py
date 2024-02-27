@@ -38,7 +38,7 @@ def main(args):
     prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983."""
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1992
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     message = "Calibrating " + args.variable[0] + " forecasts for " + SSS +\
               " initialized in " + str(args.IC[0]) 
@@ -57,11 +57,11 @@ def main(args):
     else:
         if args.CV:
             if args.variable[0] == 'prec':
-                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982,
-                                         2011)
+                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991,
+                                         2020)
             else:
-                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982,
-                                         2011)
+                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991,
+                                         2020)
 
 
             [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[\
@@ -87,11 +87,11 @@ def main(args):
             data.close()
         else:
             if args.variable[0] == 'prec':
-                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982,
-                                         2011)
+                obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991,
+                                         2020)
             else:
-                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982,
-                                         2011)
+                obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991,
+                                         2020)
             [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[\
                                                                                  sss[-1]],
                                                                       year_verif,
@@ -117,10 +117,17 @@ def main(args):
             if output.is_file():
                 pass
             else:
-                modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+                if np.logical_and(it['nombre'] == 'CFSv2', args.IC[0] == 11):
+                    modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+                                     it['latn'], it['lonn'], it['miembros'] + 4, \
+                                     it['plazos'], it['fechai'], it['fechaf'],\
+                                     it['ext'], it['rt_miembros'] + 4)
+                else:
+                     modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                                      it['latn'], it['lonn'], it['miembros'], \
                                      it['plazos'], it['fechai'], it['fechaf'],\
                                      it['ext'], it['rt_miembros'])
+
                 [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                             args.leadtime[0], \
                                                             coords['lat_s'], \
@@ -141,42 +148,53 @@ def main(args):
                          peso=pdf_intensity, prob_terc=prob_terc,
                          forecasted_category=forecasted_category)
         else:
+
             output2 = Path(RUTA, args.variable[0] + '_' + it['nombre'] + '_' + \
                           calendar.month_abbr[args.IC[0]] + '_' + SSS + \
                           '_gp_01_hind_parameters.npz')
             if output2.is_file() and not args.OW:
                 pass
             else:
-                if output.is_file():
-                    data = np.load(output)
-                    pdf_intensity = data['peso']
-                    data.close()
-                else:
+
+#                if output.is_file():
+#                    data = np.load(output)
+#                    pdf_intensity = data['peso']
+#                    data.close()
+#                else:
+                if np.logical_and(it['nombre'] == 'CFSv2', args.IC[0] == 11):
                     modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
-                                         it['latn'], it['lonn'], it['miembros'], \
-                                         it['plazos'], it['fechai'], it['fechaf'],\
-                                         it['ext'], it['rt_miembros'])
-                    [lats, lons, pronos] = modelo.select_months(args.IC[0], \
+                                     it['latn'], it['lonn'], it['miembros'] + 4, \
+                                     it['plazos'], it['fechai'], it['fechaf'],\
+                                     it['ext'], it['rt_miembros'] + 4)
+                else:
+                     modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+                                     it['latn'], it['lonn'], it['miembros'], \
+                                     it['plazos'], it['fechai'], it['fechaf'],\
+                                     it['ext'], it['rt_miembros'])
+
+
+                [lats, lons, pronos] = modelo.select_months(args.IC[0], \
                                                                 args.leadtime[0], \
                                                                 coords['lat_s'], \
                                                                 coords['lat_n'],
                                                                 coords['lon_w'],
                                                                 coords['lon_e'])
-                    pronos_dt = modelo.remove_trend(pronos, True)
-                    for_terciles = modelo.computo_terciles(pronos_dt, True)
-                    forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
-                    [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
+                pronos_dt = modelo.remove_trend(pronos, True)
+                for_terciles = modelo.computo_terciles(pronos_dt, True)
+                forecasted_category = modelo.computo_categoria(pronos_dt, for_terciles)
+                [forecast_cr, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,\
                                                                        obs_dt,
                                                                        True)
-                    pdf_intensity = modelo.pdf_eval(forecast_cr, epsb, obs_dt)
-                    [pronos_dt, a1, b1] = modelo.remove_trend(pronos, args.CV)
-                    [a2, b2, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,
+                pdf_intensity = modelo.pdf_eval(forecast_cr, epsb, obs_dt)
+                [pronos_dt, a1, b1] = modelo.remove_trend(pronos, args.CV)
+                [a2, b2, Rmedio, Rmej, epsb, K] = modelo.ereg(pronos_dt,
                                                                   obs_dt,
                                                                   args.CV)
-                    np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
+
+                np.savez(output2, lats=lats, lons=lons, pronos_dt=pronos_dt,
                              a1=a1, b1=b1, a2=a2, b2=b2, eps=epsb, Rm=Rmedio, Rb=Rmej, K=K,
                              peso=pdf_intensity)
-                    cfg.set_correct_group_to_file(output2)  # Change group of file
+                cfg.set_correct_group_to_file(output2)  # Change group of file
 
 
 # ==================================================================================================

@@ -16,9 +16,9 @@ from plot_observed_category import main as plot_observed_category
 
 cfg = configuration.Config.Instance()
 
-def main(args):
-  
+def main(args): 
     if args.calibrate:
+        print(args.cross_validate)
         cfg.logger.info("Starting calibration")
         for v in args.variables:  # loop sobre las variables a calibrar
             for m in range(1, 12+1):  # loop over IC --> Month of initial conditions (from 1 for Jan to 12 for Dec)

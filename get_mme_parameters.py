@@ -40,7 +40,7 @@ def main(args):
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
     nx = int(np.abs (coords['lon_e'] - coords['lon_w']) + 1) #does for domains beyond greenwich
-    nyears = int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
+    nyears = 30 # int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
     for_dt = np.array([]).reshape(nyears, ny, nx, 0) #[years lats lons members]
     if args.wtech[0] == 'pdf_int':
         weight = np.array([]).reshape(nyears, ny, nx, 0)
@@ -50,7 +50,7 @@ def main(args):
     #defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1992
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     message = 'Var:' + args.variable[0] + ' IC:' + calendar.month_abbr[args.IC[0]] +\
               ' Target season:' + SSS + ' ' + args.wtech[0]

@@ -15,7 +15,7 @@ cfg = configuration.Config.Instance()
 CORES = mp.cpu_count()
 PATH = cfg.get('folders').get('download_folder')
 ruta = Path(PATH, cfg.get('folders').get('nmme').get('root'))
-hind_length = 28
+hind_length = 30
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -30,6 +30,8 @@ dataset = xr.open_dataset(archivo)
 
 dataset = dataset.sel(**{'Y': slice(lats, latn), 'X': slice(lonw, lone)})
 dataset['T'] = dataset['T'].astype('datetime64[ns]')
+dataset = dataset.sel(T=slice('1991-01-01', '2020-12-31'))
+
 #compute 3-month running mean
 ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 #compute climatological mean
