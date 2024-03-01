@@ -61,7 +61,7 @@ models:
 #  - [    GEM-NEMO,     CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
 #  - [    CanCM4i,      CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
   - [    CCSM4,        COLA,       Y,        X,      10,        12,           1982,         2013,       nc,         10 ] 
-#  - [    CESM1,        COLA,       Y,        X,      10,        12,           1991,         2020,       nc,         10 ] 
+  - [    CESM1,        COLA,       Y,        X,      10,        12,           1991,         2020,       nc,         10 ] 
   - [    CFSv2,        NCEP,       Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
   # [    CM2p1,        GFDL,       Y,        X,      10,        12,           1982,         2010,       nc,         10 ]  
   # [ FLOR-A06,        GFDL,       Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
@@ -85,7 +85,7 @@ models_url:
 #  - [   GEM-NEMO,            .GEM-NEMO,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
 #  - [ CanCM4i,           .CanCM4i,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
   - [    CCSM4,    .COLA-RSMAS-CCSM4,                           .MONTHLY,                           .MONTHLY ]
-    #  - [    CESM1,    .COLA-RSMAS-CESM1,                           .MONTHLY,                           .MONTHLY ]
+  - [    CESM1,    .COLA-RSMAS-CESM1,                           .MONTHLY,                           .MONTHLY ]
 
   - [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.PENTAD_SAMPLES/.MONTHLY, .FORECAST/.PENTAD_SAMPLES/.MONTHLY ] 
   # [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.EARLY_MONTH_SAMPLES/.MONTHLY, .FORECAST/.EARLY_MONTH_SAMPLES/.MONTHLY ]

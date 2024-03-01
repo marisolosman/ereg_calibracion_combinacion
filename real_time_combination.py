@@ -71,9 +71,7 @@ def main(args):
     terciles = data['terciles']
     j = 0
     for it in modelos:
-        print(it['nombre'], inim)
-        if np.logical_and(it['nombre'] == 'CFSv2', inim == 11):
-            print("Nov")
+        if np.logical_and(it['nombre'] == 'CFSv2', inim == 11): 
             modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                             it['latn'], it['lonn'], it['miembros'] + 4, \
                             it['plazos'], it['fechai'], it['fechaf'],\
@@ -111,7 +109,6 @@ def main(args):
             #remove trend
             T = iniy - 1991
             f_dt = pronos - (b1 + T * a1)
-            print('ensembles', modelo.rt_ensembles)
             f_dt[empty_forecast, :, :] = np.nan # modificado
             if args.ctech == 'wpdf':
                 a2 = data['a2']
