@@ -2,7 +2,6 @@
 import os
 import sys
 
-from crontab import CronTab
 from getpass import getuser
 
 
@@ -11,6 +10,7 @@ user_home = os.path.expanduser(f'~{user_name}')
 conda_env = os.environ.get('CONDA_DEFAULT_ENV', '')
 file_path = os.path.abspath(os.getcwd())
 
+print(user_name, user_home, conda_env, file_path)
 
 if not conda_env:
     sys.exit('Conda environment not found')
@@ -28,22 +28,20 @@ with open(f"{user_home}/.bashrc") as bashrc:
                 stop_copy = True
         if not start_copy and not stop_copy:
             sys.exit('Unrecognized conda configuration')
-                
-  
-with CronTab(user=user_name) as cron:
-    
-    cron.env['SHELL'] = '/bin/bash'
-    cron.env['BASH_ENV'] = f'{user_home}/.bashrc_conda'
-    
-    py_command = f'cd {file_path} && python download_inputs.py --download operational --re-check'
-    if not list(cron.find_command(py_command)):
-        download_job = cron.new(command=f'conda activate {conda_env} && {py_command} && conda deactivate',
-                                comment='Download files from IRIDL')
-        download_job.day.on(15,16)
 
-    py_command = f'cd {file_path} && python run_operational_forecast.py'
-    if not list(cron.find_command(py_command)):
-        forecast_job = cron.new(command=f'conda activate {conda_env} && {py_command} && conda deactivate',
-                                comment='Run operational forecast')
-        forecast_job.day.on(17)
+cron_commands = [
+    f'cd {file_path} && python download_inputs.py --download operational',
+    f'cd {file_path} && python run_operational_forecast.py'
+]
+
+cron_timings = [
+    '0 0 15,16 * *',  # For the first command, run on 15th and 16th day of the month
+    '0 0 17 * * '      # For the second command, run on 17th day of the month
+]
+
+# Setup cron jobs
+for command, timing in zip(cron_commands, cron_timings):
+    cron_command = f'(source {os.path.expanduser("~")}/.bashrc_conda && conda activate {conda_env} && {command})'
+    os.system(f'(crontab -u {user_name} -l ; echo "{timing} {cron_command}") | crontab -u {user_name} -')
+
 

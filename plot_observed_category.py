@@ -27,7 +27,8 @@ def main(args):
     #defino ref dataset y target season
     seas = range(args.IC[0], args.IC[0] + 3)
     sss = [i-12 if i>12 else i for i in seas]
-    year_verif = 1982 if (seas[0] > 1 and seas[0] < 11) else 1983
+    year_verif = 1991 if (seas[0] > 1 and seas[0] < 11) else 1992
+    year_end = year_verif + 29
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     #obtengo datos observados
     PATH = cfg.get('folders').get('gen_data_folder')
@@ -54,7 +55,7 @@ def main(args):
         cmap = mpl.colors.ListedColormap(np.array([[8., 81., 156.], [189, 189, 189],
                                                    [165., 15., 21.]]) / 256)
 
-    for k in np.arange(year_verif, 2011):
+    for k in np.arange(year_verif, year_end + 1):
         output = Path(RUTA_FIG, 'obs_' + args.variable[0] + '_' + SSS + '_' + str(k) + '.png')
         obs_cat = obs_terciles[:, k - year_verif, :, :]
         obs[obs_cat[1, :, :] == 1] = 1

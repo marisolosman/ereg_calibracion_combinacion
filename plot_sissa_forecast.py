@@ -58,8 +58,8 @@ def main(args):
             colores_above = mpl.cm.Greens
             colores_below = mpl.cm.Oranges
             # bounds = np.arange(10, 90, 10)
-            PATH = cfg.get('folders').get('download_folder')
-            drymask = Path(PATH, cfg.get('folders').get('nmme').get('root'), 'dry_mask.nc')
+            PATH = cfg.get('folders').get('gen_data_folder')
+            drymask = Path(PATH, cfg.get('folders').get('data').get('root'), 'dry_mask.nc')
             dms = xr.open_dataset(drymask)
             #selecciono mascara del mes
             dms = dms.sel(month=sss[1])

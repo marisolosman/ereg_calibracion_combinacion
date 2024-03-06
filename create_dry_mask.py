@@ -9,9 +9,7 @@ import configuration
 cfg = configuration.Config.Instance()
 
 CORES = mp.cpu_count()
-PATH = cfg.get('folders').get('download_folder')
-ruta = Path(PATH, cfg.get('folders').get('nmme').get('root'))
-hind_length = 28
+hind_length = 30
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -21,18 +19,27 @@ latn = float(coords['lat_n'])
 lonw = float(coords['lon_w'])
 lone = float(coords['lon_e'])
 
-variable = 'prec'
 
+PATH = cfg.get('folders').get('download_folder')
+ruta = Path(PATH, cfg.get('folders').get('nmme').get('root'))
 archivo = Path(ruta, 'prec_monthly_nmme_cpc.nc')
 dataset = xr.open_dataset(archivo)
 
 dataset = dataset.sel(**{'Y': slice(lats, latn), 'X': slice(lonw, lone)})
 dataset['T'] = dataset['T'].astype('datetime64[ns]')
+dataset = dataset.sel(T=slice('1991-01-01', '2020-12-31'))
+
 # compute 3-month running mean
 ds3m = dataset.rolling(T=3, center=True).sum().dropna('T')
 # compute climatological mean
 ds3m = ds3m.groupby('T.month').mean(skipna=True)
-# create dry mask: seasonal precipitation less than 15mm/month
-ds3m[variable] = ds3m[variable] < 45
+
+# create dry mask: seasonal precipitation less than 30mm/month
+variable = 'prec'
+ds3m[variable] = ds3m[variable] < 90
+
+# save dry mask
+PATH = cfg.get('folders').get('gen_data_folder')
+ruta = Path(PATH, cfg.get('folders').get('data').get('root'))
 ds3m.to_netcdf(Path(ruta, 'dry_mask.nc'))
 

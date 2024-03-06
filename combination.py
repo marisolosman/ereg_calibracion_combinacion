@@ -40,7 +40,7 @@ def main(args):
     nmodels = len(modelos)
     ny = int(np.abs(coords['lat_n'] - coords['lat_s']) + 1)
     nx = int(np.abs (coords['lon_e'] - coords['lon_w']) + 1) #does for domains beyond greenwich
-    nyears = int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
+    nyears = 30 # int(modelos[0]['fechaf'] - modelos[0]['fechai'] + 1)
     if args.ctech == 'wpdf':
         prob_terciles = np.array([]).reshape(2, nyears, ny, nx, 0) #[cat years lats lons models]
     elif args.ctech == 'wsereg':
@@ -57,14 +57,13 @@ def main(args):
     #defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1992
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     message = "Combining forecasts: " + SSS + " " + args.variable[0] + " Initialized in " +\
                calendar.month_abbr[args.IC[0]] + " using " + args.ctech + " " + args.wtech[0]
     print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
     
     i = 0
-
     for it in modelos:
         #abro archivo modelo
         archivo = Path(PATH, cfg.get('folders').get('data').get('calibrated_forecasts'),
@@ -107,7 +106,7 @@ def main(args):
             #extraigo info del peso segun la opcion por la que elijo pesar
             if args.wtech[0] == 'pdf_int':
                 peso = data['peso']
-                weight = np.concatenate((weight, peso[:, 0, :, :][:, :, :,
+                weight = np.concatenate((weight, peso[:, :, :][:, :, :,
                                                                   np.newaxis]),
                                         axis=3)
                 peso = []

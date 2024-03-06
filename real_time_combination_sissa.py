@@ -62,7 +62,7 @@ def main(args):
     #defino ref dataset y target season
     seas = range(inim + args.leadtime[0], inim + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1991
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     message = 'Var:' + args.variable[0] + ' IC:' + calendar.month_abbr[inim] +\
               ' Target season:' + SSS + ' ' + args.ctech + ' ' + args.wtech[0]
@@ -74,10 +74,17 @@ def main(args):
     quintiles = data['quintiles']
     j = 0
     for it in modelos:
-        modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+        if np.logical_and(it['nombre'] == 'CFSv2', inim == 11): 
+            modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
+                            it['latn'], it['lonn'], it['miembros'] + 4, \
+                            it['plazos'], it['fechai'], it['fechaf'],\
+                            it['ext'], it['rt_miembros'] + 4)
+        else:
+            modelo = model.Model(it['nombre'], it['instit'], args.variable[0],\
                             it['latn'], it['lonn'], it['miembros'], \
                             it['plazos'], it['fechai'], it['fechaf'],\
                             it['ext'], it['rt_miembros'])
+
         message = f"Current model: {it['nombre']}"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
         [lats, lons, pronos] = modelo.select_real_time_months(inim, iniy,\
@@ -103,7 +110,7 @@ def main(args):
             a1 = data['a1']
             b1 = data['b1']
             #remove trend
-            T = iniy - 1982
+            T = iniy - 1991
             f_dt = pronos - (b1 + T * a1)
             f_dt[empty_forecast, :, :] = np.nan # modificado
             #junto pronos actual

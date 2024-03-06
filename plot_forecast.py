@@ -17,7 +17,8 @@ def main(args):
     # Defino ref dataset y target season
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1992
+    year_end = year_verif + 29
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     month= calendar.month_abbr[args.IC[0]]
     wtech = args.weighting  # ['pdf_int', 'mean_cor', 'same']
@@ -59,6 +60,8 @@ def main(args):
         for j in wtech:
             archivo = args.variable[0] + '_mme_' + month + '_' + \
                     SSS + '_gp_01_' + j + '_' + i + '_hind.npz'
+            info_message = f'File: "{Path(RUTA, archivo)}".'
+            print(info_message) if not cfg.get('use_logger') else cfg.logger.info(info_message)
             data = np.load(Path(RUTA, archivo))
             lat = data['lat']
             lon = data['lon']
@@ -67,10 +70,10 @@ def main(args):
             lonw = np.min(lon)
             lone = np.max(lon)
             [dx, dy] = np.meshgrid(lon, lat)
-            for k in np.arange(year_verif, 2011, 1):
+            for k in np.arange(year_verif, year_end + 1, 1):
                 output = Path(RUTA_IM, 'for_' + args.variable[0] + '_' + SSS + '_ic_' +
                               month + '_' + str(k) + '_' + i + '_' + j + '.png')
-                for_terciles = np.squeeze(data['prob_terc_comb'][:, k - 1982, :, :])
+                for_terciles = np.squeeze(data['prob_terc_comb'][:, k - year_verif, :, :])
                 if args.variable[0] == 'prec':
                     #agrego el prono de la categoria above normal
                     below = ndimage.filters.gaussian_filter(for_terciles[0, :,
@@ -115,9 +118,9 @@ def main(args):
     lonw = np.min(lon)
     lone = np.max(lon)
     [dx, dy] = np.meshgrid (lon, lat)
-    for k in np.arange(1982, 2011, 1):
+    for k in np.arange(year_verif, year_end + 1, 1):
         output = Path(RUTA_IM, 'for_' + args.variable[0] + '_' + SSS + '_ic_' + month + '_' + str(k) + '_count.png')
-        for_terciles = np.squeeze(data['prob_terc_comb'][:, k-1982, :, :])
+        for_terciles = np.squeeze(data['prob_terc_comb'][:, k-year_verif, :, :])
         #agrego el prono de la categoria above normal
         for_terciles = np.concatenate([for_terciles[0, :, :][:, :, np.newaxis],
                                        (for_terciles[1, :, :] -
@@ -137,7 +140,7 @@ def main(args):
 
 # ==================================================================================================
 if __name__ == "__main__":
-  
+
     # Define parser data
     parser = argparse.ArgumentParser(description='Verify combined forecast')
     parser.add_argument('variable',type=str, nargs= 1,\
@@ -158,7 +161,7 @@ if __name__ == "__main__":
 
     # Set error as not detected
     error_detected = False
-  
+
     # Run plotting
     start = time.time()
     try:
@@ -174,3 +177,4 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"plot_forecast.py\" ({err_pfx} errors): {end - start}" 
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+

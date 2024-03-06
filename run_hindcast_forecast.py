@@ -19,7 +19,7 @@ from create_output_files_descriptor import main as create_descriptors
 cfg = configuration.Config.Instance()
 
 def main(args):
-  
+
     if args.calibrate:
         cfg.logger.info("Starting calibration")
         for v in args.variables:  # loop sobre las variables a calibrar

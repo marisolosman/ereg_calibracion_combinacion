@@ -12,7 +12,7 @@ gen_descriptor: !!bool "true"
 # folders in which the data will be saved
 folders:
   # TREE (ereg root folders)
-  download_folder: /data/ereg/descargas/
+  download_folder: /datos/osman/ereg/descargas/
   # Si algunos miembros del real-time del CFSv2 del pentad_samples se bajan mal,  una solución pude ser bajar los
   # miembros problemáticos pero del early monthly samples. En esos casos, hay que:
   # 1- Cambiar los urls del CFSv2: cambiar ".PENTAD_SAMPLES" por ".EARLY_MONTH_SAMPLES".
@@ -21,7 +21,7 @@ folders:
   # 3- Una vez bajados los archivos problemáticos, pegarlos en la carpeta correcta de descarga (/data/ereg/descargas/).
   # Carpeta de descarga alternativa para miembros problemáticos:
   # download_folder: /data/ereg/descargas_cfs_early_month_samples/
-  gen_data_folder: /data/ereg/generados/
+  gen_data_folder: /datos/osman/ereg/generados/
   # NMME (contains downloaded data):
   nmme:
     root: NMME
@@ -61,16 +61,18 @@ coords:
 # rt_members         -> Number of members in hindcast mode
 models:
   - [    model, institution, latitude, logitude, members, leadtimes, hindcast_begin, hindcast_end, file_end, rt_members ] 
-  - [  CanCM4i,         CMC,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
-  # [ GEM-NEMO,         CMC,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ]
-  # [CanSIPSv2,         CMC,        Y,        X,      20,        12,           1982,         2010,       nc,         20 ] 
-  - [    CCSM4,        COLA,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ] 
-  - [    CFSv2,        NCEP,        Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
-  # [    CM2p1,        GFDL,        Y,        X,      10,        12,           1982,         2010,       nc,         10 ]  
-  # [ FLOR-A06,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
-  # [ FLOR-B01,        GFDL,        Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
-  - [    GEOS5,        NASA,        Y,        X,       4,         9,           1982,         2010,       nc,          4 ] 
-  - [GEM5-NEMO,         CMC,        Y,        X,      10,         9,           1982,         2010,       nc,         10 ]
+  - [    CanCM4i-IC3,  CMC,        Y,        X,      10,        12,           1982,         2021,       nc,         10 ] 
+#  - [    GEM-NEMO,     CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
+#  - [    CanCM4i,      CMC,        Y,        X,      10,        12,           1982,         2018,       nc,         10 ] 
+  - [    CCSM4,        COLA,       Y,        X,      10,        12,           1982,         2013,       nc,         10 ] 
+  - [    CESM1,        COLA,       Y,        X,      10,        12,           1991,         2020,       nc,         10 ] 
+  - [    CFSv2,        NCEP,       Y,        X,      24,        10,           1982,         2010,       nc,         24 ] 
+  # [    CM2p1,        GFDL,       Y,        X,      10,        12,           1982,         2010,       nc,         10 ]  
+  # [ FLOR-A06,        GFDL,       Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
+  # [ FLOR-B01,        GFDL,       Y,        X,      12,        12,           1982,         2010,       nc,         12 ]  
+  - [    GEOS5,        NASA,       Y,        X,       4,         9,           1982,         2016,       nc,         10 ] 
+  - [    GEM5-NEMO,    CMC,        Y,        X,      10,         9,           1982,         2021,       nc,         10 ] 
+  - [    SPEAR,        GFDL,       Y,        X,      15,        12,           1991,         2020,       nc,         30 ] 
 
 
 # URL where to download the models files from
@@ -83,16 +85,20 @@ iri_url: http://iridl.ldeo.columbia.edu/SOURCES/.Models/.NMME/
 # url_forecast_part  -> URL to access model FORECAST
 models_url:
   - [    model,       url_model_part,                  url_hindcast_part,                  url_forecast_part ] 
-  - [  CanCM4i,         .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ]
-  # [ GEM-NEMO,            .GEM-NEMO,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ]
-  # [CanSIPSv2,           .CanSIPSv2,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  - [  CanCM4i-IC3,             .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+#  - [   GEM-NEMO,            .GEM-NEMO,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+#  - [ CanCM4i,           .CanCM4i,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
   - [    CCSM4,    .COLA-RSMAS-CCSM4,                           .MONTHLY,                           .MONTHLY ]
+  - [    CESM1,    .COLA-RSMAS-CESM1,                           .MONTHLY,                           .MONTHLY ]
+
   - [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.PENTAD_SAMPLES/.MONTHLY, .FORECAST/.PENTAD_SAMPLES/.MONTHLY ] 
-  # [   CFSv2, .NCEP-CFSv2, .HINDCAST/.EARLY_MONTH_SAMPLES/.MONTHLY, .FORECAST/.EARLY_MONTH_SAMPLES/.MONTHLY ]
+  # [    CFSv2,          .NCEP-CFSv2, .HINDCAST/.EARLY_MONTH_SAMPLES/.MONTHLY, .FORECAST/.EARLY_MONTH_SAMPLES/.MONTHLY ]
   # [    CM2p1,    .GFDL-CM2p1-aer04,                           .MONTHLY,                           .MONTHLY ]  
   # [ FLOR-A06, .GFDL-CM2p5-FLOR-A06,                           .MONTHLY,                           .MONTHLY ]  
   # [ FLOR-B01, .GFDL-CM2p5-FLOR-B01,                           .MONTHLY,                           .MONTHLY ]  
   - [    GEOS5,        .NASA-GEOSS2S,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
-  - [GEM5-NEMO,         .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ]
+  - [  GEM5-NEMO,             .CanSIPS-IC3,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+  - [  SPEAR,             .GFDL-SPEAR,                 .HINDCAST/.MONTHLY,                 .FORECAST/.MONTHLY ] 
+
  
 

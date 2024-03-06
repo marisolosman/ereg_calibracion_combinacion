@@ -20,7 +20,7 @@ def main(args):
     prono es Dec y plazo 2 entonces FMA en primer tiempo es 1983."""
     seas = range(args.IC[0] + args.leadtime[0], args.IC[0] + args.leadtime[0] + 3)
     sss = [i - 12 if i > 12 else i for i in seas]
-    year_verif = 1982 if seas[-1] <= 12 else 1983
+    year_verif = 1991 if seas[-1] <= 12 else 1992
     SSS = "".join(calendar.month_abbr[i][0] for i in sss)
     message = "Calibrating " + args.variable[0] + " forecasts for " + SSS + \
               " initialized in " + str(args.IC[0])
@@ -38,11 +38,11 @@ def main(args):
         return
 
     if args.variable[0] == 'prec':
-        obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1982,
-                                 2011)
+        obs = observation.Observ('cpc', args.variable[0], 'Y', 'X', 1991,
+                                 2020)
     else:
-        obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1982,
-                                 2011)
+        obs = observation.Observ('ghcn_cams', args.variable[0], 'Y', 'X', 1991,
+                                 2020)
     [lats_obs, lons_obs, obs_3m] = obs.select_months(calendar.month_abbr[\
                                                                          sss[-1]],
                                                               year_verif,
@@ -93,3 +93,4 @@ if __name__ == "__main__":
         err_pfx = "with" if error_detected else "without"
         message = f"Total time to run \"calibration_sissa.py\" ({err_pfx} errors): {end - start}"
         print(message) if not cfg.get('use_logger') else cfg.logger.info(message)
+
