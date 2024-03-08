@@ -148,6 +148,10 @@ COPY updates ${EREG_HOME}
 # Disable group switching
 RUN sed -i "s/^group_for_files/# group_for_files/g" ${EREG_HOME}/config.yaml
 
+# Change download_folder and gen_data_folder
+RUN sed -i -E "s|^(\s+download_folder:).*$|\1 ${EREG_DATA}/descargas/|g" ${EREG_HOME}/config.yaml
+RUN sed -i -E "s|^(\s+gen_data_folder:).*$|\1 ${EREG_DATA}/generados/|g" ${EREG_HOME}/config.yaml
+
 # Create input and output folders (these folders are too big so they must be used them as volumes)
 RUN mkdir -p ${EREG_DATA}/descargas
 RUN mkdir -p ${EREG_DATA}/generados
