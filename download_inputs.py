@@ -7,6 +7,7 @@ import configuration
 import pandas as pd
 import urllib.request
 import urllib.parse
+import urllib.error
 import xarray as xr
 import os
 import os.path
@@ -18,6 +19,7 @@ import sys
 import cdo
 import netCDF4
 import numpy as np
+import shutil
 
 cfg = configuration.Config.Instance()
 
@@ -208,10 +210,21 @@ def download_file(download_url, filename, variable):
   pb = helpers.DownloadProgressBar(os.path.basename(filename))
   # Add headers to request
   opener = urllib.request.build_opener()
-  opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+  opener.addheaders = [('User-agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64)')]
   urllib.request.install_opener(opener)
   # Download file
-  f, h = urllib.request.urlretrieve(download_url, filename, pb)
+  try:
+    tmp_file, h = urllib.request.urlretrieve(url=download_url, reporthook=pb)
+  except urllib.error.HTTPError as e:
+    cfg.logger.error(f'HTTPError {e.code} "{e.reason}" downloading: {download_url}')
+    raise
+  except Exception as e:
+    cfg.logger.error(f'Error {type(e).__name__} downloading: {download_url}')
+    raise
+  else:
+    shutil.move(tmp_file, filename)
+  finally:
+    urllib.request.urlcleanup()  # Clean up temporary files
   # Change group of file
   cfg.set_correct_group_to_file(filename)
   # Check file size
